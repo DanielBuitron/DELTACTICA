@@ -18,13 +18,19 @@ window.addEventListener("scroll", onScroll, { passive: true });
 const toggle = document.querySelector("[data-nav-toggle]");
 const nav = document.querySelector("[data-nav]");
 
+const desktopNav = window.matchMedia("(min-width: 1181px)");
+
 function setNav(open) {
   if (!nav || !toggle) return;
-  nav.classList.toggle("is-open", open);
-  toggle.setAttribute("aria-expanded", open ? "true" : "false");
-  toggle.querySelector(".sr-only").textContent = open ? "Cerrar menú" : "Abrir menú";
-  document.body.classList.toggle("nav-open", open);
+  const show = desktopNav.matches ? false : open;
+  nav.classList.toggle("is-open", show);
+  toggle.setAttribute("aria-expanded", show ? "true" : "false");
+  toggle.querySelector(".sr-only").textContent = show ? "Cerrar menú" : "Abrir menú";
+  document.body.classList.toggle("nav-open", show);
+  nav.inert = desktopNav.matches ? false : !show;
 }
+
+desktopNav.addEventListener("change", () => setNav(false));
 
 if (toggle && nav) {
   toggle.addEventListener("click", () => setNav(!nav.classList.contains("is-open")));
@@ -32,6 +38,7 @@ if (toggle && nav) {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") setNav(false);
   });
+  setNav(false);
 }
 
 const filters = document.querySelectorAll("[data-filter]");

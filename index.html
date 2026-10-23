@@ -23,35 +23,32 @@
         <span></span><span></span><span></span>
         <span class="sr-only">Abrir menú</span>
       </button>
-      <nav class="nav-links" id="menu" data-nav>
-        <a href="catalogo.html" target="_blank" rel="noopener noreferrer" aria-label="Catálogo, se abre en una pestaña nueva">Catálogo</a><a href="lineas.html" target="_blank" rel="noopener noreferrer" aria-label="Líneas, se abre en una pestaña nueva">Líneas</a><a href="institucional.html" target="_blank" rel="noopener noreferrer" aria-label="Institucional, se abre en una pestaña nueva">Institucional</a><a href="dotacion.html" target="_blank" rel="noopener noreferrer" aria-label="Dotación, se abre en una pestaña nueva">Dotación</a><a href="contacto.html" target="_blank" rel="noopener noreferrer" aria-label="Contacto, se abre en una pestaña nueva">Contacto</a><a href="catalogo-impreso.html" target="_blank" rel="noopener noreferrer" aria-label="Ver catálogo, se abre en una pestaña nueva">Ver catálogo</a>
-      </nav>
+      <nav class="nav-links" id="menu" data-nav aria-label="Secciones"><a class="nav-item" href="catalogo.html" target="_blank" rel="noopener noreferrer" aria-label="Catálogo, se abre en una pestaña nueva"><span class="nav-kicker">01</span><span>Catálogo</span></a><a class="nav-item" href="lineas.html" target="_blank" rel="noopener noreferrer" aria-label="Líneas, se abre en una pestaña nueva"><span class="nav-kicker">02</span><span>Líneas</span></a><a class="nav-item" href="institucional.html" target="_blank" rel="noopener noreferrer" aria-label="Institucional, se abre en una pestaña nueva"><span class="nav-kicker">03</span><span>Institucional</span></a><a class="nav-item" href="dotacion.html" target="_blank" rel="noopener noreferrer" aria-label="Dotación, se abre en una pestaña nueva"><span class="nav-kicker">04</span><span>Dotación</span></a><a class="nav-item" href="contacto.html" target="_blank" rel="noopener noreferrer" aria-label="Contacto, se abre en una pestaña nueva"><span class="nav-kicker">05</span><span>Contacto</span></a><a class="nav-cta" href="catalogo-impreso.html" target="_blank" rel="noopener noreferrer" aria-label="Ver catálogo, se abre en una pestaña nueva">Ver catálogo</a></nav>
     </header>
     <main id="contenido">
-      
-      <section class="hero" id="inicio">
-        <div class="wrap hero-grid">
-          <div class="hero-copy">
+      <section class="stage" id="inicio">
+        <img class="stage-photo" src="img/productos/hero.jpg" alt="Conjunto, botín, morral y gorra de la línea Deltactica" />
+        <div class="stage-shade" aria-hidden="true"></div>
+        <div class="wrap stage-layout">
+          <div class="stage-copy">
             <p class="eyebrow">Línea propia</p>
             <h1>Artículos tácticos<br /><span class="metal">y militares.</span></h1>
-            <p class="lead">Esta pantalla guarda los datos que importan para elegir: referencia, línea y el punto fuerte de cada pieza. El catálogo, las fichas y el pedido se abren en otra pestaña.</p>
+            <p class="lead">Doce referencias hechas en casa. Esta pantalla deja la referencia, la línea y el dato que decide. El catálogo y cada ficha se abren en otra pestaña.</p>
             <div class="hero-actions">
               <a class="btn btn-metal" href="catalogo.html" target="_blank" rel="noopener noreferrer">Abrir catálogo</a>
               <a class="btn btn-ghost" data-wa-text="Hola, quiero hablar con el asesor comercial de Deltactica sobre artículos tácticos y militares.">Hablar con el asesor</a>
             </div>
           </div>
-          <figure class="hero-brand">
-            <img src="img/logo.png" alt="" width="551" height="219" />
-            <figcaption>Artículos tácticos y militares</figcaption>
-          </figure>
         </div>
-        <div class="rail" aria-label="Líneas">
-          <div class="wrap rail-inner">
-            <span>Campo</span><span>Faena</span><span>Abrigo</span><span>Equipo</span>
-          </div>
-        </div>
+        <nav class="stage-bar" aria-label="Líneas">
+          <a href="lineas.html" target="_blank" rel="noopener noreferrer"><span>01</span>Campo</a>
+          <a href="lineas.html" target="_blank" rel="noopener noreferrer"><span>02</span>Faena</a>
+          <a href="lineas.html" target="_blank" rel="noopener noreferrer"><span>03</span>Abrigo</a>
+          <a href="lineas.html" target="_blank" rel="noopener noreferrer"><span>04</span>Calzado</a>
+          <a href="lineas.html" target="_blank" rel="noopener noreferrer"><span>05</span>Equipo</a>
+        </nav>
       </section>
-      <section class="page" aria-labelledby="datos-titulo">
+      <section class="page showcase" aria-labelledby="datos-titulo">
         <div class="wrap">
           <div class="key-head">
             <div>
@@ -60,50 +57,42 @@
             </div>
             <a class="consult" href="catalogo-impreso.html" target="_blank" rel="noopener noreferrer">Abrir catálogo completo</a>
           </div>
-          <div class="key-table-wrap">
-            <table class="key-table">
-              <caption class="sr-only">Referencias principales de Deltactica</caption>
-              <thead><tr><th>Ref.</th><th>Artículo</th><th>Línea</th><th>Dato clave</th><th><span class="sr-only">Ficha</span></th></tr></thead>
-              <tbody>
-                <tr>
-              <td class="ref-cell">DT-01</td>
-              <td class="name-cell">Conjunto de campaña</td>
-              <td>Campo</td>
-              <td>Dos piezas en ripstop, con refuerzo en codo y rodilla.</td>
-              <td><a class="consult" href="fichas/dt-01.html" target="_blank" rel="noopener noreferrer">Abrir ficha</a></td>
-            </tr><tr>
-              <td class="ref-cell">DT-03</td>
-              <td class="name-cell">Pantalón de carga</td>
-              <td>Faena</td>
-              <td>Bolsillos de carga y refuerzo de rodilla.</td>
-              <td><a class="consult" href="fichas/dt-03.html" target="_blank" rel="noopener noreferrer">Abrir ficha</a></td>
-            </tr><tr>
-              <td class="ref-cell">DT-04</td>
-              <td class="name-cell">Chaqueta cortaviento</td>
-              <td>Abrigo</td>
-              <td>Capa exterior para clima variable.</td>
-              <td><a class="consult" href="fichas/dt-04.html" target="_blank" rel="noopener noreferrer">Abrir ficha</a></td>
-            </tr><tr>
-              <td class="ref-cell">DT-07</td>
-              <td class="name-cell">Botín de marcha</td>
-              <td>Calzado</td>
-              <td>Soporte de tobillo y suela de agarre.</td>
-              <td><a class="consult" href="fichas/dt-07.html" target="_blank" rel="noopener noreferrer">Abrir ficha</a></td>
-            </tr><tr>
-              <td class="ref-cell">DT-09</td>
-              <td class="name-cell">Morral de campaña</td>
-              <td>Equipo</td>
-              <td>35 litros, espalda acolchada.</td>
-              <td><a class="consult" href="fichas/dt-09.html" target="_blank" rel="noopener noreferrer">Abrir ficha</a></td>
-            </tr><tr>
-              <td class="ref-cell">DT-10</td>
-              <td class="name-cell">Cinturón de equipo</td>
-              <td>Equipo</td>
-              <td>Cinturón rígido con anillas de fijación.</td>
-              <td><a class="consult" href="fichas/dt-10.html" target="_blank" rel="noopener noreferrer">Abrir ficha</a></td>
-            </tr>
-              </tbody>
-            </table>
+          <div class="mosaic">
+            <a class="tile tile-lead" href="fichas/dt-01.html" target="_blank" rel="noopener noreferrer">
+              <img src="img/productos/dt-01.jpg" alt="Conjunto de campaña en ripstop verde" />
+              <span class="tile-copy"><span>DT-01 · Campo</span><strong>Conjunto de campaña</strong><em>Dos piezas en ripstop, con refuerzo en codo y rodilla.</em></span>
+            </a>
+            <a class="tile" href="fichas/dt-03.html" target="_blank" rel="noopener noreferrer">
+              <img src="img/productos/dt-03.jpg" alt="Pantalón de carga verde" />
+              <span class="tile-copy"><span>DT-03 · Faena</span><strong>Pantalón de carga</strong><em>Bolsillos de carga y refuerzo de rodilla.</em></span>
+            </a>
+            <a class="tile" href="fichas/dt-04.html" target="_blank" rel="noopener noreferrer">
+              <img src="img/productos/dt-04.jpg" alt="Chaqueta cortaviento coyote" />
+              <span class="tile-copy"><span>DT-04 · Abrigo</span><strong>Chaqueta cortaviento</strong><em>Capa exterior para clima variable.</em></span>
+            </a>
+            <a class="tile" href="fichas/dt-07.html" target="_blank" rel="noopener noreferrer">
+              <img src="img/productos/dt-07.jpg" alt="Botín de marcha coyote" />
+              <span class="tile-copy"><span>DT-07 · Calzado</span><strong>Botín de marcha</strong><em>Soporte de tobillo y suela de agarre.</em></span>
+            </a>
+            <a class="tile" href="fichas/dt-09.html" target="_blank" rel="noopener noreferrer">
+              <img src="img/productos/dt-09.jpg" alt="Morral de campaña de 35 litros" />
+              <span class="tile-copy"><span>DT-09 · Equipo</span><strong>Morral de campaña</strong><em>35 litros, espalda acolchada.</em></span>
+            </a>
+            <a class="tile tile-wide" href="fichas/dt-10.html" target="_blank" rel="noopener noreferrer">
+              <img src="img/productos/dt-10.jpg" alt="Cinturón de equipo en nylon con anillas" />
+              <span class="tile-copy"><span>DT-10 · Equipo</span><strong>Cinturón de equipo</strong><em>Cinturón rígido con anillas de fijación.</em></span>
+            </a>
+          </div>
+          <div class="thumb-head">
+            <p class="eyebrow">También en la línea</p>
+          </div>
+          <div class="thumbs">
+            <a class="thumb" href="fichas/dt-02.html" target="_blank" rel="noopener noreferrer"><img src="img/productos/dt-02.jpg" alt="" /><span>DT-02 · Faena</span><strong>Camisola de faena</strong></a>
+            <a class="thumb" href="fichas/dt-05.html" target="_blank" rel="noopener noreferrer"><img src="img/productos/dt-05.jpg" alt="" /><span>DT-05 · Abrigo</span><strong>Capa de lluvia</strong></a>
+            <a class="thumb" href="fichas/dt-06.html" target="_blank" rel="noopener noreferrer"><img src="img/productos/dt-06.jpg" alt="" /><span>DT-06 · Abrigo</span><strong>Polar de abrigo</strong></a>
+            <a class="thumb" href="fichas/dt-08.html" target="_blank" rel="noopener noreferrer"><img src="img/productos/dt-08.jpg" alt="" /><span>DT-08 · Equipo</span><strong>Guante de faena</strong></a>
+            <a class="thumb" href="fichas/dt-11.html" target="_blank" rel="noopener noreferrer"><img src="img/productos/dt-11.jpg" alt="" /><span>DT-11 · Campo</span><strong>Gorra de campaña</strong></a>
+            <a class="thumb" href="fichas/dt-12.html" target="_blank" rel="noopener noreferrer"><img src="img/productos/dt-12.jpg" alt="" /><span>DT-12 · Equipo</span><strong>Bolso de pierna</strong></a>
           </div>
         </div>
       </section>
@@ -112,9 +101,7 @@
       <div class="wrap footer-grid">
         <a class="brand" href="index.html"><img src="img/wordmark.png" alt="Deltactica" width="1013" height="100" /></a>
         <p>Artículos tácticos y militares.</p>
-        <nav aria-label="Pie de página">
-          <a href="catalogo.html" target="_blank" rel="noopener noreferrer" aria-label="Catálogo, se abre en una pestaña nueva">Catálogo</a><a href="lineas.html" target="_blank" rel="noopener noreferrer" aria-label="Líneas, se abre en una pestaña nueva">Líneas</a><a href="institucional.html" target="_blank" rel="noopener noreferrer" aria-label="Institucional, se abre en una pestaña nueva">Institucional</a><a href="dotacion.html" target="_blank" rel="noopener noreferrer" aria-label="Dotación, se abre en una pestaña nueva">Dotación</a><a href="contacto.html" target="_blank" rel="noopener noreferrer" aria-label="Contacto, se abre en una pestaña nueva">Contacto</a><a href="catalogo-impreso.html" target="_blank" rel="noopener noreferrer" aria-label="Ver catálogo, se abre en una pestaña nueva">Ver catálogo</a>
-        </nav>
+        <nav aria-label="Pie de página"><a href="catalogo.html" target="_blank" rel="noopener noreferrer" aria-label="Catálogo, se abre en una pestaña nueva">Catálogo</a><a href="lineas.html" target="_blank" rel="noopener noreferrer" aria-label="Líneas, se abre en una pestaña nueva">Líneas</a><a href="institucional.html" target="_blank" rel="noopener noreferrer" aria-label="Institucional, se abre en una pestaña nueva">Institucional</a><a href="dotacion.html" target="_blank" rel="noopener noreferrer" aria-label="Dotación, se abre en una pestaña nueva">Dotación</a><a href="contacto.html" target="_blank" rel="noopener noreferrer" aria-label="Contacto, se abre en una pestaña nueva">Contacto</a><a href="catalogo-impreso.html" target="_blank" rel="noopener noreferrer" aria-label="Ver catálogo, se abre en una pestaña nueva">Ver catálogo</a></nav>
       </div>
     </footer>
     <a class="wa-fab" data-wa-text="Hola, quiero hablar con el asesor comercial de Deltactica sobre artículos tácticos y militares." aria-label="Escribir al asesor comercial por WhatsApp">
