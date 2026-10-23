@@ -31,16 +31,7 @@ const NOTES = {
 const LINES = ["Campo", "Faena", "Abrigo", "Calzado", "Equipo"];
 
 const KEYS = { cart: "dt-cart", orders: "dt-orders", stock: "dt-stock", admin: "dt-admin", examples: "dt-examples-v1" };
-const USERS = [
-  { user: "direccion", password: "deltactica", name: "Dirección", role: "General, ventas, bodega y catálogo" },
-  { user: "ventas", password: "ventas", name: "Ventas", role: "Pedidos, estados y catálogo" },
-  { user: "bodega", password: "bodega", name: "Bodega", role: "Existencias, reposición y catálogo" },
-];
-const ACCESS = {
-  direccion: ["general", "ventas", "bodega", "catalogo"],
-  ventas: ["general", "ventas", "catalogo"],
-  bodega: ["general", "bodega", "catalogo"],
-};
+const ADMIN = { user: "admin", password: "deltactica", name: "Admin" };
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const LINE_COLORS = {
   Campo: "#f4f5f6",
@@ -415,11 +406,10 @@ function receiptView(order) {
 
 function currentUser() {
   const raw = sessionStorage.getItem(KEYS.admin);
-  if (!raw) return null;
-  if (raw === "1") return USERS[0];
+  if (!raw || raw === "1") return null;
   try {
     const parsed = JSON.parse(raw);
-    return USERS.find((user) => user.user === parsed.user) || null;
+    return parsed.user === ADMIN.user ? ADMIN : null;
   } catch {
     return null;
   }
@@ -542,19 +532,14 @@ function paintAccount() {
   });
   document.querySelectorAll("[data-account-menu]").forEach((menu) => {
     if (session) {
-      menu.innerHTML = `<p class="account-kicker">Sesión abierta</p><p class="account-role">${escapeHtml(session.name)}</p><p class="account-role">${escapeHtml(session.role)}</p><a href="${root}admin.html">Abrir panel</a><button type="button" data-logout>Salir</button>`;
+      menu.innerHTML = `<p class="account-kicker">Sesión abierta</p><p class="account-role">Admin</p><a href="${root}admin.html">Abrir panel</a><button type="button" data-logout>Salir</button>`;
       return;
     }
-    const users = USERS.map((user) => `<a href="${root}admin.html?usuario=${user.user}"><strong>${escapeHtml(user.name)}</strong><span>${escapeHtml(user.user)} · ${escapeHtml(user.password)}</span></a>`).join("");
-    menu.innerHTML = `<p class="account-kicker">Usuarios de ingreso</p>${users}<a class="account-enter" href="${root}admin.html">Entrar al panel</a>`;
+    menu.innerHTML = `<a class="account-enter" href="${root}admin.html">Iniciar sesión</a>`;
   });
-  const board = document.querySelector("[data-user-board]");
-  if (board) {
-    board.innerHTML = USERS.map((user) => `<button class="user-card" type="button" data-fill-user="${user.user}"><strong>${escapeHtml(user.name)}</strong><span>${escapeHtml(user.role)}</span><code>${escapeHtml(user.user)} · ${escapeHtml(user.password)}</code></button>`).join("");
-  }
   const who = document.querySelector("[data-admin-who]");
   if (who && session) {
-    who.textContent = `${session.name} · ${session.role}. Los ejemplos y los pedidos de este navegador se leen juntos.`;
+    who.textContent = "Los ejemplos y los pedidos de este navegador se leen juntos.";
   }
 }
 
@@ -575,30 +560,20 @@ function renderAdmin() {
   shell.hidden = !open;
   paintAccount();
   if (!open) {
-    const preset = new URLSearchParams(location.search).get("usuario");
-    const chosen = USERS.find((user) => user.user === preset);
-    if (chosen) {
-      const userField = login.querySelector("[name=usuario]");
-      const passField = login.querySelector("[name=clave]");
-      if (userField) userField.value = chosen.user;
-      if (passField) passField.value = chosen.password;
-      login.querySelectorAll("[data-fill-user]").forEach((card) => {
-        card.classList.toggle("is-picked", card.dataset.fillUser === chosen.user);
-      });
-    }
     if (!login.dataset.bound) {
       login.dataset.bound = "1";
       login.addEventListener("submit", (event) => {
         event.preventDefault();
         const data = new FormData(login);
-        const found = USERS.find((user) => user.user === data.get("usuario") && user.password === data.get("clave"));
         const error = login.querySelector("[data-admin-error]");
-        if (!found) {
-          error.textContent = "El usuario o la clave no coinciden.";
+        const user = String(data.get("usuario") || "").trim();
+        const pass = String(data.get("clave") || "");
+        if (user !== ADMIN.user || pass !== ADMIN.password) {
+          error.textContent = "El usuario o la contraseña no coinciden.";
           return;
         }
         error.textContent = "";
-        sessionStorage.setItem(KEYS.admin, JSON.stringify({ user: found.user, name: found.name }));
+        sessionStorage.setItem(KEYS.admin, JSON.stringify({ user: ADMIN.user, name: ADMIN.name }));
         renderAdmin();
       });
     }
@@ -674,14 +649,11 @@ function renderAdmin() {
     paintDownloadCount();
   }
 
-  const allowed = ACCESS[session.user] || ACCESS.direccion;
   const tabs = [...document.querySelectorAll("[data-admin-tab]")];
   const panels = [...document.querySelectorAll("[data-admin-panel]")];
-  tabs.forEach((tab) => {
-    tab.hidden = !allowed.includes(tab.dataset.adminTab);
-  });
+  const names = tabs.map((tab) => tab.dataset.adminTab);
   const show = (name) => {
-    const current = allowed.includes(name) ? name : allowed[0];
+    const current = names.includes(name) ? name : "general";
     tabs.forEach((tab) => tab.classList.toggle("is-on", tab.dataset.adminTab === current));
     panels.forEach((panel) => {
       panel.hidden = panel.dataset.adminPanel !== current;
@@ -711,20 +683,6 @@ document.addEventListener("click", (event) => {
   }
   if (event.target.closest("[data-logout]")) {
     logout();
-    return;
-  }
-  const fill = event.target.closest("[data-fill-user]");
-  if (fill) {
-    const found = USERS.find((user) => user.user === fill.dataset.fillUser);
-    const form = fill.closest("form");
-    if (found && form) {
-      form.querySelector("[name=usuario]").value = found.user;
-      form.querySelector("[name=clave]").value = found.password;
-      form.querySelectorAll("[data-fill-user]").forEach((card) => {
-        card.classList.toggle("is-picked", card === fill);
-      });
-      form.querySelector("[data-admin-error]").textContent = "";
-    }
     return;
   }
   if (!event.target.closest("[data-account]")) closeAccounts();
