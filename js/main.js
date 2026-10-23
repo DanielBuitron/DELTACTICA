@@ -19,23 +19,26 @@ const toggle = document.querySelector("[data-nav-toggle]");
 const nav = document.querySelector("[data-nav]");
 
 function setNav(open) {
+  if (!nav || !toggle) return;
   nav.classList.toggle("is-open", open);
   toggle.setAttribute("aria-expanded", open ? "true" : "false");
   toggle.querySelector(".sr-only").textContent = open ? "Cerrar menú" : "Abrir menú";
   document.body.classList.toggle("nav-open", open);
 }
 
-toggle.addEventListener("click", () => setNav(!nav.classList.contains("is-open")));
-nav.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => setNav(false)));
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") setNav(false);
-});
+if (toggle && nav) {
+  toggle.addEventListener("click", () => setNav(!nav.classList.contains("is-open")));
+  nav.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => setNav(false)));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") setNav(false);
+  });
+}
 
 const filters = document.querySelectorAll("[data-filter]");
 const cards = document.querySelectorAll(".card");
 const count = document.querySelector("[data-count]");
 
-filters.forEach((button) => {
+if (count) filters.forEach((button) => {
   button.addEventListener("click", () => {
     const filter = button.dataset.filter;
     filters.forEach((item) => {
@@ -58,7 +61,7 @@ filters.forEach((button) => {
 const form = document.querySelector("[data-form]");
 const status = document.querySelector("[data-status]");
 
-form.addEventListener("submit", (event) => {
+if (form && status) form.addEventListener("submit", (event) => {
   event.preventDefault();
   const data = new FormData(form);
   const detalle = String(data.get("detalle") || "").trim();
