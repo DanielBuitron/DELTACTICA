@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="css/styles.css" />
     <script>document.documentElement.classList.add("js");</script>
   </head>
-  <body data-wa="573000000000">
+  <body data-wa="573227043082">
     <a class="skip" href="#contenido">Saltar al contenido</a>
     <header class="header" data-header>
       <a class="brand" href="index.html"><img src="img/wordmark.png" alt="Deltactica" width="1013" height="100" /></a>
@@ -36,20 +36,40 @@
         <div class="wrap">
           <header class="page-hero">
             <p class="eyebrow">Compra</p>
-            <h1>Datos del pedido</h1>
-            <ol class="buy-steps"><li>Carrito</li><li class="is-on">Datos</li><li>Confirmación</li></ol>
+            <h1>Datos de envío</h1>
+            <ol class="buy-steps"><li>Carrito</li><li class="is-on">Envío</li><li>Recibo</li></ol>
           </header>
           <div data-order-done hidden></div>
           <div class="checkout-grid">
             <form class="contact-form" data-checkout-form>
-              <label>Nombre<input name="nombre" required autocomplete="name"></label>
-              <label>Institución<input name="institucion" autocomplete="organization"></label>
-              <label>Ciudad<input name="ciudad" required autocomplete="address-level2"></label>
-              <label>Teléfono<input name="telefono" required autocomplete="tel"></label>
-              <label>Dirección de entrega<input name="direccion" required autocomplete="street-address"></label>
-              <label>Forma de pago<select name="metodo"><option>Transferencia</option><option>Pago contraentrega</option></select></label>
-              <label>Nota<textarea name="nota"></textarea></label>
-              <button class="btn btn-metal" type="submit">Confirmar pedido</button>
+              <fieldset>
+                <legend>Quién pide</legend>
+                <label>Nombre<input name="nombre" required autocomplete="name"></label>
+                <label>Institución<input name="institucion" autocomplete="organization"></label>
+                <label>Teléfono de contacto<input name="telefono" required autocomplete="tel"></label>
+              </fieldset>
+              <fieldset>
+                <legend>Datos de envío</legend>
+                <p class="admin-note">Hacen falta para despachar. Sin estos datos el pedido no sigue.</p>
+                <label>Quién recibe<input name="recibe" required autocomplete="name"></label>
+                <label>Teléfono de entrega<input name="telefonoEnvio" required autocomplete="tel"></label>
+                <label>Departamento
+                  <select name="departamento" required>
+                    <option value="" selected disabled>Seleccione el departamento</option>
+                    <option>Amazonas</option><option>Antioquia</option><option>Arauca</option><option>Atlántico</option><option>Bogotá D.C.</option><option>Bolívar</option><option>Boyacá</option><option>Caldas</option><option>Caquetá</option><option>Casanare</option><option>Cauca</option><option>Cesar</option><option>Chocó</option><option>Córdoba</option><option>Cundinamarca</option><option>Guainía</option><option>Guaviare</option><option>Huila</option><option>La Guajira</option><option>Magdalena</option><option>Meta</option><option>Nariño</option><option>Norte de Santander</option><option>Putumayo</option><option>Quindío</option><option>Risaralda</option><option>San Andrés y Providencia</option><option>Santander</option><option>Sucre</option><option>Tolima</option><option>Valle del Cauca</option><option>Vaupés</option><option>Vichada</option>
+                  </select>
+                </label>
+                <label>Ciudad<input name="ciudad" required autocomplete="address-level2"></label>
+                <label>Dirección<input name="direccion" required autocomplete="street-address" placeholder="Calle, carrera, número"></label>
+                <label>Barrio<input name="barrio" required></label>
+                <label>Indicaciones para la entrega<textarea name="indicaciones" placeholder="Portería, horario o punto de referencia"></textarea></label>
+              </fieldset>
+              <fieldset>
+                <legend>Pago</legend>
+                <label>Forma de pago<select name="metodo"><option>Transferencia</option><option>Pago contraentrega</option></select></label>
+                <label>Nota<textarea name="nota"></textarea></label>
+              </fieldset>
+              <button class="btn btn-metal" type="submit">Confirmar y generar recibo</button>
               <p data-status></p>
             </form>
             <aside class="summary-box" data-checkout-summary></aside>

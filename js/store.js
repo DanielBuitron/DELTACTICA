@@ -288,7 +288,7 @@ function renderCart() {
   }).join("");
   rootNode.innerHTML = `<table class="cart-table"><thead><tr><th>Artículo</th><th>Precio</th><th>Cantidad</th><th>Total</th><th></th></tr></thead><tbody>${rows}</tbody></table>
     <div class="cart-foot"><button class="linkish" type="button" data-clear-cart>Vaciar carrito</button><div><p class="eyebrow">Total</p><p class="cart-total">${money(cartTotal())}</p></div></div>
-    <div class="hero-actions"><a class="btn btn-metal" href="${root}compra.html">Continuar compra</a></div>
+    <div class="hero-actions"><a class="btn btn-metal" href="${root}compra.html">Seguir con el envío</a></div>
     <p class="admin-note" data-cart-msg></p>`;
 }
 
@@ -309,13 +309,12 @@ function renderCheckout() {
       item.classList.toggle("is-on", index === 2);
     });
     const heading = document.querySelector(".page-hero h1");
-    if (heading) heading.textContent = "Pedido confirmado";
+    if (heading) heading.textContent = "Recibo";
     if (!order) {
       done.innerHTML = `<p class="lead">No está ese pedido en este navegador.</p>`;
       return;
     }
-    const rows = order.lines.map((line) => `<tr><td>${escapeHtml(line.name)} · ${line.id}</td><td>${line.qty}</td><td>${money(line.price * line.qty)}</td></tr>`).join("");
-    done.innerHTML = `<p class="eyebrow">Confirmación</p><h2>Pedido ${escapeHtml(order.id)}</h2><p class="lead">Quedó registrado para el equipo comercial. El pago acordado es ${escapeHtml(order.customer.metodo)}.</p><table class="summary-line"><tbody>${rows}</tbody></table><p class="cart-total">${money(order.total)}</p><p>${escapeHtml(order.customer.nombre)} · ${escapeHtml(order.customer.ciudad)}</p><a class="btn btn-ghost" href="${root}catalogo.html">Volver al catálogo</a>`;
+    done.innerHTML = receiptView(order);
     return;
   }
   if (!cart().length) {
@@ -333,20 +332,85 @@ function renderCheckout() {
     const customer = {
       nombre: String(data.get("nombre") || "").trim(),
       institucion: String(data.get("institucion") || "").trim(),
-      ciudad: String(data.get("ciudad") || "").trim(),
       telefono: String(data.get("telefono") || "").trim(),
+      recibe: String(data.get("recibe") || "").trim(),
+      telefonoEnvio: String(data.get("telefonoEnvio") || "").trim(),
+      departamento: String(data.get("departamento") || "").trim(),
+      ciudad: String(data.get("ciudad") || "").trim(),
       direccion: String(data.get("direccion") || "").trim(),
+      barrio: String(data.get("barrio") || "").trim(),
+      indicaciones: String(data.get("indicaciones") || "").trim(),
       metodo: String(data.get("metodo") || ""),
       nota: String(data.get("nota") || "").trim(),
     };
-    const order = placeOrder(customer);
     const status = form.querySelector("[data-status]");
+    if (!customer.recibe || !customer.telefonoEnvio || !customer.departamento || !customer.ciudad || !customer.direccion || !customer.barrio) {
+      status.textContent = "Faltan datos de envío. Complete quién recibe, teléfonos, departamento, ciudad, dirección y barrio.";
+      return;
+    }
+    const order = placeOrder(customer);
     if (!order) {
       status.textContent = "La bodega ya no alcanza para este pedido. Revise el carrito.";
       return;
     }
+    window.open(waLink(receiptText(order)), "_blank", "noopener,noreferrer");
     location.href = `${root}compra.html?pedido=${order.id}`;
   });
+}
+
+function waLink(text) {
+  const phone = document.body.dataset.wa || "573227043082";
+  return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+}
+
+function receiptText(order) {
+  const customer = order.customer;
+  const lines = order.lines.map((line) => `${line.id} ${line.name} x${line.qty} · ${money(line.price * line.qty)}`).join("\n");
+  return [
+    `Recibo Deltactica ${order.id}`,
+    new Date(order.date).toLocaleString("es-CO"),
+    "",
+    lines,
+    `Total: ${money(order.total)}`,
+    `Pago: ${customer.metodo || ""}`,
+    "",
+    "Envío",
+    `Recibe: ${customer.recibe || customer.nombre}`,
+    `Teléfono de entrega: ${customer.telefonoEnvio || customer.telefono || ""}`,
+    customer.direccion || "",
+    [customer.barrio, customer.ciudad, customer.departamento].filter(Boolean).join(", "),
+    customer.indicaciones ? `Indicaciones: ${customer.indicaciones}` : "",
+    "",
+    `Pide: ${customer.nombre}${customer.institucion ? ` · ${customer.institucion}` : ""}`,
+    `Contacto: ${customer.telefono || ""}`,
+    customer.nota ? `Nota: ${customer.nota}` : "",
+  ].filter((line) => line !== "").join("\n");
+}
+
+function receiptView(order) {
+  const customer = order.customer;
+  const rows = order.lines.map((line) => `<tr><td>${escapeHtml(line.id)}</td><td>${escapeHtml(line.name)}</td><td>${line.qty}</td><td>${money(line.price)}</td><td>${money(line.price * line.qty)}</td></tr>`).join("");
+  const link = waLink(receiptText(order));
+  return `<article class="receipt">
+    <header class="receipt-head"><div><p class="eyebrow">Deltactica</p><h2>Recibo ${escapeHtml(order.id)}</h2></div><p>${new Date(order.date).toLocaleString("es-CO")}</p></header>
+    <table class="summary-line"><thead><tr><th>Ref.</th><th>Artículo</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="cart-total">${money(order.total)}</p>
+    <p>Pago: ${escapeHtml(customer.metodo || "")}</p>
+    <div class="receipt-ship">
+      <p class="eyebrow">Envío</p>
+      <p>${escapeHtml(customer.recibe || customer.nombre)}</p>
+      <p>${escapeHtml(customer.telefonoEnvio || customer.telefono || "")}</p>
+      <p>${escapeHtml(customer.direccion || "")}</p>
+      <p>${escapeHtml([customer.barrio, customer.ciudad, customer.departamento].filter(Boolean).join(", "))}</p>
+      ${customer.indicaciones ? `<p>${escapeHtml(customer.indicaciones)}</p>` : ""}
+    </div>
+    <p>${escapeHtml(customer.nombre)}${customer.institucion ? ` · ${escapeHtml(customer.institucion)}` : ""} · ${escapeHtml(customer.telefono || "")}</p>
+    <div class="receipt-actions">
+      <a class="btn btn-metal" href="${link}" target="_blank" rel="noopener noreferrer">Enviar recibo por WhatsApp</a>
+      <button class="btn btn-ghost" type="button" onclick="window.print()">Imprimir recibo</button>
+      <a class="btn btn-ghost" href="${root}catalogo.html">Volver al catálogo</a>
+    </div>
+  </article>`;
 }
 
 function currentUser() {
@@ -582,7 +646,7 @@ function renderAdmin() {
     </div>`;
 
   const saleRows = list.length
-    ? list.map((order) => `<tr><td>${escapeHtml(order.id)}${order.example ? '<span class="example-tag">Ejemplo</span>' : ""}</td><td>${new Date(order.date).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}</td><td>${escapeHtml(order.customer.nombre)}<br>${escapeHtml(order.customer.institucion || "")}</td><td>${escapeHtml(order.customer.ciudad)}<br>${escapeHtml(order.customer.metodo || "")}</td><td>${money(order.total)}</td><td><select data-status="${escapeHtml(order.id)}">${["Recibido", "En preparación", "Despachado", "Entregado"].map((status) => `<option ${status === order.status ? "selected" : ""}>${status}</option>`).join("")}</select></td></tr>`).join("")
+    ? list.map((order) => `<tr><td>${escapeHtml(order.id)}${order.example ? '<span class="example-tag">Ejemplo</span>' : ""}</td><td>${new Date(order.date).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}</td><td>${escapeHtml(order.customer.nombre)}<br>${escapeHtml(order.customer.institucion || "")}</td><td>${escapeHtml(order.customer.ciudad)}<br>${escapeHtml(order.customer.metodo || "")}</td><td>${money(order.total)}</td><td><select class="status-select" data-status="${escapeHtml(order.id)}">${["Recibido", "En preparación", "Despachado", "Entregado"].map((status) => `<option style="background:#141416;color:#f3f4f5" ${status === order.status ? "selected" : ""}>${status}</option>`).join("")}</select></td></tr>`).join("")
     : `<tr><td colspan="6">Todavía no hay pedidos.</td></tr>`;
   sales.innerHTML = `<div class="chart-grid chart-grid-sales"><article class="admin-block"><p class="eyebrow">Ventas por mes</p>${barChart(byMonth, "Ventas de los últimos seis meses")}</article><article class="admin-block"><p class="eyebrow">Por cobrar y despachar</p><p class="admin-note">Total ${money(sold)}. ${pending} pedidos siguen abiertos.</p>${meterList(byStatus)}</article></div><div class="admin-block"><p class="eyebrow">Pedidos</p><p class="admin-note">Los marcados como ejemplo ilustran el panel. Una compra confirmada entra en la misma tabla.</p><div class="table-wrap"><table class="admin-table"><thead><tr><th>Pedido</th><th>Fecha</th><th>Cliente</th><th>Ciudad</th><th>Total</th><th>Estado</th></tr></thead><tbody>${saleRows}</tbody></table></div></div>`;
 

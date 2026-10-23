@@ -65,6 +65,10 @@ if (count) filters.forEach((button) => {
   });
 });
 
+const presetLine = new URLSearchParams(location.search).get("linea");
+const presetFilter = presetLine && document.querySelector(`[data-filter="${presetLine}"]`);
+if (presetFilter) presetFilter.click();
+
 const form = document.querySelector("[data-form]");
 const status = document.querySelector("[data-status]");
 
