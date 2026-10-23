@@ -13,6 +13,23 @@ const PRODUCTS = [
   ["DT-12", "Bolso de pierna", "Equipo", 92000, 34, 8, "Pasillo D"],
 ].map(([id, name, line, price, stock, min, place]) => ({ id, name, line, price, stock, min, place }));
 
+const NOTES = {
+  "DT-01": "Dos piezas en ripstop, con refuerzo en codo y rodilla.",
+  "DT-02": "Manga larga, ventilación y espacio para identificación.",
+  "DT-03": "Bolsillos de carga y refuerzo de rodilla.",
+  "DT-04": "Capa exterior para clima variable.",
+  "DT-05": "Impermeable con capucha regulable.",
+  "DT-06": "Capa intermedia para frío.",
+  "DT-07": "Soporte de tobillo y suela de agarre.",
+  "DT-08": "Palma reforzada y puño ajustable.",
+  "DT-09": "35 litros, espalda acolchada.",
+  "DT-10": "Cinturón rígido con anillas de fijación.",
+  "DT-11": "Visera estructurada y ajuste posterior.",
+  "DT-12": "Acceso al equipo personal sin quitar el morral.",
+};
+
+const LINES = ["Campo", "Faena", "Abrigo", "Calzado", "Equipo"];
+
 const KEYS = { cart: "dt-cart", orders: "dt-orders", stock: "dt-stock", admin: "dt-admin" };
 const ADMIN_PASSWORD = "deltactica";
 const root = /\/fichas\//.test(location.pathname) ? "../" : "";
@@ -292,6 +309,16 @@ function renderAdmin() {
   }).join("");
   warehouse.innerHTML = `<div class="admin-block"><p class="eyebrow">Bodega</p><p class="admin-note">Existencia por referencia, pasillo y mínimo de reposición. Al confirmar una compra, la existencia baja.</p><table class="admin-table"><thead><tr><th>Ref.</th><th>Artículo</th><th>Línea</th><th>Ubicación</th><th>Mínimo</th><th>Existencia</th><th>Estado</th></tr></thead><tbody>${stockRows}</tbody></table></div>`;
 
+  const catalog = document.querySelector('[data-admin-panel="catalogo"]');
+  if (catalog) {
+    const checks = ["todas", ...LINES].map((line) => {
+      const label = line === "todas" ? "Todas" : line;
+      return `<label><input type="checkbox" data-line-filter="${line}" checked> ${label}</label>`;
+    }).join("");
+    catalog.innerHTML = `<div class="admin-block"><p class="eyebrow">Descargar catálogo</p><p class="admin-note">Elija las líneas y descargue el archivo. Al abrirlo puede imprimirlo o guardarlo como PDF.</p><div class="line-filters">${checks}</div><p data-download-count></p><ul class="download-list" data-download-list></ul><button class="btn btn-metal" type="button" data-download-catalog>Descargar catálogo</button><p data-download-status></p></div>`;
+    paintDownloadCount();
+  }
+
   const tabs = [...document.querySelectorAll("[data-admin-tab]")];
   const panels = [...document.querySelectorAll("[data-admin-panel]")];
   const show = (name) => {
@@ -341,16 +368,119 @@ document.addEventListener("click", (event) => {
   if (event.target.closest("[data-clear-cart]")) {
     saveCart([]);
     renderCart();
+    return;
+  }
+  if (event.target.closest("[data-download-catalog]")) {
+    const lines = selectedLines();
+    const status = document.querySelector("[data-download-status]");
+    if (!lines.length) {
+      if (status) status.textContent = "Elija al menos una línea.";
+      return;
+    }
+    const name = saveCatalog(lines);
+    if (status) status.textContent = `Se descargó ${name}.`;
   }
 });
 
+function selectedLines() {
+  return [...document.querySelectorAll("[data-line-filter]")]
+    .filter((box) => box.checked && box.dataset.lineFilter !== "todas")
+    .map((box) => box.dataset.lineFilter);
+}
+
+function paintDownloadCount() {
+  const count = document.querySelector("[data-download-count]");
+  const list = document.querySelector("[data-download-list]");
+  if (!count || !list) return;
+  const lines = selectedLines();
+  const items = PRODUCTS.filter((item) => lines.includes(item.line));
+  count.textContent = items.length === 1 ? "1 referencia" : `${items.length} referencias`;
+  list.innerHTML = items.length
+    ? items.map((item) => `<li>${item.id} · ${escapeHtml(item.name)} · ${escapeHtml(item.line)}</li>`).join("")
+    : "<li>Elija al menos una línea.</li>";
+}
+
+function catalogFile(items, lines) {
+  const stock = stockMap();
+  const cards = items.map((item) => {
+    const photo = new URL(`img/productos/${item.id.toLowerCase()}.jpg`, location.href).href;
+    return `<article>
+      <img src="${photo}" alt="">
+      <div>
+        <p>${escapeHtml(item.id)} · ${escapeHtml(item.line)}</p>
+        <h2>${escapeHtml(item.name)}</h2>
+        <p>${escapeHtml(NOTES[item.id] || "")}</p>
+        <p>${money(item.price)} · Existencia ${stock[item.id] ?? 0} · ${escapeHtml(item.place)}</p>
+      </div>
+    </article>`;
+  }).join("");
+  const title = lines.length === LINES.length ? "Catálogo completo" : lines.join(", ");
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Deltactica · ${escapeHtml(title)}</title>
+  <style>
+    body { margin: 0; font-family: Georgia, serif; color: #161616; background: #fff; }
+    header, main { width: min(860px, calc(100% - 32px)); margin: 24px auto; }
+    h1 { font-size: 40px; letter-spacing: 0.04em; text-transform: uppercase; margin: 8px 0; }
+    article { display: grid; grid-template-columns: 140px 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid #ccc; break-inside: avoid; }
+    img { width: 140px; height: 140px; object-fit: cover; }
+    h2 { margin: 0 0 8px; font-size: 26px; text-transform: uppercase; }
+    p { margin: 0 0 6px; }
+    .bar { display: flex; justify-content: space-between; align-items: center; }
+    button { font: inherit; padding: 10px 14px; }
+    @media print { .bar button { display: none; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar"><p>Deltactica</p><button type="button" onclick="window.print()">Imprimir o guardar PDF</button></div>
+    <h1>${escapeHtml(title)}</h1>
+    <p>${items.length} referencias. Artículos tácticos y militares.</p>
+  </header>
+  <main>${cards}</main>
+</body>
+</html>`;
+}
+
+function saveCatalog(lines) {
+  const items = PRODUCTS.filter((item) => lines.includes(item.line));
+  const blob = new Blob([catalogFile(items, lines)], { type: "text/html;charset=utf-8" });
+  const link = document.createElement("a");
+  const slug = lines.length === LINES.length ? "completo" : lines.map((line) => line.toLowerCase()).join("-");
+  const name = `deltactica-catalogo-${slug}.html`;
+  link.href = URL.createObjectURL(blob);
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(link.href), 1500);
+  return name;
+}
+
 document.addEventListener("change", (event) => {
   const select = event.target.closest("[data-status]");
-  if (!select) return;
-  const next = orders().map((order) => (
-    order.id === select.dataset.status ? { ...order, status: select.value } : order
-  ));
-  write(KEYS.orders, next);
+  if (select) {
+    const next = orders().map((order) => (
+      order.id === select.dataset.status ? { ...order, status: select.value } : order
+    ));
+    write(KEYS.orders, next);
+    return;
+  }
+  const box = event.target.closest("[data-line-filter]");
+  if (!box) return;
+  const boxes = [...document.querySelectorAll("[data-line-filter]")];
+  if (box.dataset.lineFilter === "todas") {
+    boxes.forEach((item) => {
+      item.checked = box.checked;
+    });
+  } else {
+    const all = boxes.find((item) => item.dataset.lineFilter === "todas");
+    const rest = boxes.filter((item) => item.dataset.lineFilter !== "todas");
+    if (all) all.checked = rest.every((item) => item.checked);
+  }
+  paintDownloadCount();
 });
 
 document.addEventListener("submit", (event) => {

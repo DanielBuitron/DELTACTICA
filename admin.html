@@ -25,7 +25,7 @@
           <form class="admin-login contact-form" data-admin-login>
             <p class="eyebrow">Panel</p>
             <h1>Administración</h1>
-            <p>Información general, ventas y bodega.</p>
+            <p>Información general, ventas, bodega y descarga del catálogo.</p>
             <label>Clave de acceso<input name="clave" type="password" required autocomplete="current-password"></label>
             <button class="btn btn-metal" type="submit">Entrar</button>
             <p data-admin-error></p>
@@ -41,11 +41,13 @@
                 <a href="#general" data-admin-tab="general">General</a>
                 <a href="#ventas" data-admin-tab="ventas">Ventas</a>
                 <a href="#bodega" data-admin-tab="bodega">Bodega</a>
+                <a href="#catalogo" data-admin-tab="catalogo">Descargar catálogo</a>
               </nav>
               <div>
                 <section data-admin-panel="general"></section>
                 <section data-admin-panel="ventas" hidden></section>
                 <section data-admin-panel="bodega" hidden></section>
+                <section data-admin-panel="catalogo" hidden></section>
               </div>
             </div>
           </div>
