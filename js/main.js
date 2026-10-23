@@ -11,7 +11,7 @@ document.querySelectorAll("[data-wa-text]").forEach((link) => {
 });
 
 const header = document.querySelector("[data-header]");
-const onScroll = () => header.classList.toggle("is-scrolled", window.scrollY > 8);
+const onScroll = () => header && header.classList.toggle("is-scrolled", window.scrollY > 8);
 onScroll();
 window.addEventListener("scroll", onScroll, { passive: true });
 
