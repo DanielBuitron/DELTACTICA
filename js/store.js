@@ -30,8 +30,25 @@ const NOTES = {
 
 const LINES = ["Campo", "Faena", "Abrigo", "Calzado", "Equipo"];
 
-const KEYS = { cart: "dt-cart", orders: "dt-orders", stock: "dt-stock", admin: "dt-admin" };
-const ADMIN_PASSWORD = "deltactica";
+const KEYS = { cart: "dt-cart", orders: "dt-orders", stock: "dt-stock", admin: "dt-admin", examples: "dt-examples-v1" };
+const USERS = [
+  { user: "direccion", password: "deltactica", name: "Dirección", role: "General, ventas, bodega y catálogo" },
+  { user: "ventas", password: "ventas", name: "Ventas", role: "Pedidos, estados y catálogo" },
+  { user: "bodega", password: "bodega", name: "Bodega", role: "Existencias, reposición y catálogo" },
+];
+const ACCESS = {
+  direccion: ["general", "ventas", "bodega", "catalogo"],
+  ventas: ["general", "ventas", "catalogo"],
+  bodega: ["general", "bodega", "catalogo"],
+};
+const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+const LINE_COLORS = {
+  Campo: "#f4f5f6",
+  Faena: "#c5c8cc",
+  Abrigo: "#8d939a",
+  Calzado: "#d7c4a3",
+  Equipo: "#6d737a",
+};
 const root = /\/fichas\//.test(location.pathname) ? "../" : "";
 
 function money(value) {
@@ -66,9 +83,84 @@ function stockMap() {
   return seeded;
 }
 
+function monthsBack(n, day) {
+  const date = new Date();
+  date.setDate(1);
+  date.setMonth(date.getMonth() - n);
+  date.setDate(day);
+  date.setHours(9, 30, 0, 0);
+  return date.toISOString();
+}
+
+function orderLine(id, qty) {
+  const item = product(id);
+  return { id: item.id, name: item.name, price: item.price, qty };
+}
+
+function buildExample(id, date, status, customer, lines) {
+  return {
+    id,
+    date,
+    status,
+    example: true,
+    customer,
+    lines,
+    total: lines.reduce((sum, line) => sum + line.price * line.qty, 0),
+  };
+}
+
+function exampleOrders() {
+  return [
+    buildExample("DT-E2401", monthsBack(0, 8), "Recibido", {
+      nombre: "Ana Ríos", institucion: "Escuela de instrucción", ciudad: "Bogotá",
+      telefono: "3001112233", direccion: "Calle 45 # 12-30", metodo: "Transferencia", nota: "Entrega en portería.",
+    }, [orderLine("DT-01", 6), orderLine("DT-11", 15)]),
+    buildExample("DT-E2402", monthsBack(0, 18), "En preparación", {
+      nombre: "Luis Herrera", institucion: "Grupo de custodia", ciudad: "Medellín",
+      telefono: "3012223344", direccion: "Carrera 70 # 44-18", metodo: "Pago contraentrega", nota: "",
+    }, [orderLine("DT-09", 4), orderLine("DT-08", 20)]),
+    buildExample("DT-E2318", monthsBack(1, 6), "Despachado", {
+      nombre: "Marta Gil", institucion: "Centro de formación", ciudad: "Cali",
+      telefono: "3023334455", direccion: "Avenida 6N # 28-40", metodo: "Transferencia", nota: "",
+    }, [orderLine("DT-04", 8), orderLine("DT-06", 10)]),
+    buildExample("DT-E2311", monthsBack(1, 21), "Entregado", {
+      nombre: "Pedro Salas", institucion: "Unidad de apoyo", ciudad: "Barranquilla",
+      telefono: "3045556677", direccion: "Calle 84 # 51-20", metodo: "Transferencia", nota: "",
+    }, [orderLine("DT-03", 14), orderLine("DT-02", 10)]),
+    buildExample("DT-E2204", monthsBack(2, 11), "Entregado", {
+      nombre: "Elena Cruz", institucion: "Programa de marcha", ciudad: "Bucaramanga",
+      telefono: "3056667788", direccion: "Carrera 27 # 34-10", metodo: "Pago contraentrega", nota: "",
+    }, [orderLine("DT-07", 10)]),
+    buildExample("DT-E2209", monthsBack(2, 24), "Entregado", {
+      nombre: "Julián Mora", institucion: "Base de entrenamiento", ciudad: "Pereira",
+      telefono: "3107778899", direccion: "Calle 19 # 8-55", metodo: "Transferencia", nota: "",
+    }, [orderLine("DT-02", 18), orderLine("DT-10", 12)]),
+    buildExample("DT-E2116", monthsBack(3, 9), "Entregado", {
+      nombre: "Sofía León", institucion: "Curso de campo", ciudad: "Manizales",
+      telefono: "3118889900", direccion: "Avenida Santander # 62-15", metodo: "Transferencia", nota: "",
+    }, [orderLine("DT-01", 4), orderLine("DT-05", 12)]),
+    buildExample("DT-E2007", monthsBack(4, 15), "Entregado", {
+      nombre: "Camilo Díaz", institucion: "Dotación interna", ciudad: "Bogotá",
+      telefono: "3129990011", direccion: "Carrera 15 # 93-40", metodo: "Transferencia", nota: "",
+    }, [orderLine("DT-12", 10), orderLine("DT-08", 30)]),
+    buildExample("DT-E1903", monthsBack(5, 5), "Entregado", {
+      nombre: "Ricardo Peña", institucion: "Jornada de abrigo", ciudad: "Cali",
+      telefono: "3131213141", direccion: "Calle 5 # 40-22", metodo: "Pago contraentrega", nota: "",
+    }, [orderLine("DT-07", 6), orderLine("DT-04", 5)]),
+  ];
+}
+
 function orders() {
   const saved = read(KEYS.orders, null);
-  if (saved) return saved;
+  if (localStorage.getItem(KEYS.examples) !== "1") {
+    const current = Array.isArray(saved) ? saved : [];
+    const ids = new Set(current.map((order) => order.id));
+    const next = [...exampleOrders().filter((order) => !ids.has(order.id)), ...current];
+    write(KEYS.orders, next);
+    localStorage.setItem(KEYS.examples, "1");
+    return next;
+  }
+  if (Array.isArray(saved)) return saved;
   write(KEYS.orders, []);
   return [];
 }
@@ -257,57 +349,256 @@ function renderCheckout() {
   });
 }
 
+function currentUser() {
+  const raw = sessionStorage.getItem(KEYS.admin);
+  if (!raw) return null;
+  if (raw === "1") return USERS[0];
+  try {
+    const parsed = JSON.parse(raw);
+    return USERS.find((user) => user.user === parsed.user) || null;
+  } catch {
+    return null;
+  }
+}
+
+function shortMoney(value) {
+  if (value >= 1000000) {
+    return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(value / 1000000)} M`;
+  }
+  if (value >= 1000) {
+    return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 }).format(value / 1000)} mil`;
+  }
+  return money(value);
+}
+
+function recentMonths(count = 6) {
+  const now = new Date();
+  const months = [];
+  for (let i = count - 1; i >= 0; i -= 1) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ key: `${date.getFullYear()}-${date.getMonth()}`, label: MONTHS[date.getMonth()] });
+  }
+  return months;
+}
+
+function salesByMonth(list) {
+  return recentMonths().map((month) => ({
+    label: month.label,
+    value: list.filter((order) => {
+      const date = new Date(order.date);
+      return `${date.getFullYear()}-${date.getMonth()}` === month.key;
+    }).reduce((sum, order) => sum + order.total, 0),
+  }));
+}
+
+function salesByLine(list) {
+  return LINES.map((line) => ({
+    label: line,
+    color: LINE_COLORS[line],
+    value: list.reduce((sum, order) => sum + order.lines.reduce((lineSum, item) => {
+      const found = product(item.id);
+      return found && found.line === line ? lineSum + item.price * item.qty : lineSum;
+    }, 0), 0),
+  }));
+}
+
+let chartSeq = 0;
+
+function barChart(series, label) {
+  chartSeq += 1;
+  const gid = `barMetal${chartSeq}`;
+  const width = 560;
+  const height = 210;
+  const pad = 36;
+  const max = Math.max(...series.map((item) => item.value), 1);
+  const gap = 12;
+  const barWidth = (width - pad * 2 - gap * (series.length - 1)) / series.length;
+  const bars = series.map((item, index) => {
+    const barHeight = Math.max(2, (item.value / max) * 130);
+    const x = pad + index * (barWidth + gap);
+    const y = 158 - barHeight;
+    return `<g>
+      <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="url(#${gid})" rx="1"></rect>
+      <text x="${(x + barWidth / 2).toFixed(1)}" y="${(y - 8).toFixed(1)}" text-anchor="middle" fill="#f3f4f5" font-size="12" font-family="Outfit, sans-serif">${shortMoney(item.value)}</text>
+      <text x="${(x + barWidth / 2).toFixed(1)}" y="184" text-anchor="middle" fill="#9aa0a6" font-size="13" font-family="Barlow Condensed, sans-serif" letter-spacing="1">${item.label}</text>
+    </g>`;
+  }).join("");
+  return `<svg class="chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(label)}">
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.48" stop-color="#c5c8cc"/><stop offset="1" stop-color="#8d939a"/></linearGradient></defs>
+    <line x1="${pad}" y1="158" x2="${width - pad}" y2="158" stroke="rgba(232,233,235,0.18)"></line>
+    ${bars}
+  </svg>`;
+}
+
+function donutChart(parts, label) {
+  const active = parts.filter((part) => part.value > 0);
+  const total = active.reduce((sum, part) => sum + part.value, 0) || 1;
+  const cx = 100;
+  const cy = 100;
+  const radius = 78;
+  const inner = 48;
+  let start = -Math.PI / 2;
+  const slices = active.map((part) => {
+    const angle = (part.value / total) * Math.PI * 2;
+    const end = start + Math.min(angle, Math.PI * 2 - 0.0001);
+    const large = end - start > Math.PI ? 1 : 0;
+    const point = (angle, size) => [cx + Math.cos(angle) * size, cy + Math.sin(angle) * size];
+    const [x1, y1] = point(start, radius);
+    const [x2, y2] = point(end, radius);
+    const [x3, y3] = point(end, inner);
+    const [x4, y4] = point(start, inner);
+    start = end;
+    return `<path d="M ${x1} ${y1} A ${radius} ${radius} 0 ${large} 1 ${x2} ${y2} L ${x3} ${y3} A ${inner} ${inner} 0 ${large} 0 ${x4} ${y4} Z" fill="${part.color}"><title>${escapeHtml(part.label)}: ${money(part.value)}</title></path>`;
+  }).join("");
+  return `<svg class="chart donut" viewBox="0 0 200 200" role="img" aria-label="${escapeHtml(label)}">${slices}<text x="100" y="96" text-anchor="middle" fill="#9aa0a6" font-size="11" font-family="Barlow Condensed, sans-serif" letter-spacing="1">TOTAL</text><text x="100" y="116" text-anchor="middle" fill="#f3f4f5" font-size="16" font-family="Barlow Condensed, sans-serif">${shortMoney(active.reduce((sum, part) => sum + part.value, 0))}</text></svg>`;
+}
+
+function legend(parts) {
+  return `<ul class="legend">${parts.map((part) => `<li><i style="background:${part.color}"></i><span>${escapeHtml(part.label)}</span><b>${money(part.value)}</b></li>`).join("")}</ul>`;
+}
+
+function meterList(parts) {
+  const max = Math.max(...parts.map((part) => part.value), 1);
+  return `<ul class="meters">${parts.map((part) => `<li><span>${escapeHtml(part.label)}</span><div class="meter" aria-hidden="true"><i class="${part.warn ? "is-low" : ""}" style="width:${Math.max(2, Math.round((part.value / max) * 100))}%"></i></div><em>${escapeHtml(part.display)}</em></li>`).join("")}</ul>`;
+}
+
+function closeAccounts() {
+  document.querySelectorAll("[data-account-menu]").forEach((menu) => {
+    menu.hidden = true;
+  });
+  document.querySelectorAll("[data-account-toggle]").forEach((button) => {
+    button.setAttribute("aria-expanded", "false");
+  });
+}
+
+function paintAccount() {
+  const session = currentUser();
+  document.querySelectorAll("[data-account-label]").forEach((node) => {
+    node.textContent = session ? session.name : "Iniciar sesión";
+  });
+  document.querySelectorAll("[data-account-menu]").forEach((menu) => {
+    if (session) {
+      menu.innerHTML = `<p class="account-kicker">Sesión abierta</p><p class="account-role">${escapeHtml(session.name)}</p><p class="account-role">${escapeHtml(session.role)}</p><a href="${root}admin.html">Abrir panel</a><button type="button" data-logout>Salir</button>`;
+      return;
+    }
+    const users = USERS.map((user) => `<a href="${root}admin.html?usuario=${user.user}"><strong>${escapeHtml(user.name)}</strong><span>${escapeHtml(user.user)} · ${escapeHtml(user.password)}</span></a>`).join("");
+    menu.innerHTML = `<p class="account-kicker">Usuarios de ingreso</p>${users}<a class="account-enter" href="${root}admin.html">Entrar al panel</a>`;
+  });
+  const board = document.querySelector("[data-user-board]");
+  if (board) {
+    board.innerHTML = USERS.map((user) => `<button class="user-card" type="button" data-fill-user="${user.user}"><strong>${escapeHtml(user.name)}</strong><span>${escapeHtml(user.role)}</span><code>${escapeHtml(user.user)} · ${escapeHtml(user.password)}</code></button>`).join("");
+  }
+  const who = document.querySelector("[data-admin-who]");
+  if (who && session) {
+    who.textContent = `${session.name} · ${session.role}. Los ejemplos y los pedidos de este navegador se leen juntos.`;
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem(KEYS.admin);
+  closeAccounts();
+  paintAccount();
+  if (document.querySelector("[data-admin-login]")) renderAdmin();
+}
+
 function renderAdmin() {
   const login = document.querySelector("[data-admin-login]");
   const shell = document.querySelector("[data-admin-shell]");
   if (!login || !shell) return;
-  const open = sessionStorage.getItem(KEYS.admin) === "1";
+  const session = currentUser();
+  const open = Boolean(session);
   login.hidden = open;
   shell.hidden = !open;
+  paintAccount();
   if (!open) {
-    login.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const clave = new FormData(login).get("clave");
-      const error = login.querySelector("[data-admin-error]");
-      if (clave !== ADMIN_PASSWORD) {
-        error.textContent = "La clave no coincide.";
-        return;
-      }
-      sessionStorage.setItem(KEYS.admin, "1");
-      renderAdmin();
-    });
+    const preset = new URLSearchParams(location.search).get("usuario");
+    const chosen = USERS.find((user) => user.user === preset);
+    if (chosen) {
+      const userField = login.querySelector("[name=usuario]");
+      const passField = login.querySelector("[name=clave]");
+      if (userField) userField.value = chosen.user;
+      if (passField) passField.value = chosen.password;
+      login.querySelectorAll("[data-fill-user]").forEach((card) => {
+        card.classList.toggle("is-picked", card.dataset.fillUser === chosen.user);
+      });
+    }
+    if (!login.dataset.bound) {
+      login.dataset.bound = "1";
+      login.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const data = new FormData(login);
+        const found = USERS.find((user) => user.user === data.get("usuario") && user.password === data.get("clave"));
+        const error = login.querySelector("[data-admin-error]");
+        if (!found) {
+          error.textContent = "El usuario o la clave no coinciden.";
+          return;
+        }
+        error.textContent = "";
+        sessionStorage.setItem(KEYS.admin, JSON.stringify({ user: found.user, name: found.name }));
+        renderAdmin();
+      });
+    }
     return;
   }
 
-  const list = orders();
+  const list = orders().slice().sort((a, b) => new Date(b.date) - new Date(a.date));
   const stock = stockMap();
   const sold = list.reduce((sum, order) => sum + order.total, 0);
   const pending = list.filter((order) => order.status !== "Entregado").length;
   const low = PRODUCTS.filter((item) => (stock[item.id] ?? 0) <= item.min);
   const units = Object.values(stock).reduce((sum, value) => sum + value, 0);
+  const byMonth = salesByMonth(list);
+  const byLine = salesByLine(list);
+  const byStatus = ["Recibido", "En preparación", "Despachado", "Entregado"].map((status) => ({
+    label: status,
+    value: list.filter((order) => order.status === status).length,
+    display: String(list.filter((order) => order.status === status).length),
+  }));
+  const byPlace = LINES.map((line) => {
+    const items = PRODUCTS.filter((item) => item.line === line);
+    const total = items.reduce((sum, item) => sum + (stock[item.id] ?? 0), 0);
+    const warn = items.some((item) => (stock[item.id] ?? 0) <= item.min);
+    return { label: line, value: total, display: String(total), warn };
+  });
 
   const general = document.querySelector('[data-admin-panel="general"]');
   const sales = document.querySelector('[data-admin-panel="ventas"]');
   const warehouse = document.querySelector('[data-admin-panel="bodega"]');
   general.innerHTML = `<div class="stats">
       <article class="stat"><span>Referencias</span><strong>${PRODUCTS.length}</strong></article>
-      <article class="stat"><span>Unidades en bodega</span><strong>${units}</strong></article>
+      <article class="stat"><span>Unidades</span><strong>${units}</strong></article>
       <article class="stat"><span>Pedidos</span><strong>${list.length}</strong></article>
-      <article class="stat"><span>Ventas</span><strong>${money(sold)}</strong></article>
+      <article class="stat"><span>Ventas</span><strong class="stat-money">${money(sold)}</strong></article>
+      <article class="stat"><span>Por despachar</span><strong>${pending}</strong></article>
+      <article class="stat"><span>Por reponer</span><strong>${low.length}</strong></article>
     </div>
-    <div class="admin-block"><p class="eyebrow">Información general</p><p>Línea propia de artículos tácticos y militares. Cinco familias: campo, faena, abrigo, calzado y equipo. Los pedidos confirmados en la tienda quedan en este navegador, junto con la existencia de bodega.</p><p>Por despachar: ${pending}. Referencias en el mínimo o por debajo: ${low.length ? low.map((item) => item.id).join(", ") : "ninguna"}.</p></div>`;
+    <div class="chart-grid">
+      <article class="admin-block"><p class="eyebrow">Ventas por mes</p><p class="admin-note">Seis meses, con los ejemplos y los pedidos de este navegador.</p>${barChart(byMonth, "Ventas de los últimos seis meses")}</article>
+      <article class="admin-block"><p class="eyebrow">Ventas por línea</p><div class="donut-row">${donutChart(byLine, "Ventas por línea")}${legend(byLine)}</div></article>
+    </div>
+    <div class="chart-grid">
+      <article class="admin-block"><p class="eyebrow">Estado de pedidos</p>${meterList(byStatus)}</article>
+      <article class="admin-block"><p class="eyebrow">Unidades por línea</p><p class="admin-note">${low.length ? `Reponer ${low.map((item) => item.id).join(", ")}.` : "Ninguna referencia está en el mínimo."}</p>${meterList(byPlace)}</article>
+    </div>`;
 
   const saleRows = list.length
-    ? list.map((order) => `<tr><td>${escapeHtml(order.id)}</td><td>${new Date(order.date).toLocaleString("es-CO")}</td><td>${escapeHtml(order.customer.nombre)}<br>${escapeHtml(order.customer.institucion || "")}</td><td>${escapeHtml(order.customer.ciudad)}</td><td>${money(order.total)}</td><td><select data-status="${escapeHtml(order.id)}">${["Recibido", "En preparación", "Despachado", "Entregado"].map((status) => `<option ${status === order.status ? "selected" : ""}>${status}</option>`).join("")}</select></td></tr>`).join("")
-    : `<tr><td colspan="6">Todavía no hay pedidos. Una compra confirmada aparece en esta tabla.</td></tr>`;
-  sales.innerHTML = `<div class="admin-block"><p class="eyebrow">Información de ventas</p><p class="admin-note">Total registrado: ${money(sold)}</p><table class="admin-table"><thead><tr><th>Pedido</th><th>Fecha</th><th>Cliente</th><th>Ciudad</th><th>Total</th><th>Estado</th></tr></thead><tbody>${saleRows}</tbody></table></div>`;
+    ? list.map((order) => `<tr><td>${escapeHtml(order.id)}${order.example ? '<span class="example-tag">Ejemplo</span>' : ""}</td><td>${new Date(order.date).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}</td><td>${escapeHtml(order.customer.nombre)}<br>${escapeHtml(order.customer.institucion || "")}</td><td>${escapeHtml(order.customer.ciudad)}<br>${escapeHtml(order.customer.metodo || "")}</td><td>${money(order.total)}</td><td><select data-status="${escapeHtml(order.id)}">${["Recibido", "En preparación", "Despachado", "Entregado"].map((status) => `<option ${status === order.status ? "selected" : ""}>${status}</option>`).join("")}</select></td></tr>`).join("")
+    : `<tr><td colspan="6">Todavía no hay pedidos.</td></tr>`;
+  sales.innerHTML = `<div class="chart-grid chart-grid-sales"><article class="admin-block"><p class="eyebrow">Ventas por mes</p>${barChart(byMonth, "Ventas de los últimos seis meses")}</article><article class="admin-block"><p class="eyebrow">Por cobrar y despachar</p><p class="admin-note">Total ${money(sold)}. ${pending} pedidos siguen abiertos.</p>${meterList(byStatus)}</article></div><div class="admin-block"><p class="eyebrow">Pedidos</p><p class="admin-note">Los marcados como ejemplo ilustran el panel. Una compra confirmada entra en la misma tabla.</p><div class="table-wrap"><table class="admin-table"><thead><tr><th>Pedido</th><th>Fecha</th><th>Cliente</th><th>Ciudad</th><th>Total</th><th>Estado</th></tr></thead><tbody>${saleRows}</tbody></table></div></div>`;
 
+  const scale = Math.max(...PRODUCTS.map((item) => Math.max(stock[item.id] ?? 0, item.min)), 1);
+  const stockMeters = PRODUCTS.map((item) => {
+    const left = stock[item.id] ?? 0;
+    const width = Math.max(2, Math.round((left / scale) * 100));
+    const mark = Math.round((item.min / scale) * 100);
+    return `<li class="${left <= item.min ? "low" : ""}"><span>${item.id}</span><div class="meter" aria-hidden="true"><i class="${left <= item.min ? "is-low" : ""}" style="width:${width}%"></i><b style="left:${mark}%"></b></div><em>${left}</em></li>`;
+  }).join("");
   const stockRows = PRODUCTS.map((item) => {
     const left = stock[item.id] ?? 0;
     const mark = left <= item.min ? "low" : "";
     return `<tr class="${mark}"><td>${item.id}</td><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item.line)}</td><td>${escapeHtml(item.place)}</td><td>${item.min}</td><td><form class="stock-edit" data-stock-form="${item.id}"><input name="qty" type="number" min="0" value="${left}" aria-label="Existencia de ${item.id}"><button class="linkish" type="submit">Guardar</button></form></td><td>${left <= item.min ? "Reponer" : "Disponible"}</td></tr>`;
   }).join("");
-  warehouse.innerHTML = `<div class="admin-block"><p class="eyebrow">Bodega</p><p class="admin-note">Existencia por referencia, pasillo y mínimo de reposición. Al confirmar una compra, la existencia baja.</p><table class="admin-table"><thead><tr><th>Ref.</th><th>Artículo</th><th>Línea</th><th>Ubicación</th><th>Mínimo</th><th>Existencia</th><th>Estado</th></tr></thead><tbody>${stockRows}</tbody></table></div>`;
+  warehouse.innerHTML = `<div class="admin-block"><p class="eyebrow">Existencia frente al mínimo</p><p class="admin-note">La marca vertical es el mínimo de reposición. Al confirmar una compra, la existencia baja.</p><ul class="meters stock-meters">${stockMeters}</ul></div><div class="admin-block"><p class="eyebrow">Bodega</p><div class="table-wrap"><table class="admin-table"><thead><tr><th>Ref.</th><th>Artículo</th><th>Línea</th><th>Ubicación</th><th>Mínimo</th><th>Existencia</th><th>Estado</th></tr></thead><tbody>${stockRows}</tbody></table></div></div>`;
 
   const catalog = document.querySelector('[data-admin-panel="catalogo"]');
   if (catalog) {
@@ -319,23 +610,60 @@ function renderAdmin() {
     paintDownloadCount();
   }
 
+  const allowed = ACCESS[session.user] || ACCESS.direccion;
   const tabs = [...document.querySelectorAll("[data-admin-tab]")];
   const panels = [...document.querySelectorAll("[data-admin-panel]")];
+  tabs.forEach((tab) => {
+    tab.hidden = !allowed.includes(tab.dataset.adminTab);
+  });
   const show = (name) => {
-    const current = panels.some((panel) => panel.dataset.adminPanel === name) ? name : "general";
+    const current = allowed.includes(name) ? name : allowed[0];
     tabs.forEach((tab) => tab.classList.toggle("is-on", tab.dataset.adminTab === current));
     panels.forEach((panel) => {
       panel.hidden = panel.dataset.adminPanel !== current;
     });
+    if (location.hash !== `#${current}`) history.replaceState(null, "", `#${current}`);
   };
+  shell._show = show;
   if (!shell.dataset.ready) {
     shell.dataset.ready = "1";
-    tabs.forEach((tab) => tab.addEventListener("click", () => show(tab.dataset.adminTab)));
+    tabs.forEach((tab) => tab.addEventListener("click", (event) => {
+      event.preventDefault();
+      shell._show(tab.dataset.adminTab);
+    }));
   }
   show((location.hash || "#general").slice(1));
 }
 
 document.addEventListener("click", (event) => {
+  const accountToggle = event.target.closest("[data-account-toggle]");
+  if (accountToggle) {
+    const menu = accountToggle.parentElement.querySelector("[data-account-menu]");
+    const willOpen = menu.hidden;
+    closeAccounts();
+    menu.hidden = !willOpen;
+    accountToggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
+    return;
+  }
+  if (event.target.closest("[data-logout]")) {
+    logout();
+    return;
+  }
+  const fill = event.target.closest("[data-fill-user]");
+  if (fill) {
+    const found = USERS.find((user) => user.user === fill.dataset.fillUser);
+    const form = fill.closest("form");
+    if (found && form) {
+      form.querySelector("[name=usuario]").value = found.user;
+      form.querySelector("[name=clave]").value = found.password;
+      form.querySelectorAll("[data-fill-user]").forEach((card) => {
+        card.classList.toggle("is-picked", card === fill);
+      });
+      form.querySelector("[data-admin-error]").textContent = "";
+    }
+    return;
+  }
+  if (!event.target.closest("[data-account]")) closeAccounts();
   const add = event.target.closest("[data-add]");
   if (add) {
     event.preventDefault();
@@ -466,6 +794,7 @@ document.addEventListener("change", (event) => {
       order.id === select.dataset.status ? { ...order, status: select.value } : order
     ));
     write(KEYS.orders, next);
+    renderAdmin();
     return;
   }
   const box = event.target.closest("[data-line-filter]");
@@ -497,4 +826,5 @@ paintCount();
 paintPrices();
 renderCart();
 renderCheckout();
+paintAccount();
 renderAdmin();
