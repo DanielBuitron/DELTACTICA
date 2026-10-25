@@ -697,16 +697,29 @@ function closeAccounts() {
 
 function paintAccount() {
   const session = currentUser();
+  document.querySelectorAll("[data-account-link]").forEach((link) => {
+    link.hidden = Boolean(session);
+  });
+  document.querySelectorAll("[data-account-toggle]").forEach((button) => {
+    button.hidden = !session;
+    if (!session) button.setAttribute("aria-expanded", "false");
+  });
   document.querySelectorAll("[data-account-label]").forEach((node) => {
     node.textContent = session ? session.name : "Iniciar sesión";
   });
   document.querySelectorAll("[data-account-menu]").forEach((menu) => {
-    if (session) {
-      menu.innerHTML = `<p class="account-kicker">Sesión abierta</p><p class="account-role">Admin</p><a href="${root}admin.html">Abrir panel</a><button type="button" data-logout>Salir</button>`;
+    if (!session) {
+      menu.hidden = true;
+      menu.innerHTML = "";
       return;
     }
-    menu.innerHTML = `<a class="account-enter" href="${root}admin.html">Iniciar sesión</a>`;
+    menu.innerHTML = `<p class="account-kicker">Sesión abierta</p><p class="account-role">Admin</p><a href="${root}admin.html">Abrir panel</a><button type="button" data-logout>Salir</button>`;
   });
+  const userField = document.querySelector("[data-admin-login] [name=usuario]");
+  if (userField && !session) {
+    userField.value = ADMIN.user;
+    userField.setAttribute("autocomplete", "off");
+  }
   const who = document.querySelector("[data-admin-who]");
   if (who && session) {
     who.textContent = "Los ejemplos y los pedidos de este navegador se leen juntos.";

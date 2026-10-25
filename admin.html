@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/styles.css?v=ingreso" />
     <script>document.documentElement.classList.add("js");</script>
   </head>
   <body data-wa="573227043082">
@@ -20,8 +20,9 @@
       <div class="header-tools is-end">
         <a class="nav-item" href="index.html"><span class="nav-long">Volver al sitio</span><span class="nav-short">Sitio</span></a>
         <div class="account" data-account>
-          <button class="account-toggle" type="button" data-account-toggle aria-expanded="false" aria-haspopup="true">
-            <span data-account-label>Iniciar sesión</span>
+          <a class="account-toggle" data-account-link href="admin.html"><span>Iniciar sesión</span></a>
+          <button class="account-toggle" type="button" data-account-toggle hidden aria-expanded="false" aria-haspopup="true">
+            <span data-account-label>Admin</span>
           </button>
           <div class="account-menu" data-account-menu hidden></div>
         </div>
@@ -30,11 +31,11 @@
     <main id="contenido">
       <section class="page">
         <div class="wrap">
-          <form class="admin-login contact-form" data-admin-login>
+          <form class="admin-login contact-form" data-admin-login autocomplete="off">
             <p class="eyebrow">Acceso</p>
             <h1>Iniciar sesión</h1>
             <p>Ingreso administrativo del panel.</p>
-            <label>Usuario<input name="usuario" required autocomplete="username" value="delta"></label>
+            <label>Usuario<input name="usuario" required autocomplete="off" value="delta"></label>
             <label>Contraseña<input name="clave" type="password" required autocomplete="current-password"></label>
             <button class="btn btn-metal" type="submit">Entrar</button>
             <p data-admin-error></p>
@@ -67,7 +68,7 @@
       </section>
     </main>
 
-    <script src="js/store.js" defer></script>
-    <script src="js/main.js" defer></script>
+    <script src="js/store.js?v=ingreso" defer></script>
+    <script src="js/main.js?v=ingreso" defer></script>
   </body>
 </html>
