@@ -285,50 +285,59 @@
     },
     async catalog(items, assets) {
       const pdf = createPdf();
-      const plan = ["cover"];
       pdf.addPage();
       pdf.rect(0, 0, PAGE_W, PAGE_H, "#070708");
-      if (assets.logo) {
-        const box = fit(assets.logo, 340, 160);
-        pdf.image(assets.logo, (PAGE_W - box.w) / 2, PAGE_H - 280 - box.h, box.w, box.h);
-      }
-      pdf.rect(150, PAGE_H - 312, PAGE_W - 300, 2, "#d7c4a3");
-      pdf.text(PAGE_W / 2, PAGE_H - 360, 28, "CATÁLOGO", { bold: true, color: "#f4f5f6", align: "center" });
-      pdf.text(PAGE_W / 2, PAGE_H - 390, 13, assets.title || "Artículos tácticos y militares", { color: "#c5c8cc", align: "center" });
-      pdf.text(PAGE_W / 2, PAGE_H - 434, 12, "Campo   ·   Faena   ·   Abrigo   ·   Calzado   ·   Equipo", { color: "#f4f5f6", align: "center" });
-      pdf.text(PAGE_W / 2, 72, 11, `${items.length} referencias`, { color: "#c5c8cc", align: "center" });
-      pdf.text(PAGE_W / 2, 52, 10, `WhatsApp ${assets.phone}`, { color: "#8d939a", align: "center" });
+      const logoBox = assets.logo ? fit(assets.logo, 250, 108) : { w: 0, h: 0 };
+      const logoX = 42;
+      const logoY = 430;
+      if (assets.logo) pdf.image(assets.logo, logoX, logoY, logoBox.w, logoBox.h);
+      const textX = logoX + logoBox.w + 36;
+      const textTop = logoY + logoBox.h - 8;
+      pdf.line(logoX + logoBox.w + 16, logoY + 8, logoX + logoBox.w + 16, logoY + logoBox.h - 8, "#d7c4a3", 1);
+      pdf.text(textX, textTop, 16, "Catálogo", { bold: true, color: "#f4f5f6" });
+      wrap(assets.title || "Artículos tácticos y militares", 11, PAGE_W - textX - 42).slice(0, 3).forEach((line, index) => {
+        pdf.text(textX, textTop - 24 - index * 15, 11, line, { color: "#c5c8cc" });
+      });
+      pdf.text(textX, logoY + 18, 10, `${items.length} referencias`, { color: "#f4f5f6" });
+      if (assets.phone) pdf.text(textX, logoY, 10, `WhatsApp ${assets.phone}`, { color: "#8d939a" });
 
-      for (let index = 0; index < items.length; index += 2) {
-        plan.push("sheet");
+      const columns = 3;
+      const rows = 2;
+      const perPage = columns * rows;
+      const margin = 28;
+      const gap = 12;
+      const cellW = (PAGE_W - margin * 2 - gap * (columns - 1)) / columns;
+      const cellH = 300;
+      for (let index = 0; index < items.length; index += perPage) {
         pdf.addPage();
-        pdf.rect(0, PAGE_H - 72, PAGE_W, 72, "#070708");
-        pdf.rect(0, PAGE_H - 76, PAGE_W, 4, "#d7c4a3");
-        if (assets.wordmark) {
-          const box = fit(assets.wordmark, 190, 30);
-          pdf.image(assets.wordmark, 36, PAGE_H - 52, box.w, box.h);
+        pdf.rect(0, PAGE_H - 48, PAGE_W, 48, "#070708");
+        if (assets.logo) {
+          const mark = fit(assets.logo, 92, 26);
+          pdf.image(assets.logo, margin, PAGE_H - 11 - mark.h, mark.w, mark.h);
         }
-        pdf.text(PAGE_W - 36, PAGE_H - 44, 11, "CATÁLOGO", { color: "#c5c8cc", align: "right" });
-        [items[index], items[index + 1]].filter(Boolean).forEach((item, slot) => {
-          const top = PAGE_H - 110 - slot * 340;
-          pdf.rect(36, top - 250, 220, 250, "#f3f4f5");
+        const slice = items.slice(index, index + perPage);
+        slice.forEach((item, slot) => {
+          const col = slot % columns;
+          const row = Math.floor(slot / columns);
+          const x = margin + col * (cellW + gap);
+          const top = PAGE_H - 72 - row * cellH;
+          const photoH = 112;
+          pdf.rect(x, top - photoH, cellW, photoH, "#f3f4f5");
           if (item.photo) {
-            const box = fit(item.photo, 200, 230);
-            pdf.image(item.photo, 46 + (200 - box.w) / 2, top - 240 + (230 - box.h) / 2, box.w, box.h);
+            const box = fit(item.photo, cellW - 8, photoH - 8);
+            pdf.image(item.photo, x + (cellW - box.w) / 2, top - photoH + (photoH - box.h) / 2, box.w, box.h);
           }
-          pdf.text(276, top - 24, 11, `${item.id}   ·   ${item.line}`, { bold: true, color: "#8d939a" });
-          wrap(item.name, 20, 270).slice(0, 2).forEach((line, lineIndex) => {
-            pdf.text(276, top - 54 - lineIndex * 24, 20, line, { bold: true, color: "#161616" });
+          pdf.text(x, top - photoH - 16, 8, `${item.id}  ·  ${item.line}`, { bold: true, color: "#8d939a" });
+          wrap(item.name, 11, cellW).slice(0, 2).forEach((line, lineIndex) => {
+            pdf.text(x, top - photoH - 32 - lineIndex * 13, 11, line, { bold: true, color: "#161616" });
           });
-          wrap(item.note || "", 12, 270).slice(0, 4).forEach((line, lineIndex) => {
-            pdf.text(276, top - 118 - lineIndex * 16, 12, line, { color: "#161616" });
+          wrap(item.note || "", 8, cellW).slice(0, 2).forEach((line, lineIndex) => {
+            pdf.text(x, top - photoH - 64 - lineIndex * 11, 8, line, { color: "#5c6168" });
           });
-          pdf.text(276, top - 214, 16, assets.money(item.price), { bold: true, color: "#161616" });
+          pdf.text(x, top - photoH - 96, 11, assets.money(item.price), { bold: true, color: "#161616" });
         });
-        const pageNumber = plan.length;
-        pdf.line(36, 40, PAGE_W - 36, 40, "#d7c4a3", 1);
-        pdf.text(36, 24, 9, "DELTÁCTICA  ·  Artículos tácticos y militares", { color: "#5c6168" });
-        pdf.text(PAGE_W - 36, 24, 9, `${pageNumber}`, { color: "#5c6168", align: "right" });
+        const pageNumber = Math.floor(index / perPage) + 2;
+        pdf.text(PAGE_W - margin, 22, 9, String(pageNumber), { color: "#8d939a", align: "right" });
       }
       return pdf.toBlob();
     },

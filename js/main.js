@@ -41,33 +41,62 @@ if (toggle && nav) {
   setNav(false);
 }
 
-const filters = document.querySelectorAll("[data-filter]");
-const cards = document.querySelectorAll(".card");
+const filters = [...document.querySelectorAll("[data-filter]")];
+const cards = [...document.querySelectorAll(".card")];
 const count = document.querySelector("[data-count]");
+const catalogQuery = document.querySelector("[data-catalog-query]");
+
+function setFilter(button, on) {
+  button.classList.toggle("is-active", on);
+  button.setAttribute("aria-pressed", on ? "true" : "false");
+}
+
+function lineFilters() {
+  return filters.filter((button) => button.dataset.filter !== "todos");
+}
+
+function syncAllFilter() {
+  const all = filters.find((button) => button.dataset.filter === "todos");
+  if (all) setFilter(all, lineFilters().every((button) => button.getAttribute("aria-pressed") === "true"));
+}
+
+function applyCatalogFilter() {
+  if (!count) return;
+  const lines = lineFilters()
+    .filter((button) => button.getAttribute("aria-pressed") === "true")
+    .map((button) => button.dataset.filter);
+  const query = (catalogQuery?.value || "").trim().toLowerCase();
+  let visible = 0;
+  cards.forEach((card) => {
+    const show = lines.includes(card.dataset.cat) && (!query || card.textContent.toLowerCase().includes(query));
+    card.hidden = !show;
+    if (show) visible += 1;
+  });
+  count.textContent = visible === 1 ? "1 referencia" : `${visible} referencias`;
+}
 
 if (count) filters.forEach((button) => {
   button.addEventListener("click", () => {
-    const filter = button.dataset.filter;
-    filters.forEach((item) => {
-      const active = item === button;
-      item.classList.toggle("is-active", active);
-      item.setAttribute("aria-pressed", active ? "true" : "false");
-    });
-
-    let visible = 0;
-    cards.forEach((card) => {
-      const show = filter === "todos" || card.dataset.cat === filter;
-      card.hidden = !show;
-      if (show) visible += 1;
-    });
-
-    count.textContent = visible === 1 ? "1 referencia" : `${visible} referencias`;
+    if (button.dataset.filter === "todos") {
+      const on = button.getAttribute("aria-pressed") !== "true";
+      filters.forEach((item) => setFilter(item, on));
+    } else {
+      setFilter(button, button.getAttribute("aria-pressed") !== "true");
+      syncAllFilter();
+    }
+    applyCatalogFilter();
   });
 });
 
+if (catalogQuery) catalogQuery.addEventListener("input", applyCatalogFilter);
+
 const presetLine = new URLSearchParams(location.search).get("linea");
 const presetFilter = presetLine && document.querySelector(`[data-filter="${presetLine}"]`);
-if (presetFilter) presetFilter.click();
+if (presetFilter && presetFilter.dataset.filter !== "todos") {
+  lineFilters().forEach((button) => setFilter(button, button === presetFilter));
+  syncAllFilter();
+  applyCatalogFilter();
+}
 
 const form = document.querySelector("[data-form]");
 const status = document.querySelector("[data-status]");

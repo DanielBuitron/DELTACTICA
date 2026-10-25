@@ -513,7 +513,7 @@ function ensurePdf() {
   if (window.DTPDF) return Promise.resolve();
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = `${root}js/pdf.js`;
+    script.src = `${root}js/pdf.js?v=catalogo`;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("pdf"));
     document.head.appendChild(script);
@@ -1031,11 +1031,12 @@ function renderAdmin() {
 
   const catalog = document.querySelector('[data-admin-panel="catalogo"]');
   if (catalog) {
-    const checks = ["todas", ...LINES].map((line) => {
-      const label = line === "todas" ? "Todas" : line;
-      return `<label><input type="checkbox" data-line-filter="${line}" checked> ${label}</label>`;
-    }).join("");
-    catalog.innerHTML = `<div class="admin-block"><p class="eyebrow">Descargar catálogo</p><p class="admin-note">Elija las líneas y descargue el PDF. Lleva el logo, la foto y el precio de cada referencia.</p><div class="line-filters">${checks}</div><p data-download-count></p><ul class="download-list" data-download-list></ul><button class="btn btn-metal" type="button" data-download-catalog>Descargar catálogo</button><p data-download-status></p></div>`;
+    const counts = Object.fromEntries(LINES.map((line) => [line, PRODUCTS.filter((item) => item.line === line).length]));
+    const chips = [
+      `<button class="filter is-active" type="button" data-line-filter="todas" aria-pressed="true">Todas <b>${PRODUCTS.length}</b></button>`,
+      ...LINES.map((line) => `<button class="filter is-active" type="button" data-line-filter="${line}" aria-pressed="true">${line} <b>${counts[line]}</b></button>`)
+    ].join("");
+    catalog.innerHTML = `<div class="admin-block"><p class="eyebrow">Descargar catálogo</p><p class="admin-note">Combine líneas o busque una referencia. El PDF lleva el logo a un lado y las fichas en tamaño de catálogo.</p><div class="catalog-tools"><label class="catalog-search">Buscar<input data-catalog-search type="search" placeholder="Referencia o nombre" autocomplete="off"></label><div class="filters" role="group" aria-label="Líneas del PDF">${chips}</div></div><p class="count" data-download-count></p><div class="download-picks" data-download-list></div><button class="btn btn-metal" type="button" data-download-catalog>Descargar catálogo</button><p data-download-status></p></div>`;
     paintDownloadCount();
   }
 
@@ -1132,15 +1133,34 @@ document.addEventListener("click", (event) => {
     }
     return;
   }
+  const lineButton = event.target.closest("[data-line-filter]");
+  if (lineButton) {
+    const buttons = [...document.querySelectorAll("[data-line-filter]")];
+    const rest = buttons.filter((button) => button.dataset.lineFilter !== "todas");
+    const all = buttons.find((button) => button.dataset.lineFilter === "todas");
+    const mark = (button, on) => {
+      button.setAttribute("aria-pressed", on ? "true" : "false");
+      button.classList.toggle("is-active", on);
+    };
+    if (lineButton.dataset.lineFilter === "todas") {
+      const on = lineButton.getAttribute("aria-pressed") !== "true";
+      buttons.forEach((button) => mark(button, on));
+    } else {
+      mark(lineButton, lineButton.getAttribute("aria-pressed") !== "true");
+      if (all) mark(all, rest.every((button) => button.getAttribute("aria-pressed") === "true"));
+    }
+    paintDownloadCount();
+    return;
+  }
   if (event.target.closest("[data-download-catalog]")) {
-    const lines = selectedLines();
+    const items = catalogSelection();
     const status = document.querySelector("[data-download-status]");
-    if (!lines.length) {
+    if (!items.length) {
       if (status) status.textContent = "Elija al menos una línea.";
       return;
     }
     if (status) status.textContent = "Se está armando el PDF.";
-    saveCatalog(lines).then((name) => {
+    saveCatalog().then((name) => {
       if (status) status.textContent = `Se descargó ${name}.`;
     }).catch(() => {
       if (status) status.textContent = "No se pudo armar el PDF.";
@@ -1173,20 +1193,25 @@ document.addEventListener("click", (event) => {
 
 function selectedLines() {
   return [...document.querySelectorAll("[data-line-filter]")]
-    .filter((box) => box.checked && box.dataset.lineFilter !== "todas")
-    .map((box) => box.dataset.lineFilter);
+    .filter((button) => button.dataset.lineFilter !== "todas" && button.getAttribute("aria-pressed") === "true")
+    .map((button) => button.dataset.lineFilter);
+}
+
+function catalogSelection() {
+  const lines = selectedLines();
+  const query = (document.querySelector("[data-catalog-search]")?.value || "").trim().toLowerCase();
+  return PRODUCTS.filter((item) => lines.includes(item.line) && (!query || `${item.id} ${item.name} ${item.line}`.toLowerCase().includes(query)));
 }
 
 function paintDownloadCount() {
   const count = document.querySelector("[data-download-count]");
   const list = document.querySelector("[data-download-list]");
   if (!count || !list) return;
-  const lines = selectedLines();
-  const items = PRODUCTS.filter((item) => lines.includes(item.line));
+  const items = catalogSelection();
   count.textContent = items.length === 1 ? "1 referencia" : `${items.length} referencias`;
   list.innerHTML = items.length
-    ? items.map((item) => `<li>${item.id} · ${escapeHtml(item.name)} · ${escapeHtml(item.line)}</li>`).join("")
-    : "<li>Elija al menos una línea.</li>";
+    ? items.map((item) => `<span>${item.id} · ${escapeHtml(item.name)}</span>`).join("")
+    : "<span>Elija al menos una línea.</span>";
 }
 
 function blobToDataUrl(blob) {
@@ -1253,10 +1278,15 @@ async function catalogFile(items, lines) {
 </html>`;
 }
 
-async function saveCatalog(lines) {
-  const items = PRODUCTS.filter((item) => lines.includes(item.line));
+async function saveCatalog() {
+  const picked = catalogSelection();
+  const lines = [...new Set(picked.map((item) => item.line))];
+  const items = picked;
   const assets = await brandAssets();
-  const title = lines.length === LINES.length ? "Catálogo completo" : lines.join(", ");
+  const query = (document.querySelector("[data-catalog-search]")?.value || "").trim();
+  const title = query
+    ? `Búsqueda: ${query}`
+    : lines.length === LINES.length ? "Catálogo completo" : lines.join(", ");
   const sheets = [];
   for (const item of items) {
     const src = photoUrls.get(item.id) || `${root}img/productos/${item.id.toLowerCase()}.jpg`;
@@ -1264,7 +1294,7 @@ async function saveCatalog(lines) {
     sheets.push({ id: item.id, name: item.name, line: item.line, note: NOTES[item.id] || "", price: item.price, photo });
   }
   const blob = await window.DTPDF.catalog(sheets, { ...assets, title });
-  const slug = lines.length === LINES.length ? "completo" : lines.map((line) => line.toLowerCase()).join("-");
+  const slug = query ? "busqueda" : lines.length === LINES.length ? "completo" : lines.map((line) => line.toLowerCase()).join("-");
   const name = `deltactica-catalogo-${slug}.pdf`;
   downloadBlob(blob, name);
   return name;
@@ -1296,19 +1326,10 @@ document.addEventListener("change", (event) => {
     renderAdmin();
     return;
   }
-  const box = event.target.closest("[data-line-filter]");
-  if (!box) return;
-  const boxes = [...document.querySelectorAll("[data-line-filter]")];
-  if (box.dataset.lineFilter === "todas") {
-    boxes.forEach((item) => {
-      item.checked = box.checked;
-    });
-  } else {
-    const all = boxes.find((item) => item.dataset.lineFilter === "todas");
-    const rest = boxes.filter((item) => item.dataset.lineFilter !== "todas");
-    if (all) all.checked = rest.every((item) => item.checked);
-  }
-  paintDownloadCount();
+});
+
+document.addEventListener("input", (event) => {
+  if (event.target.closest("[data-catalog-search]")) paintDownloadCount();
 });
 
 document.addEventListener("submit", (event) => {
