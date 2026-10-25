@@ -36,8 +36,8 @@
         <div class="wrap">
           <header class="page-hero">
             <p class="eyebrow">Compra</p>
-            <h1>Datos de envío</h1>
-            <ol class="buy-steps"><li>Carrito</li><li class="is-on">Envío</li><li>Recibo</li></ol>
+            <h1>Datos del cliente</h1>
+            <ol class="buy-steps"><li>Carrito</li><li class="is-on">Datos del cliente</li><li>Recibo</li></ol>
           </header>
           <div data-order-done hidden></div>
           <div class="checkout-grid">
@@ -66,7 +66,8 @@
               </fieldset>
               <fieldset>
                 <legend>Pago</legend>
-                <label>Forma de pago<select name="metodo"><option>Transferencia</option><option>Pago contraentrega</option></select></label>
+                <label>Forma de pago<select name="metodo"><option>Transferencia</option><option>Pago contraentrega</option><option>Pago en línea Wompi</option></select></label>
+                <p class="admin-note" data-pay-note></p>
                 <label>Nota<textarea name="nota"></textarea></label>
               </fieldset>
               <button class="btn btn-metal" type="submit">Confirmar y generar recibo</button>
