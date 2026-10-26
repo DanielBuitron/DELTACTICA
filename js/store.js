@@ -30,7 +30,7 @@ const NOTES = {
 
 const LINES = ["Campo", "Faena", "Abrigo", "Calzado", "Equipo"];
 
-const KEYS = { cart: "dt-cart", orders: "dt-orders", stock: "dt-stock", admin: "dt-admin", examples: "dt-examples-v1", wa: "dt-wa", wompi: "dt-wompi", internal: "dt-internal" };
+const KEYS = { cart: "dt-cart", orders: "dt-orders", stock: "dt-stock", admin: "dt-admin", examples: "dt-examples-v1", wa: "dt-wa", wompi: "dt-wompi", internal: "dt-internal", trace: "dt-trace" };
 const ADMIN = { user: "delta", password: "admin123", name: "Admin" };
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const LINE_COLORS = {
@@ -92,6 +92,103 @@ function notifyInternal(tipo, datos) {
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ origen: "sitio-deltactica", tipo, fecha: new Date().toISOString(), datos }),
   }).catch(() => {});
+}
+
+function traceEvents() {
+  const saved = read(KEYS.trace, []);
+  return Array.isArray(saved) ? saved : [];
+}
+
+function traceKey(storage, key) {
+  let id = storage.getItem(key);
+  if (!id) {
+    id = `${key.slice(3, 4)}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    storage.setItem(key, id);
+  }
+  return id;
+}
+
+function currentPage() {
+  const path = location.pathname.toLowerCase();
+  if (path.includes("admin.html")) return null;
+  const ficha = path.match(/dt-(\d{2})\.html/);
+  if (ficha) {
+    const id = `DT-${ficha[1]}`;
+    return product(id) ? { name: `Ficha ${id}`, product: id } : { name: "Ficha", product: "" };
+  }
+  if (path.endsWith("/") || /\/deltactica\/?$/.test(path)) return { name: "Inicio", product: "" };
+  const names = [
+    ["catalogo-impreso.html", "Catálogo impreso"],
+    ["catalogo.html", "Catálogo"],
+    ["lineas.html", "Líneas"],
+    ["institucional.html", "Institucional"],
+    ["dotacion.html", "Dotación"],
+    ["contacto.html", "Contacto"],
+    ["carrito.html", "Carrito"],
+    ["compra.html", "Compra"],
+    ["index.html", "Inicio"],
+  ];
+  const found = names.find(([file]) => path.endsWith(file));
+  return { name: found ? found[1] : "Otra página", product: "" };
+}
+
+function rememberTrace(fields) {
+  const page = currentPage();
+  if (!page && fields.a !== "pedido") return null;
+  const event = {
+    id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    t: Date.now(),
+    s: traceKey(sessionStorage, "dt-session"),
+    v: traceKey(localStorage, "dt-visitor"),
+    a: fields.a,
+    p: fields.p || (page ? page.name : ""),
+    d: String(fields.d || "").slice(0, 80),
+    n: Number(fields.n) || 0,
+  };
+  const fresh = traceEvents().filter((item) => Date.now() - item.t < 1000 * 60 * 60 * 24 * 45);
+  fresh.push(event);
+  write(KEYS.trace, fresh.slice(-600));
+  notifyInternal("visita", { accion: event.a, pagina: event.p, detalle: event.d, sesion: event.s });
+  return event;
+}
+
+function absorbPending(nextName) {
+  const id = sessionStorage.getItem("dt-trace-pending");
+  if (!id) return;
+  sessionStorage.removeItem("dt-trace-pending");
+  const events = traceEvents();
+  const index = events.findIndex((item) => item.id === id);
+  if (index < 0) return;
+  events[index] = { ...events[index], a: "paso", d: nextName };
+  write(KEYS.trace, events);
+}
+
+function beginTrace() {
+  const page = currentPage();
+  if (!page || window.__dtTrace) return;
+  window.__dtTrace = true;
+  absorbPending(page.name);
+  if (!sessionStorage.getItem("dt-trace-seen")) {
+    sessionStorage.setItem("dt-trace-seen", "1");
+    rememberTrace({ a: "entrada", p: page.name });
+  }
+  rememberTrace({ a: "pagina", p: page.name });
+  if (page.product) rememberTrace({ a: "ficha", p: page.name, d: page.product });
+  const arrived = Date.now();
+  let left = false;
+  window.addEventListener("pagehide", () => {
+    if (left) return;
+    left = true;
+    const seconds = Math.max(0, Math.round((Date.now() - arrived) / 1000));
+    const event = rememberTrace({ a: "salida", p: page.name, n: seconds });
+    if (event) sessionStorage.setItem("dt-trace-pending", event.id);
+  });
+}
+
+function stayText(seconds) {
+  if (!seconds) return "0 s";
+  if (seconds < 60) return `${seconds} s`;
+  return `${Math.round(seconds / 60)} min`;
 }
 
 function product(id) {
@@ -280,6 +377,7 @@ function placeOrder(customer) {
   saveCart([]);
   notifyInternal("pedido", order);
   notifyInternal("existencia", stock);
+  lines.forEach((line) => rememberTrace({ a: "pedido", p: "Compra", d: line.id, n: line.qty }));
   return order;
 }
 
@@ -934,6 +1032,133 @@ async function filesFromList(items) {
   return files;
 }
 
+function topProduct(rows, score) {
+  const ranked = rows.filter((row) => score(row) > 0).sort((a, b) => score(b) - score(a) || a.id.localeCompare(b.id));
+  return ranked[0] || null;
+}
+
+function traceBoard() {
+  const events = traceEvents();
+  const realOrders = orders().filter((order) => !order.example);
+  const sessions = [...new Set(events.map((event) => event.s))];
+  const visitors = [...new Set(events.map((event) => event.v))];
+  const entries = events.filter((event) => event.a === "entrada");
+  const exits = events.filter((event) => event.a === "salida");
+  const pages = events.filter((event) => event.a === "pagina");
+  const searches = events.filter((event) => event.a === "buscar");
+  const sessionHas = (names) => sessions.filter((id) => events.some((event) => event.s === id && names.includes(event.p))).length;
+  const sessionAction = (action) => sessions.filter((id) => events.some((event) => event.s === id && event.a === action)).length;
+  const funnel = [
+    { label: "Entraron", value: entries.length, display: String(entries.length) },
+    { label: "Catálogo", value: sessionHas(["Catálogo"]), display: String(sessionHas(["Catálogo"])) },
+    { label: "Ficha", value: sessionAction("ficha"), display: String(sessionAction("ficha")) },
+    { label: "Carrito", value: sessionHas(["Carrito"]), display: String(sessionHas(["Carrito"])) },
+    { label: "Compra", value: sessionHas(["Compra"]), display: String(sessionHas(["Compra"])) },
+    { label: "Pedidos", value: realOrders.length, display: String(realOrders.length) },
+  ];
+  const pageCounts = new Map();
+  pages.forEach((event) => pageCounts.set(event.p, (pageCounts.get(event.p) || 0) + 1));
+  const pageMeters = [...pageCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, value]) => ({ label, value, display: String(value) }));
+  const steps = new Map();
+  events.filter((event) => event.a === "paso").forEach((event) => {
+    const key = `${event.p} → ${event.d}`;
+    steps.set(key, (steps.get(key) || 0) + 1);
+  });
+  const stepRows = [...steps.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const views = {};
+  const found = {};
+  const carts = {};
+  const sold = {};
+  PRODUCTS.forEach((item) => {
+    views[item.id] = 0;
+    found[item.id] = 0;
+    carts[item.id] = 0;
+    sold[item.id] = 0;
+  });
+  events.forEach((event) => {
+    if (event.a === "ficha" && views[event.d] !== undefined) views[event.d] += 1;
+    if (event.a === "carrito" && carts[event.d] !== undefined) carts[event.d] += event.n || 1;
+    if (event.a === "buscar") {
+      const query = event.d.toLowerCase();
+      PRODUCTS.forEach((item) => {
+        if (item.id.toLowerCase() === query || item.name.toLowerCase().includes(query)) found[item.id] += 1;
+      });
+    }
+  });
+  realOrders.forEach((order) => {
+    order.lines.forEach((line) => {
+      if (sold[line.id] !== undefined) sold[line.id] += line.qty;
+    });
+  });
+  const rows = PRODUCTS.map((item) => ({
+    ...item,
+    views: views[item.id],
+    found: found[item.id],
+    carts: carts[item.id],
+    sold: sold[item.id],
+  }));
+  const wanted = topProduct(rows, (row) => row.found + row.views);
+  const best = topProduct(rows, (row) => row.sold);
+  const unsold = rows.filter((row) => row.sold === 0);
+  const lowest = rows.filter((row) => row.sold > 0).sort((a, b) => a.sold - b.sold || a.id.localeCompare(b.id))[0];
+  const productName = (row) => row ? `${row.id} · ${row.name}` : "Sin datos todavía";
+  const leastStrong = !best ? "—" : unsold[0] ? unsold[0].id : (lowest ? lowest.id : "—");
+  const leastNote = !best
+    ? "Todavía no hay compras confirmadas."
+    : unsold.length > 1
+      ? `También sin vender: ${unsold.slice(1).map((row) => row.id).join(", ")}`
+      : productName(unsold[0] || lowest);
+  const table = rows
+    .slice()
+    .sort((a, b) => b.sold - a.sold || (b.found + b.views) - (a.found + a.views) || a.id.localeCompare(b.id))
+    .map((row) => `<tr><td>${row.id}</td><td>${escapeHtml(row.name)}</td><td>${row.views}</td><td>${row.found}</td><td>${row.carts}</td><td>${row.sold}</td></tr>`)
+    .join("");
+  const flow = stepRows.length
+    ? `<table class="admin-table"><thead><tr><th>Recorrido</th><th>Veces</th></tr></thead><tbody>${stepRows.map(([label, value]) => `<tr><td>${escapeHtml(label)}</td><td>${value}</td></tr>`).join("")}</tbody></table>`
+    : "<p class=\"admin-note\">Cuando alguien pase de una pantalla a otra, el recorrido aparece aquí.</p>";
+  const groups = new Map();
+  events.forEach((event) => {
+    if (!groups.has(event.s)) groups.set(event.s, []);
+    groups.get(event.s).push(event);
+  });
+  const recent = [...groups.values()].slice(-6).reverse().map((group) => {
+    const path = [];
+    group.forEach((event) => {
+      if (event.a === "pagina" && path[path.length - 1] !== event.p) path.push(event.p);
+    });
+    const gone = group.some((event) => event.a === "salida");
+    const stamp = new Date(group[0].t).toLocaleString("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+    return `<li><span>${escapeHtml(stamp)}</span><b>${escapeHtml(path.join(" → ") || "Entrada")}</b><em>${gone ? "Salió" : "En el sitio"}</em></li>`;
+  }).join("");
+  const stayed = events.filter((event) => (event.a === "salida" || event.a === "paso") && event.n > 0);
+  const average = stayed.length ? Math.round(stayed.reduce((sum, event) => sum + event.n, 0) / stayed.length) : 0;
+  return `<p class="admin-note">Entradas, salidas, búsquedas y ventas de este navegador. Con la dirección de la aplicación, el mismo aviso sale hacia el software interno.</p>
+    <div class="stats">
+      <article class="stat"><span>Entradas</span><strong>${entries.length}</strong></article>
+      <article class="stat"><span>Salidas</span><strong>${exits.length}</strong></article>
+      <article class="stat"><span>Visitantes</span><strong>${visitors.length}</strong></article>
+      <article class="stat"><span>Páginas vistas</span><strong>${pages.length}</strong></article>
+      <article class="stat"><span>Búsquedas</span><strong>${searches.length}</strong></article>
+      <article class="stat"><span>Permanencia</span><strong>${stayText(average)}</strong></article>
+    </div>
+    <div class="stats">
+      <article class="stat"><span>Más buscado</span><strong>${wanted ? wanted.id : "—"}</strong><p class="admin-note">${escapeHtml(productName(wanted))}</p></article>
+      <article class="stat"><span>Más vendido</span><strong>${best ? best.id : "—"}</strong><p class="admin-note">${escapeHtml(productName(best))}${best ? `. ${best.sold} uds.` : ""}</p></article>
+      <article class="stat"><span>Menos vendido</span><strong>${escapeHtml(leastStrong)}</strong><p class="admin-note">${escapeHtml(leastNote)}</p></article>
+    </div>
+    <div class="chart-grid">
+      <article class="admin-block"><p class="eyebrow">Del ingreso al pedido</p>${meterList(funnel)}</article>
+      <article class="admin-block"><p class="eyebrow">Pantallas</p>${pageMeters.length ? meterList(pageMeters) : "<p class=\"admin-note\">Todavía no hay páginas vistas.</p>"}</article>
+    </div>
+    <div class="chart-grid">
+      <article class="admin-block"><p class="eyebrow">Hacia dónde siguen</p>${flow}</article>
+      <article class="admin-block"><p class="eyebrow">Últimas visitas</p>${recent ? `<ul class="trace-list">${recent}</ul>` : "<p class=\"admin-note\">La primera visita queda registrada al abrir el sitio.</p>"}</article>
+    </div>
+    <article class="admin-block"><p class="eyebrow">Referencias</p><p class="admin-note">Vistas de ficha, búsquedas por nombre o referencia, veces que entró al carrito y unidades de pedidos confirmados. Los ejemplos no cuentan como venta.</p><div class="table-wrap"><table class="admin-table"><thead><tr><th>Ref.</th><th>Artículo</th><th>Vistas</th><th>Búsquedas</th><th>Carrito</th><th>Vendidas</th></tr></thead><tbody>${table}</tbody></table></div></article>`;
+}
+
 function renderAdmin() {
   const login = document.querySelector("[data-admin-login]");
   const shell = document.querySelector("[data-admin-shell]");
@@ -989,11 +1214,7 @@ function renderAdmin() {
   const warehouse = document.querySelector('[data-admin-panel="bodega"]');
   const wompi = wompiConfig();
   const localPhone = advisorPhone().replace(/^57/, "");
-  general.innerHTML = `<div class="chart-grid">
-      <article class="admin-block"><p class="eyebrow">Asesor comercial</p><p class="admin-note">Este WhatsApp recibe los pedidos y atiende el botón del sitio.</p><form class="panel-form" data-wa-form><label>Número<input name="wa" inputmode="numeric" autocomplete="tel" required value="${escapeHtml(localPhone)}"></label><button class="btn btn-metal" type="submit">Guardar número</button></form><p data-wa-status></p></article>
-      <article class="admin-block"><p class="eyebrow">Pasarela Wompi</p><p class="admin-note">Cuando el comercio tenga las llaves, péguelas aquí. El pago en línea del pedido usa esa pasarela.</p><form class="panel-form" data-wompi-form><label>Llave pública<input name="publicKey" autocomplete="off" value="${escapeHtml(wompi.publicKey)}" placeholder="pub_test_ o pub_prod_"></label><label>Secreto de integridad<input name="integrity" autocomplete="off" value="${escapeHtml(wompi.integrity)}"></label><button class="btn btn-metal" type="submit">Guardar Wompi</button></form><p data-wompi-status>${wompi.publicKey && wompi.integrity ? "Wompi está listo para cobrar en el pedido." : "Wompi queda abierto hasta tener las llaves."}</p></article>
-      <article class="admin-block span-row"><p class="eyebrow">Software interno</p><p class="admin-note">A partir de diciembre o enero este sitio le enviará pedidos, existencia, el WhatsApp del asesor y el aviso de pago. Pegue la dirección cuando el software exista. Vacía, la compra sigue en este navegador.</p><form class="panel-form" data-internal-form><label>Dirección<input name="base" inputmode="url" autocomplete="off" placeholder="https://api.deltactica.com" value="${escapeHtml(internalBase())}"></label><button class="btn btn-metal" type="submit">Guardar dirección</button></form><p data-internal-status>${internalBase() ? `La comunicación apunta a ${escapeHtml(internalBase())}.` : "La comunicación queda abierta. Aún no hay dirección."}</p></article>
-    </div><div class="stats">
+  general.innerHTML = `<div class="stats">
       <article class="stat"><span>Referencias</span><strong>${PRODUCTS.length}</strong></article>
       <article class="stat"><span>Unidades</span><strong>${units}</strong></article>
       <article class="stat"><span>Pedidos</span><strong>${list.length}</strong></article>
@@ -1028,6 +1249,18 @@ function renderAdmin() {
     return `<tr class="${mark}"><td>${item.id}</td><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item.line)}</td><td>${escapeHtml(item.place)}</td><td>${item.min}</td><td><form class="stock-edit" data-stock-form="${item.id}"><input name="qty" type="number" min="0" value="${left}" aria-label="Existencia de ${item.id}"><button class="linkish" type="submit">Guardar</button></form></td><td>${left <= item.min ? "Reponer" : "Disponible"}</td></tr>`;
   }).join("");
   warehouse.innerHTML = `<div class="admin-block"><p class="eyebrow">Imágenes del catálogo</p><p class="admin-note">En Drive use Descargar. Si baja un .zip, súbalo tal cual. Si baja la carpeta ya abierta, use Subir carpeta. Cada archivo tiene que llamarse como la referencia: DT-01.jpg, DT-02.png o DT-12.webp. La foto entra sola en su ficha, en el catálogo y en el carrito de este navegador.</p><div class="photo-drop" data-photo-drop><p>Suelte aquí la carpeta o las imágenes.</p><div class="photo-actions"><label class="btn btn-metal">Subir carpeta<input data-photo-folder type="file" webkitdirectory mozdirectory directory multiple></label><label class="btn btn-ghost">Elegir imágenes o zip<input data-photo-files type="file" accept="image/*,.zip" multiple></label><button class="btn btn-ghost" type="button" data-photo-clear>Quitar cargadas</button></div></div><p data-photo-status></p><div class="photo-grid" data-photo-grid></div></div><div class="admin-block"><p class="eyebrow">Existencia frente al mínimo</p><p class="admin-note">La marca vertical es el mínimo de reposición. Al confirmar una compra, la existencia baja.</p><ul class="meters stock-meters">${stockMeters}</ul></div><div class="admin-block"><p class="eyebrow">Bodega</p><div class="table-wrap"><table class="admin-table"><thead><tr><th>Ref.</th><th>Artículo</th><th>Línea</th><th>Ubicación</th><th>Mínimo</th><th>Existencia</th><th>Estado</th></tr></thead><tbody>${stockRows}</tbody></table></div></div>`;
+
+  const trace = document.querySelector('[data-admin-panel="trazabilidad"]');
+  if (trace) trace.innerHTML = traceBoard();
+
+  const settings = document.querySelector('[data-admin-panel="configuracion"]');
+  if (settings) {
+    settings.innerHTML = `<div class="chart-grid">
+      <article class="admin-block"><p class="eyebrow">Asesor comercial</p><p class="admin-note">Este WhatsApp recibe los pedidos y atiende el botón del sitio.</p><form class="panel-form" data-wa-form><label>Número<input name="wa" inputmode="numeric" autocomplete="tel" required value="${escapeHtml(localPhone)}"></label><button class="btn btn-metal" type="submit">Guardar número</button></form><p data-wa-status></p></article>
+      <article class="admin-block"><p class="eyebrow">Pasarela Wompi</p><p class="admin-note">Cuando el comercio tenga las llaves, péguelas aquí. El pago en línea del pedido usa esa pasarela.</p><form class="panel-form" data-wompi-form><label>Llave pública<input name="publicKey" autocomplete="off" value="${escapeHtml(wompi.publicKey)}" placeholder="pub_test_ o pub_prod_"></label><label>Secreto de integridad<input name="integrity" autocomplete="off" value="${escapeHtml(wompi.integrity)}"></label><button class="btn btn-metal" type="submit">Guardar Wompi</button></form><p data-wompi-status>${wompi.publicKey && wompi.integrity ? "Wompi está listo para cobrar en el pedido." : "Wompi queda abierto hasta tener las llaves."}</p></article>
+      <article class="admin-block span-row"><p class="eyebrow">Aplicación interna</p><p class="admin-note">A partir de diciembre o enero este sitio le enviará pedidos, existencia, el WhatsApp del asesor, el aviso de pago y la trazabilidad. Pegue la dirección cuando el software exista. Vacía, la compra sigue en este navegador.</p><form class="panel-form" data-internal-form><label>Dirección<input name="base" inputmode="url" autocomplete="off" placeholder="https://api.deltactica.com" value="${escapeHtml(internalBase())}"></label><button class="btn btn-metal" type="submit">Guardar dirección</button></form><p data-internal-status>${internalBase() ? `La comunicación apunta a ${escapeHtml(internalBase())}.` : "La comunicación queda abierta. Aún no hay dirección."}</p></article>
+    </div>`;
+  }
 
   const catalog = document.querySelector('[data-admin-panel="catalogo"]');
   if (catalog) {
@@ -1065,6 +1298,13 @@ function renderAdmin() {
 }
 
 document.addEventListener("click", (event) => {
+  const lineFilter = event.target.closest("[data-filter]");
+  if (lineFilter && lineFilter.dataset.filter !== "todos") {
+    rememberTrace({ a: "filtro", p: "Catálogo", d: lineFilter.dataset.filter });
+  }
+  if (event.target.closest(".wa-fab, [data-wa-text]")) {
+    rememberTrace({ a: "asesor", d: "whatsapp" });
+  }
   const accountToggle = event.target.closest("[data-account-toggle]");
   if (accountToggle) {
     if (!currentUser()) {
@@ -1094,7 +1334,9 @@ document.addEventListener("click", (event) => {
     event.stopPropagation();
     const scope = add.closest(".hero-actions, .card-body, .tile") || document;
     const qty = scope.querySelector("[data-qty]");
-    const message = addToCart(add.dataset.add, qty ? qty.value : 1);
+    const addedQty = qty ? qty.value : 1;
+    const message = addToCart(add.dataset.add, addedQty);
+    if (!message) rememberTrace({ a: "carrito", d: add.dataset.add, n: Number(addedQty) || 1 });
     const previous = add.textContent;
     add.textContent = message || "Añadido al carrito";
     window.setTimeout(() => {
@@ -1328,8 +1570,16 @@ document.addEventListener("change", (event) => {
   }
 });
 
+let catalogSearchTimer = 0;
 document.addEventListener("input", (event) => {
   if (event.target.closest("[data-catalog-search]")) paintDownloadCount();
+  const catalogQuery = event.target.closest("[data-catalog-query]");
+  if (!catalogQuery) return;
+  window.clearTimeout(catalogSearchTimer);
+  catalogSearchTimer = window.setTimeout(() => {
+    const text = catalogQuery.value.trim();
+    if (text.length >= 2) rememberTrace({ a: "buscar", p: "Catálogo", d: text });
+  }, 700);
 });
 
 document.addEventListener("submit", (event) => {
@@ -1405,6 +1655,7 @@ document.addEventListener("drop", (event) => {
   });
 });
 
+beginTrace();
 applyAdvisorPhone();
 paintCount();
 paintPrices();

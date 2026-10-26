@@ -2309,6 +2309,36 @@ section[id] {
   line-height: 1;
 }
 
+.trace-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trace-list li {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.trace-list span,
+.trace-list em {
+  color: var(--soft);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.trace-list b {
+  font-weight: 500;
+}
+
+.stat .admin-note {
+  margin-top: 8px;
+}
+
 .admin-menu {
   display: grid;
   border: 1px solid var(--line);
