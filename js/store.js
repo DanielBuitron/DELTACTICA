@@ -185,6 +185,89 @@ function beginTrace() {
   });
 }
 
+const SEARCH_WORDS = {
+  "DT-01": "conjunto camisa pantalon ripstop campana uniforme dos piezas",
+  "DT-02": "camisola camisa faena manga identificacion",
+  "DT-03": "pantalon cargo bolsillo rodilla carga",
+  "DT-04": "chaqueta cortaviento viento abrigo capa",
+  "DT-05": "capa lluvia impermeable capucha agua",
+  "DT-06": "polar frio abrigo sueter",
+  "DT-07": "botin bota calzado marcha tobillo zapato",
+  "DT-08": "guante mano faena palma",
+  "DT-09": "morral maleta campana espalda litro mochila",
+  "DT-10": "cinturon anilla hebilla correa equipo",
+  "DT-11": "gorra visera cachucha campana",
+  "DT-12": "bolso pierna muslo cartera",
+};
+
+function plainText(value) {
+  return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function matchProducts(query) {
+  const words = plainText(query).split(/\s+/).filter((word) => word.length > 1);
+  if (!words.length) return [];
+  return PRODUCTS.filter((item) => {
+    const hay = plainText(`${item.id} ${item.name} ${item.line} ${NOTES[item.id] || ""} ${SEARCH_WORDS[item.id] || ""}`);
+    return words.every((word) => hay.includes(word));
+  });
+}
+
+window.DTSearch = { match: matchProducts };
+
+function mountMenuSearch() {
+  const nav = document.querySelector("[data-nav]");
+  if (!nav || nav.querySelector("[data-menu-search]")) return;
+  const form = document.createElement("form");
+  form.className = "menu-search";
+  form.dataset.menuSearch = "";
+  form.setAttribute("role", "search");
+  form.innerHTML = `<input data-menu-query type="search" placeholder="Buscar por palabra" autocomplete="off" aria-label="Buscar en el catálogo" aria-expanded="false" aria-controls="menu-resultados"><div class="menu-results" id="menu-resultados" hidden></div>`;
+  nav.prepend(form);
+  const input = form.querySelector("[data-menu-query]");
+  const list = form.querySelector(".menu-results");
+  const paint = () => {
+    const query = input.value.trim();
+    const found = matchProducts(query);
+    if (!query) {
+      list.hidden = true;
+      list.innerHTML = "";
+      input.setAttribute("aria-expanded", "false");
+      return;
+    }
+    const rows = found.slice(0, 6).map((item) => `<a href="${root}fichas/${item.id.toLowerCase()}.html"><img src="${root}img/productos/${item.id.toLowerCase()}.jpg" alt=""><span><b>${item.id} · ${escapeHtml(item.name)}</b><small>${escapeHtml(item.line)} · ${money(item.price)}</small></span></a>`).join("");
+    const more = found.length > 6 ? `<a class="menu-more" href="${root}catalogo.html?q=${encodeURIComponent(query)}"><span><b>Ver las ${found.length} referencias</b><small>Abrir el catálogo con esta búsqueda</small></span></a>` : "";
+    list.innerHTML = rows || `<p>Ninguna referencia coincide con “${escapeHtml(query)}”.</p>`;
+    if (more) list.innerHTML += more;
+    list.hidden = false;
+    input.setAttribute("aria-expanded", "true");
+  };
+  input.addEventListener("input", paint);
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const query = input.value.trim();
+    if (!query) return;
+    if (document.querySelector("[data-count]")) {
+      list.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+      return;
+    }
+    location.href = `${root}catalogo.html?q=${encodeURIComponent(query)}`;
+  });
+  document.addEventListener("click", (event) => {
+    if (!form.contains(event.target)) {
+      list.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      list.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+    }
+  });
+}
+
 function stayText(seconds) {
   if (!seconds) return "0 s";
   if (seconds < 60) return `${seconds} s`;
@@ -1655,6 +1738,7 @@ document.addEventListener("drop", (event) => {
   });
 });
 
+mountMenuSearch();
 beginTrace();
 applyAdvisorPhone();
 paintCount();

@@ -44,7 +44,7 @@ if (toggle && nav) {
 const filters = [...document.querySelectorAll("[data-filter]")];
 const cards = [...document.querySelectorAll(".card")];
 const count = document.querySelector("[data-count]");
-const catalogQuery = document.querySelector("[data-catalog-query]");
+const menuQuery = document.querySelector("[data-menu-query]");
 
 function setFilter(button, on) {
   button.classList.toggle("is-active", on);
@@ -55,20 +55,23 @@ function lineFilters() {
   return filters.filter((button) => button.dataset.filter !== "todos");
 }
 
-function syncAllFilter() {
-  const all = filters.find((button) => button.dataset.filter === "todos");
-  if (all) setFilter(all, lineFilters().every((button) => button.getAttribute("aria-pressed") === "true"));
+function allFilter() {
+  return filters.find((button) => button.dataset.filter === "todos");
 }
 
 function applyCatalogFilter() {
   if (!count) return;
+  const todas = allFilter()?.getAttribute("aria-pressed") === "true";
   const lines = lineFilters()
     .filter((button) => button.getAttribute("aria-pressed") === "true")
     .map((button) => button.dataset.filter);
-  const query = (catalogQuery?.value || "").trim().toLowerCase();
+  const query = (menuQuery?.value || "").trim();
+  const hits = query && window.DTSearch ? window.DTSearch.match(query).map((item) => item.id) : null;
   let visible = 0;
   cards.forEach((card) => {
-    const show = lines.includes(card.dataset.cat) && (!query || card.textContent.toLowerCase().includes(query));
+    const id = card.querySelector("[data-add]")?.dataset.add || "";
+    const inLine = todas || lines.includes(card.dataset.cat);
+    const show = query ? Boolean(hits && hits.includes(id)) : inLine;
     card.hidden = !show;
     if (show) visible += 1;
   });
@@ -77,26 +80,33 @@ function applyCatalogFilter() {
 
 if (count) filters.forEach((button) => {
   button.addEventListener("click", () => {
+    const todas = allFilter();
     if (button.dataset.filter === "todos") {
-      const on = button.getAttribute("aria-pressed") !== "true";
-      filters.forEach((item) => setFilter(item, on));
+      lineFilters().forEach((item) => setFilter(item, false));
+      setFilter(todas, true);
+    } else if (todas?.getAttribute("aria-pressed") === "true") {
+      lineFilters().forEach((item) => setFilter(item, item === button));
+      setFilter(todas, false);
     } else {
       setFilter(button, button.getAttribute("aria-pressed") !== "true");
-      syncAllFilter();
+      const any = lineFilters().some((item) => item.getAttribute("aria-pressed") === "true");
+      setFilter(todas, !any);
     }
     applyCatalogFilter();
   });
 });
 
-if (catalogQuery) catalogQuery.addEventListener("input", applyCatalogFilter);
+if (menuQuery && count) menuQuery.addEventListener("input", applyCatalogFilter);
 
 const presetLine = new URLSearchParams(location.search).get("linea");
 const presetFilter = presetLine && document.querySelector(`[data-filter="${presetLine}"]`);
 if (presetFilter && presetFilter.dataset.filter !== "todos") {
   lineFilters().forEach((button) => setFilter(button, button === presetFilter));
-  syncAllFilter();
-  applyCatalogFilter();
+  setFilter(allFilter(), false);
 }
+const presetQuery = new URLSearchParams(location.search).get("q");
+if (presetQuery && menuQuery) menuQuery.value = presetQuery;
+if (count && (presetFilter || presetQuery)) applyCatalogFilter();
 
 const form = document.querySelector("[data-form]");
 const status = document.querySelector("[data-status]");
