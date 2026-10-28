@@ -1050,6 +1050,36 @@
         }
       }
       ctx.putImageData(img, 0, 0);
+      const limpio = ctx.getImageData(0, 0, anchoImg, altoImg);
+      const px = limpio.data;
+      const brillo = (i) => px[i] + px[i + 1] + px[i + 2];
+      for (let y = 1; y < altoImg - 1; y += 1) {
+        for (let x = 1; x < anchoImg - 1; x += 1) {
+          const i = (y * anchoImg + x) * 4;
+          if (px[i + 3] < 48 || brillo(i) < 460) continue;
+          let orilla = false;
+          for (let d = 1; d <= 2 && !orilla; d += 1) {
+            if (px[((y - d) * anchoImg + x) * 4 + 3] < 48 || px[((y + d) * anchoImg + x) * 4 + 3] < 48 || px[(y * anchoImg + x - d) * 4 + 3] < 48 || px[(y * anchoImg + x + d) * 4 + 3] < 48) orilla = true;
+          }
+          if (!orilla) continue;
+          let mejor = -1;
+          let menor = brillo(i);
+          for (let d = 1; d <= 8 && mejor < 0; d += 1) {
+            [x + d, x - d].forEach((xx) => {
+              if (xx < 0 || xx >= anchoImg || mejor >= 0) return;
+              const j = (y * anchoImg + xx) * 4;
+              if (px[j + 3] > 48 && brillo(j) < menor - 40) mejor = j;
+            });
+          }
+          if (mejor >= 0) {
+            px[i] = px[mejor];
+            px[i + 1] = px[mejor + 1];
+            px[i + 2] = px[mejor + 2];
+            px[i + 3] = 255;
+          }
+        }
+      }
+      ctx.putImageData(limpio, 0, 0);
       canvas = cerrado;
       const filas = 180;
       const pixels = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
@@ -1061,7 +1091,7 @@
         const segs = [];
         let inicio = -1;
         for (let x = 0; x < W; x += 1) {
-          const opaco = pixels[(y * W + x) * 4 + 3] > 48;
+          const opaco = pixels[(y * W + x) * 4 + 3] > 120;
           if (opaco && inicio < 0) inicio = x;
           if (!opaco && inicio >= 0) {
             if (x - inicio > 2) segs.push([inicio, x - 1]);
@@ -1080,10 +1110,12 @@
         };
         const tinta = (x, dir) => {
           let elegido = leer(x);
-          for (let s = 0; s < 16; s += 1) {
+          for (let s = 0; s < 22; s += 1) {
             const color = leer(x + dir * s);
             elegido = color;
-            if (color[0] + color[1] + color[2] < 2.15) break;
+            const suma = color[0] + color[1] + color[2];
+            const gris = Math.max(color[0], color[1], color[2]) - Math.min(color[0], color[1], color[2]) < 0.14;
+            if (suma < 1.25 || !gris) break;
           }
           return elegido;
         };
@@ -1100,7 +1132,8 @@
           tintaFila[i].der = [0, 1, 2].map((c) => (copia[i - 1].der[c] + copia[i].der[c] * 2 + copia[i + 1].der[c]) / 4);
         }
       }
-      const grosor = Math.min(ancho, alto) * 0.036;
+      const grosor = Math.min(ancho, alto) * 0.09;
+      const panza = grosor * 0.22;
       const mapa = new THREE.CanvasTexture(canvas);
       mapa.colorSpace = THREE.SRGBColorSpace;
       mapa.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -1117,7 +1150,9 @@
         colores.push(rgb[0], rgb[1], rgb[2]);
         return posiciones.length / 3 - 1;
       };
+      const sombra = (rgb) => [rgb[0] * 0.74, rgb[1] * 0.74, rgb[2] * 0.74];
       const z = grosor / 2;
+      let anterior = null;
       for (let i = 0; i < filas; i += 1) {
         const y0 = (0.5 - i / filas) * alto;
         const y1 = (0.5 - (i + 1) / filas) * alto;
@@ -1125,24 +1160,57 @@
         const v1 = 1 - (i + 1) / filas;
         const rgb = tintaFila[i];
         const rgbAbajo = tintaFila[Math.min(filas - 1, i + 1)];
+        const actual = [];
         cortes[i].forEach(([a, b]) => {
           const u0 = a / Math.max(1, W - 1);
           const u1 = b / Math.max(1, W - 1);
           const x0 = (u0 - 0.5) * ancho;
           const x1 = (u1 - 0.5) * ancho;
-          const p0 = poner(x0, y0, z, u0, v0, rgb.izq);
-          const p1 = poner(x1, y0, z, u1, v0, rgb.der);
-          const p2 = poner(x1, y1, z, u1, v1, rgbAbajo.der);
-          const p3 = poner(x0, y1, z, u0, v1, rgbAbajo.izq);
+          const izq = sombra(rgb.izq);
+          const der = sombra(rgb.der);
+          const izqAbajo = sombra(rgbAbajo.izq);
+          const derAbajo = sombra(rgbAbajo.der);
+          const p0 = poner(x0, y0, z, u0, v0, izq);
+          const p1 = poner(x1, y0, z, u1, v0, der);
+          const p2 = poner(x1, y1, z, u1, v1, derAbajo);
+          const p3 = poner(x0, y1, z, u0, v1, izqAbajo);
           indices.push(p0, p3, p1, p1, p3, p2);
-          const q0 = poner(x0, y0, -z, u1, v0, rgb.izq);
-          const q1 = poner(x1, y0, -z, u0, v0, rgb.der);
-          const q2 = poner(x1, y1, -z, u0, v1, rgbAbajo.der);
-          const q3 = poner(x0, y1, -z, u1, v1, rgbAbajo.izq);
+          const q0 = poner(x0, y0, -z, u1, v0, izq);
+          const q1 = poner(x1, y0, -z, u0, v0, der);
+          const q2 = poner(x1, y1, -z, u0, v1, derAbajo);
+          const q3 = poner(x0, y1, -z, u1, v1, izqAbajo);
           indices.push(q0, q1, q3, q1, q2, q3);
-          bordes.push(p0, p3, q0, p3, q3, q0);
-          bordes.push(q1, q2, p1, q2, p2, p1);
+          const ml0 = poner(x0 - panza, y0, 0, u0, v0, rgb.izq);
+          const ml1 = poner(x0 - panza, y1, 0, u0, v1, rgbAbajo.izq);
+          const mr0 = poner(x1 + panza, y0, 0, u1, v0, rgb.der);
+          const mr1 = poner(x1 + panza, y1, 0, u1, v1, rgbAbajo.der);
+          bordes.push(p0, ml0, p3, ml0, ml1, p3);
+          bordes.push(ml0, q0, ml1, q0, q3, ml1);
+          bordes.push(p1, p2, mr0, p2, mr1, mr0);
+          bordes.push(mr0, mr1, q1, mr1, q2, q1);
+          if (i === 0) {
+            bordes.push(p0, p1, q0, p1, q1, q0);
+          }
+          if (i === filas - 1) {
+            bordes.push(p3, q3, p2, q3, q2, p2);
+          }
+          actual.push({ x0, x1, p0, p1, p2, p3, q0, q1, q2, q3, ml0, ml1, mr0, mr1 });
         });
+        if (anterior) {
+          actual.forEach((cur) => {
+            const otro = anterior.find((pieza) => cur.x0 < pieza.x1 && cur.x1 > pieza.x0);
+            if (!otro) return;
+            if (Math.abs(cur.x0 - otro.x0) > 0.004) {
+              bordes.push(otro.p3, otro.ml1, cur.p0, otro.ml1, cur.ml0, cur.p0);
+              bordes.push(otro.ml1, otro.q3, cur.ml0, otro.q3, cur.q0, cur.ml0);
+            }
+            if (Math.abs(cur.x1 - otro.x1) > 0.004) {
+              bordes.push(otro.p2, cur.p1, otro.mr1, cur.p1, cur.mr0, otro.mr1);
+              bordes.push(otro.mr1, cur.mr0, otro.q2, cur.mr0, cur.q1, otro.q2);
+            }
+          });
+        }
+        anterior = actual;
       }
       if (!indices.length) return null;
       const geometria = new THREE.BufferGeometry();
