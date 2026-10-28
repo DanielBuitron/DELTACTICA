@@ -264,7 +264,7 @@ function productImage(item) {
     const clave = String(item.id).toLowerCase().replace(/-/g, "");
     return `${root}img/vueltas/${clave}-01.jpg?v=4`;
   }
-  if (item.photo !== false && item.id) return `${root}img/recorte/${String(item.id).toLowerCase()}.webp?v=1`;
+  if (item.photo !== false && item.id) return `${root}img/recorte/${String(item.id).toLowerCase()}.webp?v=2`;
   return `${root}${item.image || ""}`;
 }
 

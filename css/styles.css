@@ -1034,12 +1034,56 @@ button.consult {
   background: radial-gradient(ellipse at 50% 42%, #f7f4ee, #d8d1c6 74%);
 }
 
-.fit-pick span {
-  padding: 0 4px 6px;
-  font-family: var(--font-display);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.fit-piece {
+  position: absolute;
+  z-index: 2;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 14px rgba(40, 32, 20, 0.32));
+}
+
+.fit-piece[data-zona="cabeza"] {
+  top: 0;
+  left: 50%;
+  width: 38%;
+  height: 26%;
+  transform: translateX(-50%);
+}
+
+.fit-piece[data-zona="pies"] {
+  bottom: 0;
+  left: 50%;
+  width: 46%;
+  height: 24%;
+  transform: translateX(-50%);
+}
+
+.fit-piece[data-zona="cintura"] {
+  top: 46%;
+  left: 50%;
+  width: 52%;
+  height: 18%;
+  transform: translateX(-50%);
+}
+
+.fit-piece[data-zona="manos"] {
+  top: 34%;
+  left: 2%;
+  width: 28%;
+  height: 24%;
+}
+
+.fit-piece[data-zona="extra"] {
+  right: 1%;
+  width: 34%;
+  height: 28%;
+}
+
+.fit-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .consult::after {
@@ -2080,13 +2124,13 @@ section[id] {
 
 .grid .plate-photo {
   background:
-    radial-gradient(ellipse at 50% 42%, #f7f4ee, #d8d1c6 74%);
+    radial-gradient(ellipse at 50% 38%, #fffdf8, #f4efe6 46%, #e4ddd2 78%);
 }
 
 .grid .plate-photo img {
-  height: 260px;
+  height: clamp(250px, 30vw, 360px);
   object-fit: contain;
-  padding: 8px;
+  padding: 6px;
   background: transparent;
 }
 
@@ -3121,11 +3165,10 @@ select option {
 
 .giro-stage {
   position: relative;
-  height: 740px;
+  height: min(84vh, 900px);
   border: 1px solid #b7b1a6;
   background:
-    radial-gradient(ellipse at 50% 28%, #f7f4ee 0%, #e4ddd2 46%, transparent 70%),
-    linear-gradient(#efeae2, #d4cdc2 62%, #c3bbb0);
+    radial-gradient(ellipse at 50% 34%, #fffdf8 0%, #f6f1e8 40%, #e7e0d4 72%);
   touch-action: none;
   cursor: grab;
   overflow: hidden;
@@ -3350,7 +3393,7 @@ select option {
   }
 
   .giro-stage {
-    height: 520px;
+    height: min(78vh, 720px);
   }
 
   .catalog-filter-head {
@@ -3429,7 +3472,11 @@ select option {
   }
 
   .giro-stage {
-    height: min(68svh, 460px);
+    height: min(76svh, 640px);
+  }
+
+  .grid .plate-photo img {
+    height: clamp(220px, 52vw, 300px);
   }
 
   .catalog-filter-head {
