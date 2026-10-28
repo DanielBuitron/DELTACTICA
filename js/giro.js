@@ -23,10 +23,10 @@
   if (price) price.textContent = item.price ? new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(item.price) : "A consultar";
   if (add) add.dataset.add = item.id;
   const copy = {
-    ropa: "La prenda va puesta en el maniquí. Arrastre para dar la vuelta.",
-    cabeza: "Va sobre el maniquí. Arrastre para dar la vuelta.",
-    pie: "El calzado está en vitrina. Arrastre para dar la vuelta.",
-    objeto: "La pieza está en vitrina. Arrastre para dar la vuelta.",
+    ropa: "La prenda se ve completa, en vitrina clara. Arrastre para dar la vuelta.",
+    cabeza: "La pieza se ve completa, en vitrina clara. Arrastre para dar la vuelta.",
+    pie: "El calzado está en vitrina clara. Arrastre para dar la vuelta.",
+    objeto: "La pieza está en vitrina clara. Arrastre para dar la vuelta.",
   };
   if (note) note.textContent = copy[item.stage] || copy.objeto;
   if (ask) ask.dataset.waText = `Hola, quiero información de la referencia ${item.id}, ${item.name}.`;
@@ -44,13 +44,13 @@
     </div>
     <div class="giro-controls">
       <button class="btn btn-ghost" type="button" data-giro-play>Pausar</button>
-      <input data-giro-range type="range" min="0" max="359" value="36" aria-label="Girar 360 grados">
+      <input data-giro-range type="range" min="0" max="359" value="12" aria-label="Girar 360 grados">
     </div>
   </div>`;
   const stage = host.querySelector("[data-giro-stage]");
   const range = host.querySelector("[data-giro-range]");
   const play = host.querySelector("[data-giro-play]");
-  let angle = 36;
+  let angle = 12;
   let dragging = false;
   let lastX = 0;
   let auto = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -861,96 +861,29 @@
     }
 
     if (dressed) {
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.112, 48, 32), skin);
-      head.scale.set(0.9, 1.08, 0.88);
-      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.055, 0.09, 28), skin);
-      const legsOf = (material, hem) => {
-        const hipY = hem + 0.04;
-        [-1, 1].forEach((side) => {
-          const hip = new THREE.Vector3(side * 0.09, hipY, 0.02);
-          const knee = new THREE.Vector3(side * 0.095, hipY * 0.52, 0.03);
-          const ankle = new THREE.Vector3(side * 0.1, 0.1, 0.04);
-          group.add(bone(0.062, 0.046, hip, knee, material));
-          group.add(bone(0.042, 0.032, knee, ankle, material));
-          const shoe = new THREE.Mesh(new THREE.CapsuleGeometry(0.038, 0.1, 4, 12), shoeWhite);
-          shoe.rotation.z = Math.PI / 2;
-          shoe.scale.set(1, 0.46, 0.68);
-          shoe.position.set(side * 0.1, 0.05, 0.06);
-          group.add(shoe);
-        });
-      };
-      if (wearHead && !wearTop && !wearLegs) {
-        head.position.set(0, 1.58, 0);
-        neck.position.set(0, 1.42, 0);
-        const shoulders = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.28, 8, 16), skin);
-        shoulders.rotation.z = Math.PI / 2;
-        shoulders.position.set(0, 1.28, 0);
-        const chest = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 0.22, 8, 16), skin);
-        chest.position.set(0, 1.05, 0);
-        group.add(chest, shoulders, neck, head);
-        const capCloth = clothTex(0.15, 0.05, 0.85, 0.75);
-        const crown = new THREE.Mesh(new THREE.SphereGeometry(0.135, 36, 24, 0, Math.PI * 2, 0, Math.PI * 0.52), capCloth);
-        crown.position.set(0, 1.66, 0);
-        const brim = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.018, 0.14), capCloth);
-        brim.position.set(0, 1.56, 0.12);
-        group.add(crown, brim);
-      } else if (wearLegs && !wearTop) {
-        const trouser = clothTex(0.12, 0.04, 0.88, 0.96);
-        legsOf(trouser, 0.08);
-        const torso = new THREE.Mesh(new THREE.LatheGeometry([
-          new THREE.Vector2(0.12, 0),
-          new THREE.Vector2(0.16, 0.16),
-          new THREE.Vector2(0.14, 0.34),
-          new THREE.Vector2(0.08, 0.46),
-        ], 28), skin);
-        torso.position.set(0, 0.86, 0);
-        torso.scale.z = 0.8;
-        neck.position.set(0, 1.4, 0);
-        head.position.set(0, 1.56, 0);
-        group.add(torso, neck, head);
-      } else {
-        let bodyH = full ? 1.35 : 0.86;
-        let bodyW = bodyH * aspect;
-        if (bodyW > 1.05) {
-          bodyW = 1.05;
-          bodyH = bodyW / aspect;
-        }
-        const garment = formMesh(photo, bodyW, bodyH, 0.045);
-        const lift = full ? 0.02 : 0.46;
-        if (garment) {
-          garment.position.y += lift;
-          garment.traverse((mesh) => {
-            if (!mesh.isMesh || !mesh.geometry || !mesh.geometry.attributes.position) return;
-            const pos = mesh.geometry.attributes.position;
-            const half = bodyW * 0.5;
-            for (let index = 0; index < pos.count; index += 1) {
-              const x = pos.getX(index);
-              const along = Math.min(1, Math.abs(x) / half);
-              const chest = Math.cos(along * Math.PI * 0.5) * 0.055;
-              const sleeve = Math.max(0, along - 0.4) * 0.1;
-              pos.setZ(index, pos.getZ(index) + chest - sleeve);
-            }
-            pos.needsUpdate = true;
-            mesh.geometry.computeVertexNormals();
-          });
-          group.add(garment);
-        }
-        const hem = 0.08 + lift;
-        const collar = hem + bodyH;
-        neck.position.set(0, collar - 0.02, 0.06);
-        head.position.set(0, collar + 0.09, 0.04);
-        group.add(neck, head);
-        if (longSleeves(photo)) {
-          [-1, 1].forEach((side) => {
-            const hand = new THREE.Mesh(new THREE.SphereGeometry(0.032, 16, 12), skin);
-            hand.scale.set(0.8, 1.25, 0.6);
-            hand.position.set(side * bodyW * 0.46, hem + bodyH * 0.06, -0.04);
-            group.add(hand);
-          });
-        }
-        legsOf(full ? clothTex(0.3, 0.62, 0.7, 0.98) : pant, hem);
+      let height = wearHead ? 0.9 : 1.25;
+      let width = height * aspect;
+      if (width > 1.2) {
+        width = 1.2;
+        height = width / aspect;
       }
-      group.add(shadowDisc(0.48));
+      const garment = formMesh(photo, width, height, wearHead ? 0.16 : 0.07);
+      if (garment) {
+        garment.traverse((mesh) => {
+          if (!mesh.isMesh || !mesh.geometry || !mesh.geometry.attributes.position) return;
+          const pos = mesh.geometry.attributes.position;
+          const half = width * 0.5;
+          for (let index = 0; index < pos.count; index += 1) {
+            const x = pos.getX(index);
+            const along = Math.min(1, Math.abs(x) / half);
+            pos.setZ(index, pos.getZ(index) + Math.cos(along * Math.PI * 0.5) * 0.04);
+          }
+          pos.needsUpdate = true;
+          mesh.geometry.computeVertexNormals();
+        });
+        group.add(garment);
+      }
+      group.add(shadowDisc(0.62));
     } else {
       const holster = /chapuza|funda|pistolera|holster/.test(label);
       let height = item.stage === "pie" ? 1.2 : holster ? 1.35 : 1.15;
@@ -1000,7 +933,7 @@
     scene.add(group);
     const sphere = new THREE.Box3().setFromObject(group).getBoundingSphere(new THREE.Sphere());
     group.position.sub(sphere.center);
-    camera.position.set(0, 0.04, sphere.radius / Math.tan(THREE.MathUtils.degToRad(15)) * 1.08);
+    camera.position.set(0, 0.02, sphere.radius / Math.tan(THREE.MathUtils.degToRad(15)) * 0.96);
     camera.lookAt(0, 0, 0);
 
     const resize = () => {
@@ -1016,7 +949,7 @@
 
     spin = () => {
       group.rotation.y = angle * Math.PI / 180;
-      group.rotation.x = dressed ? 0.04 : 0.16;
+      group.rotation.x = dressed ? 0 : 0.12;
       group.updateMatrixWorld(true);
       renderer.render(scene, camera);
     };
