@@ -252,6 +252,10 @@ window.DT_VISTAS = window.DT_VISTAS || {
   "DT-1330": 4, "DT-1331": 4, "DT-1332": 4, "DT-1333": 4, "DT-1334": 4, "DT-1335": 4
 };
 
+PRODUCTS.forEach((item) => {
+  NOTES[item.id] = window.DT_VISTAS[item.id] ? "Prenda sobre maniquí, con giro." : "Foto del producto.";
+});
+
 function productImage(item) {
   if (!item) return "";
   const custom = photoUrls.get(item.id);
@@ -1722,7 +1726,8 @@ function renderPublic() {
         <p class="card-kicker"><span>${item.id}</span><span>${escapeHtml(item.line)}</span></p>
         <h3>${escapeHtml(item.name)}</h3>
         <p class="price">${priceLabel(item)}</p>
-        <a class="consult" href="${root}producto.html?id=${item.id}">Ver en 360</a>
+        <a class="consult" href="${root}producto.html?id=${item.id}">${window.DT_VISTAS && window.DT_VISTAS[item.id] ? "Ver en 360" : "Ver foto"}</a>
+        ${window.DT_VISTAS && window.DT_VISTAS[item.id] ? `<a class="consult" href="${root}probar.html?id=${item.id}">Probar</a>` : ""}
         <button class="cart-add" type="button" data-add="${item.id}">Añadir al carrito</button>
         <a class="consult" data-wa-text="Hola, quiero información de la referencia ${item.id}, ${item.name}.">Consultar referencia</a>
       </div>

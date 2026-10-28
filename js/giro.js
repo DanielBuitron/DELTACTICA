@@ -31,11 +31,34 @@
   if (note) note.textContent = copy[item.stage] || copy.objeto;
   if (ask) ask.dataset.waText = `Hola, quiero información de la referencia ${item.id}, ${item.name}.`;
   if (item.photo === false) {
-    host.innerHTML = `<div class="giro"><div class="giro-stage giro-missing"><p>El archivo de esta foto no es una imagen. Hay que volver a guardarlo como PNG para verla en 360.</p></div></div>`;
+    host.innerHTML = `<div class="giro"><div class="giro-stage giro-missing"><p>El archivo de esta foto no es una imagen. Hay que volver a guardarlo como PNG.</p></div></div>`;
     return;
   }
+  const esPrenda = !!(window.DT_VISTAS && window.DT_VISTAS[item.id]);
   if (related) {
     related.innerHTML = list.filter((entry) => entry.line === item.line && entry.id !== item.id && entry.photo !== false).slice(0, 4).map((entry) => `<a href="producto.html?id=${entry.id}"><img src="${typeof productImage === "function" ? productImage(entry) : entry.image}" alt=""><span>${entry.name}</span></a>`).join("");
+  }
+  if (!esPrenda) {
+    if (note) note.textContent = "Foto del producto.";
+    host.innerHTML = `<div class="giro"><div class="giro-stage foto-sola" data-giro-stage></div><div class="giro-controls"><button class="btn btn-ghost" type="button" data-giro-zoom>Ver grande</button></div></div>`;
+    const foto = document.createElement("img");
+    foto.alt = item.name;
+    foto.src = typeof productImage === "function" ? productImage(item) : item.image;
+    host.querySelector("[data-giro-stage]").append(foto);
+    host.querySelector("[data-giro-zoom]").addEventListener("click", () => {
+      const luz = document.createElement("dialog");
+      luz.style.cssText = "border:0;padding:0;background:#f4efe6;max-width:min(920px,94vw);";
+      const grande = document.createElement("img");
+      grande.src = item.image;
+      grande.alt = item.name;
+      grande.style.cssText = "display:block;width:100%;height:auto;";
+      luz.append(grande);
+      luz.addEventListener("click", () => luz.close());
+      luz.addEventListener("close", () => luz.remove());
+      document.body.append(luz);
+      luz.showModal();
+    });
+    return;
   }
 
   host.innerHTML = `<div class="giro">
