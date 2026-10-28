@@ -69,7 +69,7 @@
 
   function vista(item, numero) {
     const clave = item.id.toLowerCase().replace(/-/g, "");
-    return `img/vueltas/${clave}-${String(numero).padStart(2, "0")}.jpg?v=4`;
+    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=1`;
   }
 
   function foto(item) {
@@ -97,7 +97,7 @@
     svg.setAttribute("class", "fit-blank");
     svg.setAttribute("viewBox", "0 0 300 640");
     svg.setAttribute("aria-hidden", "true");
-    svg.innerHTML = '<ellipse cx="150" cy="72" rx="36" ry="44" fill="#f4f5f6"/><path fill="#f7f8f8" d="M128 112h44l8 36H120z"/><path fill="#f4f5f6" d="M78 168c22-22 122-22 144 0l22 78c8 86-8 168-28 196h-28l-12-120-16 16-16-16-12 120H104c-20-28-36-110-28-196z"/><path fill="#eceeed" d="M78 176c-40 36-46 120-38 176 4 16 18 18 24 4 10-48 16-110 36-148z"/><path fill="#eceeed" d="M222 176c40 36 46 120 38 176-4 16-18 18-24 4-10-48-16-110-36-148z"/><path fill="#f4f5f6" d="M112 430h34l-4 168h-34z"/><path fill="#f4f5f6" d="M154 430h34l4 168h-34z"/>';
+    svg.innerHTML = '<ellipse cx="150" cy="78" rx="34" ry="42" fill="#f7f7f7"/><path fill="#f3f3f3" d="M136 112h28l6 42h-40z"/><path fill="#f7f7f7" d="M92 168c18-16 98-16 116 0 10 18 18 46 14 78-6 42-18 70-28 92h-22l-8-70h-28l-8 70H86c-10-22-22-50-28-92-4-32 4-60 34-78z"/><path fill="#efefef" d="M96 176c-28 24-40 78-36 140 2 18 16 16 20 2 8-36 14-90 28-118z"/><path fill="#efefef" d="M204 176c28 24 40 78 36 140-2 18-16 16-20 2-8-36-14-90-28-118z"/><path fill="#f7f7f7" d="M118 330h22l-2 250h-24z"/><path fill="#f7f7f7" d="M160 330h22l4 250h-24z"/>';
     return svg;
   }
 
@@ -108,10 +108,9 @@
     image.draggable = false;
     image.className = clase;
     image.dataset.capa = "prenda";
-    image.style.cssText = "position:absolute;width:100%;object-fit:contain;opacity:0;visibility:hidden;pointer-events:none;z-index:1;";
-    if (clase === "fit-arriba") image.style.cssText += "top:0;height:64%;";
-    else if (clase === "fit-abajo") image.style.cssText += "bottom:0;height:54%;";
-    else image.style.cssText += "inset:0;height:100%;";
+    image.style.cssText = "opacity:0;visibility:hidden;";
+    image.dataset.zona = clase === "fit-abajo" ? "abajo" : clase === "fit-arriba" ? "arriba" : "completo";
+    image.className = "fit-capa";
     return image;
   }
 
@@ -134,7 +133,7 @@
         const on = key === local;
         image.style.opacity = on ? "1" : "0";
         image.style.visibility = on ? "visible" : "hidden";
-        image.style.transform = on ? `perspective(1600px) rotateY(${yaw.toFixed(2)}deg)` : "none";
+        image.style.transform = on ? `translateX(-50%) perspective(1600px) rotateY(${yaw.toFixed(2)}deg)` : "translateX(-50%)";
       });
     });
     const frente = Math.cos(turn * Math.PI / 180);
@@ -164,9 +163,7 @@
     extras = [];
     const cuerpo = puesto.completo ? [puesto.completo] : prendas;
     cuerpo.forEach((item) => {
-      const clase = !puesto.completo && puesto.arriba && puesto.abajo
-        ? (abajo.has(item.id) ? "fit-abajo" : "fit-arriba")
-        : "fit-full";
+      const clase = puesto.completo ? "fit-full" : (abajo.has(item.id) ? "fit-abajo" : "fit-arriba");
       for (let numero = 1; numero <= 4; numero += 1) {
         const image = frame(item, numero, clase);
         image.dataset.grupo = item.id;
@@ -190,7 +187,7 @@
       stage.append(image);
       extras.push(image);
     });
-    angle = 0;
+    angle = frames.length ? angle : 0;
     paint();
     paintPicks();
   }

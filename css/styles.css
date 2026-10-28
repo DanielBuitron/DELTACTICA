@@ -985,13 +985,41 @@ button.consult {
 .fit-blank {
   position: absolute;
   z-index: 0;
-  top: 2%;
-  bottom: 2%;
+  top: 1%;
+  bottom: 1%;
   left: 50%;
-  height: 96%;
+  height: 98%;
   width: auto;
   transform: translateX(-50%);
   pointer-events: none;
+}
+
+.fit-capa {
+  position: absolute;
+  left: 50%;
+  z-index: 1;
+  width: 88%;
+  object-fit: contain;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.fit-capa[data-zona="arriba"] {
+  top: 12%;
+  height: 52%;
+}
+
+.fit-capa[data-zona="abajo"] {
+  top: 52%;
+  z-index: 2;
+  width: 52%;
+  height: 46%;
+}
+
+.fit-capa[data-zona="completo"] {
+  top: 8%;
+  width: 76%;
+  height: 88%;
 }
 
 .fit-room [data-fit-name] {
