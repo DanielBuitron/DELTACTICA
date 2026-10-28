@@ -188,75 +188,59 @@
   }
 
   function mount(THREE, tex) {
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(stage.clientWidth, stage.clientHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
     stage.appendChild(renderer.domElement);
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(28, stage.clientWidth / stage.clientHeight, 0.1, 40);
-    scene.add(new THREE.AmbientLight(0xfff6ec, 0.72));
-    const key = new THREE.DirectionalLight(0xfff3e2, 1.55);
-    key.position.set(1.6, 3.6, 3.4);
+    const camera = new THREE.PerspectiveCamera(30, 1, 0.08, 50);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+    scene.add(new THREE.HemisphereLight(0xfff8f2, 0x1a1c22, 0.75));
+    const key = new THREE.DirectionalLight(0xfff7ee, 2.2);
+    key.position.set(2.8, 4.6, 5.4);
     scene.add(key);
-    const fill = new THREE.DirectionalLight(0xd5dbe8, 0.5);
-    fill.position.set(-2.6, 1.8, 2.2);
+    const fill = new THREE.DirectionalLight(0xd5deee, 0.7);
+    fill.position.set(-4.4, 1.8, 2.8);
     scene.add(fill);
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.34);
-    rimLight.position.set(-0.6, 2.4, -2.8);
-    scene.add(rimLight);
+    const rim = new THREE.DirectionalLight(0xfff2e4, 1);
+    rim.position.set(-1.6, 3.2, -4.6);
+    scene.add(rim);
 
     const label = plain(item.name);
     const lower = /pantalon|falda|short|pantaloneta|bermuda/.test(label);
     const full = /uniforme|overol|conjunto/.test(label);
-    const dressed = item.stage === "ropa" || item.stage === "cabeza";
     const wearTop = item.stage === "ropa" && (full || !lower);
     const wearLegs = item.stage === "ropa" && (full || lower);
     const wearHead = item.stage === "cabeza";
-    const tone = new THREE.Color((tex.tone?.r || 96) / 255, (tex.tone?.g || 102) / 255, (tex.tone?.b || 90) / 255);
-    const skin = new THREE.MeshStandardMaterial({ color: 0xf4f1eb, roughness: 0.46, metalness: 0.02 });
-    const under = new THREE.MeshStandardMaterial({ color: 0x2a2e33, roughness: 0.74, metalness: 0.06 });
-    const shoeMat = new THREE.MeshStandardMaterial({ color: 0x14161a, roughness: 0.42, metalness: 0.2 });
-    const edgeMat = new THREE.MeshStandardMaterial({
-      color: tone.clone().multiplyScalar(0.9),
-      roughness: 0.8,
-      metalness: 0.04,
-      emissive: tone.clone().multiplyScalar(0.08),
-      side: THREE.DoubleSide,
-    });
-    const backMat = new THREE.MeshStandardMaterial({
-      color: tone.clone().multiplyScalar(0.84),
-      roughness: 0.9,
-      metalness: 0.02,
-    });
+    const dressed = wearTop || wearLegs || wearHead;
+    const tone = new THREE.Color((tex.tone?.r || 96) / 255, (tex.tone?.g || 100) / 255, (tex.tone?.b || 96) / 255);
+    const photo = tex.cut || tex.front;
+    const map = new THREE.CanvasTexture(photo);
+    map.colorSpace = THREE.SRGBColorSpace;
+    map.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    map.wrapS = THREE.ClampToEdgeWrapping;
+    map.wrapT = THREE.ClampToEdgeWrapping;
 
-    const source = tex.cut || tex.front;
-    const printMap = new THREE.CanvasTexture(source);
-    printMap.colorSpace = THREE.SRGBColorSpace;
-    printMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    printMap.wrapS = THREE.ClampToEdgeWrapping;
-    printMap.wrapT = THREE.ClampToEdgeWrapping;
-    const faceMat = new THREE.MeshStandardMaterial({
-      map: printMap,
-      color: 0xffffff,
-      roughness: 0.68,
-      metalness: 0.02,
-      alphaTest: 0.22,
-      side: THREE.FrontSide,
-    });
+    const skin = new THREE.MeshPhysicalMaterial({ color: 0xf3f0ea, roughness: 0.42, metalness: 0.02, clearcoat: 0.16, clearcoatRoughness: 0.42 });
+    const cloth = new THREE.MeshPhysicalMaterial({ color: tone, roughness: 0.76, metalness: 0.02, sheen: 0.5, sheenRoughness: 0.5, sheenColor: tone });
+    const under = new THREE.MeshPhysicalMaterial({ color: 0x2b2f34, roughness: 0.7, metalness: 0.08, clearcoat: 0.06 });
+    const shoeMat = new THREE.MeshPhysicalMaterial({ color: 0x15171a, roughness: 0.36, metalness: 0.24, clearcoat: 0.4, clearcoatRoughness: 0.28 });
 
-    function shadow(radius) {
+    function shadowDisc(radius) {
       const canvas = document.createElement("canvas");
-      canvas.width = 128;
-      canvas.height = 128;
+      canvas.width = 256;
+      canvas.height = 256;
       const paint = canvas.getContext("2d");
-      const gradient = paint.createRadialGradient(64, 64, 8, 64, 64, 64);
-      gradient.addColorStop(0, "rgba(0,0,0,0.55)");
+      const gradient = paint.createRadialGradient(128, 128, 16, 128, 128, 128);
+      gradient.addColorStop(0, "rgba(0,0,0,0.48)");
       gradient.addColorStop(1, "rgba(0,0,0,0)");
       paint.fillStyle = gradient;
-      paint.fillRect(0, 0, 128, 128);
+      paint.fillRect(0, 0, 256, 256);
       const mesh = new THREE.Mesh(
-        new THREE.CircleGeometry(radius, 40),
+        new THREE.CircleGeometry(radius, 48),
         new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true, depthWrite: false })
       );
       mesh.rotation.x = -Math.PI / 2;
@@ -264,225 +248,208 @@
       return mesh;
     }
 
-    function buildShell(canvas, height, bow, thick, rear, inset) {
-      const sw = canvas.width;
-      const sh = canvas.height;
-      const pixels = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, sw, sh).data;
-      const cols = 168;
-      const rows = Math.max(2, Math.round(cols * sh / sw));
-      const width = height * sw / sh;
-      const solid = new Uint8Array(cols * rows);
-      for (let row = 0; row < rows; row += 1) {
-        for (let col = 0; col < cols; col += 1) {
-          const px = Math.min(sw - 1, Math.round((col + 0.5) / cols * (sw - 1)));
-          const py = Math.min(sh - 1, Math.round((row + 0.5) / rows * (sh - 1)));
-          solid[row * cols + col] = pixels[(py * sw + px) * 4 + 3] > 72 ? 1 : 0;
-        }
-      }
-      const alive = (col, row) => col >= 0 && row >= 0 && col < cols && row < rows && solid[row * cols + col] === 1;
-      const place = (col, row) => {
-        const u = cols === 1 ? 0.5 : col / (cols - 1);
-        const v = rows === 1 ? 0.5 : 1 - row / (rows - 1);
-        const across = (u - 0.5) * 2;
-        const along = (v - 0.5) * 2;
-        return {
-          x: (u - 0.5) * width,
-          y: (v - 0.5) * height,
-          z: Math.cos(across * Math.PI * 0.5) * Math.cos(along * 0.5) * bow,
-          u,
-          v,
-        };
+    const worn = [];
+    function dress(mesh, span) {
+      const material = cloth.clone();
+      material.customProgramCacheKey = () => "prenda-foto";
+      material.onBeforeCompile = (shader) => {
+        shader.uniforms.garmentMap = { value: map };
+        shader.uniforms.meshMatrix = { value: mesh.matrix.clone() };
+        shader.uniforms.span = { value: span };
+        material.userData.shader = shader;
+        shader.vertexShader = `uniform mat4 meshMatrix;\nvarying vec3 vWearP;\nvarying vec3 vWearN;\n${shader.vertexShader}`;
+        shader.vertexShader = shader.vertexShader.replace(
+          "#include <begin_vertex>",
+          `#include <begin_vertex>
+          vWearP = (meshMatrix * vec4(position, 1.0)).xyz;
+          vWearN = normalize(mat3(meshMatrix) * normal);`
+        );
+        shader.fragmentShader = `uniform sampler2D garmentMap;\nuniform vec4 span;\nvarying vec3 vWearP;\nvarying vec3 vWearN;\n${shader.fragmentShader}`;
+        shader.fragmentShader = shader.fragmentShader.replace(
+          "#include <color_fragment>",
+          `#include <color_fragment>
+          {
+            float gu = (vWearP.x - span.x) / (span.y - span.x);
+            float gv = (vWearP.y - span.z) / (span.w - span.z);
+            vec4 gtex = texture2D(garmentMap, vec2(gu, gv));
+            float gfront = smoothstep(0.02, 0.62, vWearN.z);
+            float gok = gfront * step(0.0, gu) * step(gu, 1.0) * step(0.0, gv) * step(gv, 1.0) * smoothstep(0.18, 0.62, gtex.a);
+            diffuseColor.rgb = mix(diffuseColor.rgb, gtex.rgb, gok);
+          }`
+        );
       };
-      const frontPos = [];
-      const frontUv = [];
-      const backPos = [];
-      const slot = new Int32Array(cols * rows);
-      slot.fill(-1);
-      const anchors = { top: -10, bottom: 10, left: null, right: null, width, height };
-      for (let row = 0; row < rows; row += 1) {
-        for (let col = 0; col < cols; col += 1) {
-          if (!alive(col, row)) continue;
-          const point = place(col, row);
-          slot[row * cols + col] = frontPos.length / 3;
-          frontPos.push(point.x, point.y, point.z);
-          frontUv.push(point.u, point.v);
-          const pinch = inset || 1;
-          backPos.push(point.x * pinch, point.y * pinch, point.z - thick);
-          if (point.y > anchors.top) anchors.top = point.y;
-          if (point.y < anchors.bottom) anchors.bottom = point.y;
-          if (point.u < 0.36 && (!anchors.left || point.y < anchors.left.y)) anchors.left = point;
-          if (point.u > 0.64 && (!anchors.right || point.y < anchors.right.y)) anchors.right = point;
-        }
-      }
-      const frontIdx = [];
-      const backIdx = [];
-      const tally = new Map();
-      const mark = (a, b) => {
-        const key = a < b ? `${a}_${b}` : `${b}_${a}`;
-        tally.set(key, (tally.get(key) || 0) + 1);
-      };
-      for (let row = 0; row < rows - 1; row += 1) {
-        for (let col = 0; col < cols - 1; col += 1) {
-          const a = slot[row * cols + col];
-          const b = slot[row * cols + col + 1];
-          const d = slot[(row + 1) * cols + col];
-          const e = slot[(row + 1) * cols + col + 1];
-          if (a < 0 || b < 0 || d < 0 || e < 0) continue;
-          frontIdx.push(a, d, e, a, e, b);
-          backIdx.push(a, e, d, a, b, e);
-          mark(a, d); mark(d, e); mark(e, a);
-          mark(a, e); mark(e, b); mark(b, a);
-        }
-      }
-      const rimPos = [];
-      const rimIdx = [];
-      tally.forEach((hits, key) => {
-        if (hits !== 1) return;
-        const [ia, ib] = key.split("_").map(Number);
-        const base = rimPos.length / 3;
-        for (let axis = 0; axis < 3; axis += 1) {
-          rimPos.push(frontPos[ia * 3 + axis]);
-        }
-        for (let axis = 0; axis < 3; axis += 1) {
-          rimPos.push(frontPos[ib * 3 + axis]);
-        }
-        for (let axis = 0; axis < 3; axis += 1) {
-          rimPos.push(backPos[ib * 3 + axis]);
-        }
-        for (let axis = 0; axis < 3; axis += 1) {
-          rimPos.push(backPos[ia * 3 + axis]);
-        }
-        rimIdx.push(base, base + 1, base + 2, base, base + 2, base + 3);
-      });
-      const meshFrom = (positions, index, uv, material) => {
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-        if (uv) geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-        geometry.setIndex(index);
-        geometry.computeVertexNormals();
-        return new THREE.Mesh(geometry, material);
-      };
-      const shell = new THREE.Group();
-      if (frontIdx.length) {
-        shell.add(meshFrom(frontPos, frontIdx, frontUv, faceMat));
-        if (rear) {
-          shell.add(meshFrom(backPos, backIdx, frontUv, rear));
-          if (rimIdx.length) shell.add(meshFrom(rimPos, rimIdx, null, edgeMat));
-        }
-      }
-      shell.userData.anchors = anchors;
-      return shell;
+      mesh.material = material;
+      worn.push(mesh);
+      return mesh;
     }
 
-    function addHead(parent, x, y, z) {
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.112, 32, 24), skin);
-      head.scale.set(0.92, 1.08, 0.9);
-      head.position.set(x, y, z);
+    function body(parent) {
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 40, 28), skin);
+      head.scale.set(0.9, 1.08, 0.88);
+      head.position.set(0, 1.7, 0.02);
       parent.add(head);
-      const neck = new THREE.Mesh(new THREE.CapsuleGeometry(0.046, 0.06, 6, 14), skin);
-      neck.position.set(x, y - 0.14, z - 0.01);
+      const neck = new THREE.Mesh(new THREE.CapsuleGeometry(0.046, 0.05, 6, 16), skin);
+      neck.position.set(0, 1.54, 0.01);
       parent.add(neck);
-      return head;
-    }
-
-    function addHands(parent, anchors) {
-      [anchors.left, anchors.right].forEach((cuff) => {
-        if (!cuff || Math.abs(cuff.x) < anchors.width * 0.16) return;
-        const hand = new THREE.Mesh(new THREE.SphereGeometry(0.03, 18, 14), skin);
-        hand.position.set(cuff.x, cuff.y + 0.045, cuff.z + 0.01);
-        parent.add(hand);
-      });
-    }
-
-    function addLegs(parent, hem, xSpan) {
+      if (!wearTop) {
+        const profile = [
+          [0.15, 0.78],
+          [0.19, 0.98],
+          [0.2, 1.18],
+          [0.16, 1.36],
+          [0.07, 1.48],
+        ].map((point) => new THREE.Vector2(point[0], point[1]));
+        parent.add(new THREE.Mesh(new THREE.LatheGeometry(profile, 40), under));
+        [-1, 1].forEach((side) => {
+          const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.05, 0.42, 6, 16), under);
+          arm.position.set(side * 0.26, 1.08, 0);
+          arm.rotation.z = side * 0.16;
+          parent.add(arm);
+          const hand = new THREE.Mesh(new THREE.SphereGeometry(0.04, 16, 12), skin);
+          hand.position.set(side * 0.32, 0.82, 0.03);
+          parent.add(hand);
+        });
+      }
       [-1, 1].forEach((side) => {
-        const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.072, 0.34, 6, 16), under);
-        leg.position.set(side * xSpan, hem - 0.18, -0.02);
+        const legMat = wearLegs && !wearTop ? cloth.clone() : (wearLegs ? cloth : under);
+        const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.078, 0.5, 8, 18), legMat);
+        leg.scale.set(1.35, 1, 0.78);
+        leg.position.set(side * 0.11, 0.4, 0);
         parent.add(leg);
-        const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.065, 0.2), shoeMat);
-        shoe.position.set(side * xSpan, hem - 0.4, 0.03);
+        if (wearLegs && !wearTop) dress(leg, new THREE.Vector4(-0.38, 0.38, 0.08, 0.78));
+        const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.065, 0.22), shoeMat);
+        shoe.position.set(side * 0.11, 0.045, 0.03);
         parent.add(shoe);
       });
+      if (wearHead) {
+        const crown = new THREE.Mesh(new THREE.SphereGeometry(0.145, 36, 22, 0, Math.PI * 2, 0, Math.PI * 0.58), cloth);
+        crown.scale.set(1.2, 0.7, 1.08);
+        crown.position.set(0, 1.76, 0.02);
+        parent.add(crown);
+        dress(crown, new THREE.Vector4(-0.22, 0.22, 1.58, 1.9));
+      }
     }
 
-    function addBareTop(parent, waist) {
-      const profile = [
-        [0.15, waist],
-        [0.18, waist + 0.16],
-        [0.2, waist + 0.32],
-        [0.16, waist + 0.46],
-        [0.08, waist + 0.54],
-      ].map((point) => new THREE.Vector2(point[0], point[1]));
-      parent.add(new THREE.Mesh(new THREE.LatheGeometry(profile, 28), under));
-      [-1, 1].forEach((side) => {
-        const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.05, 0.36, 5, 14), under);
-        arm.position.set(side * 0.28, waist + 0.28, 0);
-        arm.rotation.z = side * 0.18;
-        parent.add(arm);
-        const hand = new THREE.Mesh(new THREE.SphereGeometry(0.044, 16, 12), skin);
-        hand.position.set(side * 0.34, waist + 0.05, 0.04);
-        parent.add(hand);
+    function roundedRect(width, height, radius) {
+      const shape = new THREE.Shape();
+      const x = -width / 2;
+      const y = -height / 2;
+      const r = Math.min(radius, width / 2 - 0.001, height / 2 - 0.001);
+      shape.moveTo(x + r, y);
+      shape.lineTo(x + width - r, y);
+      shape.absarc(x + width - r, y + r, r, -Math.PI / 2, 0, false);
+      shape.lineTo(x + width, y + height - r);
+      shape.absarc(x + width - r, y + height - r, r, 0, Math.PI / 2, false);
+      shape.lineTo(x + r, y + height);
+      shape.absarc(x + r, y + height - r, r, Math.PI / 2, Math.PI, false);
+      shape.lineTo(x, y + r);
+      shape.absarc(x + r, y + r, r, Math.PI, Math.PI * 1.5, false);
+      return shape;
+    }
+
+    function showpiece(width, height, depth) {
+      const faceW = width * 0.96;
+      const faceH = height * 0.96;
+      const geometry = new THREE.ExtrudeGeometry(roundedRect(faceW, faceH, Math.min(faceW, faceH) * 0.08), {
+        depth,
+        bevelEnabled: true,
+        bevelThickness: depth * 0.16,
+        bevelSize: Math.min(faceW, faceH) * 0.025,
+        bevelSegments: 3,
+        curveSegments: 10,
       });
-      addHead(parent, 0, waist + 0.68, 0.04);
+      geometry.translate(0, 0, -depth / 2);
+      geometry.computeVertexNormals();
+      const face = new THREE.MeshPhysicalMaterial({
+        map,
+        color: 0xffffff,
+        roughness: 0.4,
+        metalness: 0.05,
+        clearcoat: 0.28,
+        clearcoatRoughness: 0.32,
+      });
+      face.onBeforeCompile = (shader) => {
+        shader.vertexShader = shader.vertexShader.replace(
+          "#include <uv_vertex>",
+          `vMapUv = vec2(position.x / ${faceW.toFixed(4)} + 0.5, position.y / ${faceH.toFixed(4)} + 0.5);`
+        );
+      };
+      face.customProgramCacheKey = () => `pieza-${faceW.toFixed(2)}-${faceH.toFixed(2)}`;
+      const edge = new THREE.MeshPhysicalMaterial({
+        color: tone,
+        roughness: 0.38,
+        metalness: 0.16,
+        clearcoat: 0.45,
+        clearcoatRoughness: 0.22,
+      });
+      const mesh = new THREE.Mesh(geometry, [face, edge]);
+      mesh.position.y = height / 2 + 0.08;
+      return mesh;
     }
 
     const group = new THREE.Group();
-    const photo = source;
+    const aspect = photo.width / Math.max(1, photo.height);
 
-    if (wearTop || (wearLegs && !wearHead)) {
-      const height = wearTop ? (full ? 1.16 : 1.08) : 0.86;
-      const bow = wearTop ? 0.05 : 0.08;
-      const thick = wearTop ? 0.13 : 0.16;
-      const shell = buildShell(photo, height, bow, thick, backMat, wearTop ? 0.9 : 0.96);
-      const anchors = shell.userData.anchors;
-      group.add(shell);
-      if (wearTop) {
-        addHead(group, 0, anchors.top - 0.01, 0.06);
-        if (!wearLegs) addLegs(group, anchors.bottom, 0.1);
-      } else {
-        addBareTop(group, anchors.top - 0.02);
-        [anchors.left, anchors.right].forEach((cuff) => {
-          if (!cuff) return;
-          const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.2), shoeMat);
-          shoe.position.set(cuff.x * 0.85, cuff.y - 0.02, cuff.z + 0.02);
-          group.add(shoe);
-        });
+    function garment(width, height) {
+      const geometry = new THREE.PlaneGeometry(width, height, 48, 20);
+      const position = geometry.attributes.position;
+      const radius = Math.max(0.34, width * 0.46);
+      for (let index = 0; index < position.count; index += 1) {
+        const x = position.getX(index);
+        const y = position.getY(index);
+        const across = width ? x / (width * 0.5) : 0;
+        const theta = across * 0.95;
+        const lift = Math.cos((y / Math.max(height, 0.01)) * 0.35);
+        position.setX(index, Math.sin(theta) * radius);
+        position.setZ(index, Math.cos(theta) * radius * lift);
       }
-      group.add(shadow(0.48));
-    } else if (wearHead) {
-      addBareTop(group, 0.72);
-      addLegs(group, 0.72, 0.1);
-      const shell = buildShell(photo, 0.3, 0.08, 0.06, faceMat);
-      shell.position.set(0, 1.5, 0.08);
-      group.add(shell);
-      group.add(shadow(0.42));
+      geometry.translate(0, 0, -radius + 0.12);
+      geometry.computeVertexNormals();
+      return new THREE.Mesh(geometry, new THREE.MeshPhysicalMaterial({
+        map,
+        color: 0xffffff,
+        roughness: 0.48,
+        metalness: 0.02,
+        clearcoat: 0.18,
+        clearcoatRoughness: 0.35,
+        alphaTest: 0.25,
+        side: THREE.DoubleSide,
+      }));
+    }
+
+    if (dressed) {
+      body(group);
+      if (wearTop) {
+        const height = full ? 1.18 : 1.05;
+        const width = Math.min(1.05, height * aspect);
+        const shirt = garment(width, height);
+        shirt.position.set(0, full ? 1.0 : 1.12, 0);
+        group.add(shirt);
+      }
+      group.add(shadowDisc(0.48));
     } else {
-      let height = item.stage === "pie" ? 1.12 : 1.0;
-      const aspect = photo.width / photo.height;
-      if (height * aspect > 1.25) height = 1.25 / aspect;
-      const thick = item.stage === "pie" ? 0.28 : 0.2;
-      const shell = buildShell(photo, height, item.stage === "pie" ? 0.08 : 0.05, thick, faceMat);
-      const anchors = shell.userData.anchors;
-      shell.position.y = -anchors.bottom + 0.07;
-      group.add(shell);
-      const reach = Math.min(0.62, Math.max(0.34, anchors.width * 0.42));
+      let height = item.stage === "pie" ? 1.15 : 1.02;
+      let width = height * aspect;
+      if (width > 1.28) {
+        width = 1.28;
+        height = width / aspect;
+      }
+      const depth = item.stage === "pie" ? Math.min(0.42, height * 0.34) : Math.max(0.18, Math.min(width, height) * 0.26);
+      group.add(showpiece(width, height, depth));
+      const reach = Math.min(0.72, Math.max(0.36, width * 0.42));
       const plinth = new THREE.Mesh(
-        new THREE.CylinderGeometry(reach * 0.82, reach, 0.05, 48),
-        new THREE.MeshStandardMaterial({ color: 0x3a4048, metalness: 0.66, roughness: 0.3 })
+        new THREE.CylinderGeometry(reach * 0.78, reach, 0.055, 64),
+        new THREE.MeshPhysicalMaterial({ color: 0x3a4048, roughness: 0.28, metalness: 0.72, clearcoat: 0.4, clearcoatRoughness: 0.25 })
       );
-      plinth.position.y = 0.025;
+      plinth.position.y = 0.028;
       group.add(plinth);
-      group.add(shadow(reach * 1.05));
+      group.add(shadowDisc(reach * 1.05));
     }
 
     scene.add(group);
-    const bounds = new THREE.Box3().setFromObject(group);
-    const size = bounds.getSize(new THREE.Vector3());
-    const center = bounds.getCenter(new THREE.Vector3());
-    group.position.sub(center);
-    const fit = Math.max(size.x, size.y * 1.04);
-    const fov = camera.fov * Math.PI / 180;
-    camera.position.set(0, size.y * 0.02, (fit / 2) / Math.tan(fov / 2) * 1.48);
+    const sphere = new THREE.Box3().setFromObject(group).getBoundingSphere(new THREE.Sphere());
+    group.position.sub(sphere.center);
+    camera.position.set(0, 0.02, sphere.radius / Math.tan(THREE.MathUtils.degToRad(15)) * 1.28);
     camera.lookAt(0, 0, 0);
 
     const resize = () => {
@@ -498,7 +465,12 @@
 
     spin = () => {
       group.rotation.y = angle * Math.PI / 180;
-      group.rotation.x = 0.06;
+      group.rotation.x = dressed ? 0.03 : 0.08;
+      group.updateMatrixWorld(true);
+      worn.forEach((mesh) => {
+        const shader = mesh.material.userData.shader;
+        if (shader) shader.uniforms.meshMatrix.value.copy(mesh.matrix);
+      });
       renderer.render(scene, camera);
     };
     spin();
