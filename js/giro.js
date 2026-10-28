@@ -100,8 +100,8 @@
             open[i] = 1;
             continue;
           }
-          if (dark && pixels[p] < 18 && pixels[p + 1] < 18 && pixels[p + 2] < 18) open[i] = 1;
-          else if (light && pixels[p] > 236 && pixels[p + 1] > 236 && pixels[p + 2] > 236) open[i] = 1;
+          if (dark && pixels[p] <= 6 && pixels[p + 1] <= 6 && pixels[p + 2] <= 6) open[i] = 1;
+          else if (light && pixels[p] > 248 && pixels[p + 1] > 248 && pixels[p + 2] > 248) open[i] = 1;
         }
         const stack = [];
         const seen = new Uint8Array(total);
@@ -225,7 +225,7 @@
     const wearTop = item.stage === "ropa" && (full || !lower);
     const wearLegs = item.stage === "ropa" && (full || lower);
     const wearHead = item.stage === "cabeza";
-    const dressed = wearTop || wearLegs || wearHead;
+    const dressed = item.stage === "ropa";
     const tone = new THREE.Color((tex.tone?.r || 96) / 255, (tex.tone?.g || 100) / 255, (tex.tone?.b || 96) / 255);
     const photo = tex.cut || tex.front;
     const map = new THREE.CanvasTexture(photo);
@@ -1042,13 +1042,7 @@
       const mediana = orden[Math.floor(orden.length / 2)] || 0.08;
       const menor = Math.min(ancho, alto);
       const anchoReal = Math.min(ancho, mediana * 2 * ancho);
-      let grosor = menor * 0.08;
-      if (redondo) grosor = (/cepillo/.test(label) ? 0.34 : 0.86) * anchoReal;
-      else if (boina) grosor = menor * 0.34;
-      else if (visera) grosor = menor * 0.16;
-      else if (bolsa) grosor = menor * 0.2;
-      else if (plano || cordon) grosor = menor * 0.028;
-      else if (/guante|chapuza|funda|porta |piernera|arnes|grip|reloj|esposa/.test(label)) grosor = menor * 0.07;
+      const grosor = Math.min(ancho, alto) * 0.04;
       const mapa = solidMap(canvas);
       const foto = new THREE.MeshBasicMaterial({ map: mapa });
       const canto = new THREE.MeshBasicMaterial({ vertexColors: true });
@@ -1138,6 +1132,31 @@
       return malla;
     }
 
+    function ficha(canvas) {
+      const relacion = canvas.width / Math.max(1, canvas.height);
+      const medida = 1.02;
+      const ancho = relacion >= 1 ? medida : medida * relacion;
+      const alto = relacion >= 1 ? medida / relacion : medida;
+      const mapa = new THREE.CanvasTexture(canvas);
+      mapa.colorSpace = THREE.SRGBColorSpace;
+      mapa.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      const cara = new THREE.Mesh(
+        new THREE.PlaneGeometry(ancho, alto),
+        new THREE.MeshBasicMaterial({ map: mapa, transparent: true, alphaTest: 0.15, side: THREE.FrontSide })
+      );
+      const profundo = Math.min(ancho, alto) * 0.045;
+      const lomo = new THREE.Mesh(
+        new THREE.BoxGeometry(ancho * 0.7, alto * 0.82, profundo),
+        new THREE.MeshBasicMaterial({ color: tone })
+      );
+      lomo.position.z = -profundo * 0.45;
+      cara.position.z = 0.002;
+      const grupo = new THREE.Group();
+      grupo.add(lomo, cara);
+      grupo.position.y = alto / 2 + 0.06;
+      return grupo;
+    }
+
     if (dressed) {
       let height = wearHead ? 0.9 : 1.25;
       let width = height * aspect;
@@ -1163,6 +1182,8 @@
       }
       group.add(shadowDisc(0.62));
     } else {
+      angle = 0;
+      if (range) range.value = "0";
       let height = item.stage === "pie" ? 1.2 : 1.15;
       let width = height * aspect;
       if (width > 1.35) {
@@ -1171,8 +1192,6 @@
       }
       const hoops = /candonga|argolla|arete/.test(label);
       const donut = /\bdona\b/.test(label);
-      const cream = /brillametal|crema/.test(label);
-      const tin = /betun/.test(label);
       if (hoops || donut) {
         const gold = new THREE.MeshPhysicalMaterial({ color: 0xffd978, metalness: 0.92, roughness: 0.16, clearcoat: 0.7, clearcoatRoughness: 0.08 });
         const count = hoops ? 2 : 1;
@@ -1190,10 +1209,6 @@
           hinge.position.set(side * 0.58, 0.58 + major + pipe, 0.02);
           group.add(hinge);
         }
-      } else if (tin) {
-        group.add(lata(photo, width, height));
-      } else if (cream) {
-        group.add(crema(photo, width, height));
       } else {
         const pieza = barrido(photo, width, height);
         if (pieza) group.add(pieza);
@@ -1227,7 +1242,7 @@
 
     spin = () => {
       group.rotation.y = angle * Math.PI / 180;
-      group.rotation.x = dressed ? 0 : 0.04;
+      group.rotation.x = 0;
       group.updateMatrixWorld(true);
       renderer.render(scene, camera);
     };
