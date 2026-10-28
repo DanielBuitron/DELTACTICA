@@ -664,25 +664,222 @@
       return holder;
     }
 
+    function rowSpans(canvas) {
+      const pixels = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
+      const rows = 96;
+      const spans = [];
+      for (let row = 0; row < rows; row += 1) {
+        const y = Math.min(canvas.height - 1, Math.round(row / (rows - 1) * (canvas.height - 1)));
+        let min = canvas.width;
+        let max = -1;
+        for (let x = 0; x < canvas.width; x += 2) {
+          if (pixels[(y * canvas.width + x) * 4 + 3] > 48) {
+            if (x < min) min = x;
+            if (x > max) max = x;
+          }
+        }
+        spans.push(max < 0 ? null : { min: min / canvas.width, max: max / canvas.width, width: (max - min) / canvas.width });
+      }
+      return spans;
+    }
+
+    function longSleeves(canvas) {
+      const pixels = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
+      const y0 = Math.round(canvas.height * 0.5);
+      const y1 = Math.round(canvas.height * 0.9);
+      const hit = (x0, x1) => {
+        for (let y = y0; y < y1; y += 8) {
+          for (let x = x0; x < x1; x += 4) {
+            if (pixels[(y * canvas.width + x) * 4 + 3] > 40) return true;
+          }
+        }
+        return false;
+      };
+      const left = hit(0, canvas.width * 0.4);
+      const right = hit(canvas.width * 0.6, canvas.width);
+      return left || right;
+    }
+
+    function plastic(color) {
+      return new THREE.MeshPhysicalMaterial({
+        color,
+        roughness: 0.34,
+        metalness: 0.06,
+        clearcoat: 0.45,
+        clearcoatRoughness: 0.22,
+      });
+    }
+
+    function labeledBox(crop, width, height, depth) {
+      const baked = document.createElement("canvas");
+      baked.width = Math.max(2, crop.width);
+      baked.height = Math.max(2, crop.height);
+      const paint = baked.getContext("2d");
+      const ink = averageColor(crop);
+      paint.fillStyle = `#${ink.getHexString()}`;
+      paint.fillRect(0, 0, baked.width, baked.height);
+      paint.drawImage(crop, 0, 0);
+      const texture = new THREE.CanvasTexture(baked);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      const front = new THREE.MeshPhysicalMaterial({
+        map: texture,
+        color: 0xffffff,
+        roughness: 0.38,
+        metalness: 0.04,
+        clearcoat: 0.32,
+        clearcoatRoughness: 0.28,
+      });
+      const side = plastic(ink);
+      const back = plastic(ink.clone().multiplyScalar(0.82));
+      return new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), [side, side, side, side, front, back]);
+    }
+
+    function goods(canvas, fitWidth, fitHeight) {
+      const spans = rowSpans(canvas);
+      let split = -1;
+      let jump = 0;
+      for (let row = 12; row < spans.length - 12; row += 1) {
+        let above = 0;
+        let below = 0;
+        let aboveCount = 0;
+        let belowCount = 0;
+        for (let index = row - 8; index < row; index += 1) if (spans[index]) { above += spans[index].width; aboveCount += 1; }
+        for (let index = row; index < row + 8; index += 1) if (spans[index]) { below += spans[index].width; belowCount += 1; }
+        if (!aboveCount || !belowCount) continue;
+        const delta = below / belowCount - above / aboveCount;
+        if (delta > jump) { jump = delta; split = row; }
+      }
+      const holder = new THREE.Group();
+      let maxWidth = 0;
+      spans.forEach((span) => { if (span && span.width > maxWidth) maxWidth = span.width; });
+      let boxStart = -1;
+      let sawNarrow = false;
+      for (let row = 0; row < spans.length; row += 1) {
+        if (!spans[row]) continue;
+        if (spans[row].width < maxWidth * 0.86) sawNarrow = true;
+        else if (sawNarrow && spans[row].width > maxWidth * 0.9) { boxStart = row; break; }
+      }
+      const useSplit = boxStart > 8 && boxStart < spans.length - 8;
+      if (!useSplit) {
+        const pixels = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
+        let opaque = 0;
+        let seen = 0;
+        for (let index = 3; index < pixels.length; index += 32) {
+          seen += 1;
+          if (pixels[index] > 48) opaque += 1;
+        }
+        if (!seen || opaque / seen < 0.55) return holder;
+      }
+      const bands = useSplit
+        ? [
+          { from: 0, to: boxStart, kind: "tube" },
+          { from: boxStart, to: spans.length - 1, kind: "box" },
+        ]
+        : [{ from: 0, to: spans.length - 1, kind: "box" }];
+      bands.forEach((band) => {
+        const rows = spans.slice(band.from, band.to + 1).filter(Boolean);
+        if (rows.length < 3) return;
+        const y0 = band.from / (spans.length - 1);
+        const y1 = band.to / (spans.length - 1);
+        const x0 = Math.min(...rows.map((row) => row.min));
+        const x1 = Math.max(...rows.map((row) => row.max));
+        const crop = tight(slice(canvas, x0, y0, x1, y1));
+        const worldW = (x1 - x0) * fitWidth;
+        const worldH = (y1 - y0) * fitHeight;
+        if (band.kind === "tube" && worldW > worldH * 1.4) {
+          const radius = worldH * 0.52;
+          const ink = averageColor(crop);
+          const body = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius * 0.96, worldW, 56), plastic(ink));
+          body.rotation.z = Math.PI / 2;
+          const arc = 2.05;
+          const baked = document.createElement("canvas");
+          baked.width = Math.max(2, crop.width);
+          baked.height = Math.max(2, crop.height);
+          const paint = baked.getContext("2d");
+          paint.fillStyle = `#${ink.getHexString()}`;
+          paint.fillRect(0, 0, baked.width, baked.height);
+          paint.drawImage(crop, 0, 0);
+          const texture = new THREE.CanvasTexture(baked);
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+          const label = new THREE.Mesh(
+            new THREE.CylinderGeometry(radius * 1.012, radius * 0.97, worldW * 0.98, 56, 1, true, -0.35, arc),
+            new THREE.MeshPhysicalMaterial({ map: texture, roughness: 0.36, metalness: 0.02, clearcoat: 0.4, clearcoatRoughness: 0.24 })
+          );
+          label.rotation.z = Math.PI / 2;
+          const pack = new THREE.Group();
+          pack.add(body, label);
+          pack.position.set(((x0 + x1) / 2 - 0.5) * fitWidth, (1 - (y0 + y1) / 2) * fitHeight, radius * 0.05);
+          holder.add(pack);
+        } else {
+          const depth = Math.max(0.16, Math.min(worldW, worldH) * (useSplit ? 0.72 : 0.46));
+          const mesh = labeledBox(crop, worldW, worldH, depth);
+          mesh.position.set(((x0 + x1) / 2 - 0.5) * fitWidth, (1 - (y0 + y1) / 2) * fitHeight, 0);
+          holder.add(mesh);
+        }
+      });
+      const bounds = new THREE.Box3().setFromObject(holder);
+      holder.position.y -= bounds.min.y - 0.08;
+      return holder;
+    }
+
     const group = new THREE.Group();
     const aspect = photo.width / Math.max(1, photo.height);
     const worn = wearTop || wearLegs;
+    const pant = new THREE.MeshPhysicalMaterial({ color: 0xf3f0ea, roughness: 0.78, metalness: 0, sheen: 0.25, sheenColor: 0xf7f4ee });
+    const shoeWhite = new THREE.MeshPhysicalMaterial({ color: 0xf7f6f3, roughness: 0.42, clearcoat: 0.18, clearcoatRoughness: 0.4 });
 
     if (worn) {
-      let height = 1.4;
-      let width = height * aspect;
-      if (width > 1.45) {
-        width = 1.45;
-        height = width / aspect;
-      }
-      const depth = Math.max(0.2, Math.min(width, height) * 0.26);
-      const piece = formMesh(photo, width, height, depth);
-      if (piece) group.add(piece);
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.1, 40, 28), skin);
-      head.scale.set(0.9, 1.06, 0.84);
-      head.position.set(0, height + 0.14, 0.02);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.105, 40, 28), skin);
+      head.scale.set(0.92, 1.05, 0.88);
+      head.position.set(0, 1.54, 0.02);
       group.add(head);
-      group.add(shadowDisc(Math.max(0.42, width * 0.34)));
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.062, 0.08, 24), skin);
+      neck.position.set(0, 1.47, 0.015);
+      group.add(neck);
+      if (wearTop) {
+        const torso = tube(part(photo, 0.33, 0.67), 0.2, 0.155, 0.74, true);
+        torso.scale.z = 0.8;
+        torso.position.set(0, 1.04, 0);
+        group.add(torso);
+        const collarInk = averageColor(part(photo, 0.4, 0.6));
+        const collar = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.072, 0.095, 0.11, 32),
+          new THREE.MeshPhysicalMaterial({ color: collarInk, roughness: 0.55, sheen: 0.45, sheenColor: collarInk })
+        );
+        collar.position.set(0, 1.44, 0.02);
+        group.add(collar);
+        const sleeves = longSleeves(photo);
+        [-1, 1].forEach((side) => {
+          const crop = part(photo, side < 0 ? 0 : 0.62, side < 0 ? 0.38 : 1);
+          if (sleeves) {
+            group.add(limb(crop, 0.095, 0.05, [side * 0.02, 1.38, 0.05], [side * 0.18, 0.62, 0.08]));
+          } else {
+            group.add(limb(crop, 0.078, 0.06, [side * 0.17, 1.28, 0.05], [side * 0.3, 1.02, 0.07]));
+            const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.04, 0.28, 6, 12), skin);
+            arm.position.set(side * 0.32, 0.82, 0.06);
+            arm.rotation.z = side * 0.12;
+            group.add(arm);
+            const hand = new THREE.Mesh(new THREE.SphereGeometry(0.04, 16, 12), skin);
+            hand.position.set(side * 0.34, 0.64, 0.08);
+            group.add(hand);
+          }
+        });
+      } else {
+        const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.42, 8, 16), pant);
+        torso.position.set(0, 1.1, 0);
+        group.add(torso);
+      }
+      [-1, 1].forEach((side) => {
+        const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.072, 0.5, 8, 16), pant);
+        leg.position.set(side * 0.09, 0.36, 0);
+        group.add(leg);
+        const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.18), shoeWhite);
+        shoe.position.set(side * 0.09, 0.045, 0.03);
+        group.add(shoe);
+      });
+      group.add(shadowDisc(0.42));
     } else {
       let height = item.stage === "pie" ? 1.15 : 1.02;
       let width = height * aspect;
@@ -691,8 +888,12 @@
         height = width / aspect;
       }
       const depth = item.stage === "pie" ? Math.min(0.48, Math.max(width, height) * 0.28) : Math.max(0.16, Math.min(width, height) * 0.32);
-      const piece = formMesh(photo, width, height, depth);
-      if (piece) group.add(piece);
+      const piece = goods(photo, width, height);
+      if (piece && piece.children.length) group.add(piece);
+      else {
+        const fallback = formMesh(photo, width, height, depth);
+        if (fallback) group.add(fallback);
+      }
       const reach = Math.min(0.72, Math.max(0.36, width * 0.42));
       const plinth = new THREE.Mesh(
         new THREE.CylinderGeometry(reach * 0.78, reach, 0.055, 64),
@@ -722,7 +923,7 @@
 
     spin = () => {
       group.rotation.y = angle * Math.PI / 180;
-      group.rotation.x = worn ? 0.03 : 0.08;
+      group.rotation.x = worn ? 0.02 : 0.22;
       group.updateMatrixWorld(true);
       renderer.render(scene, camera);
     };
