@@ -1002,17 +1002,7 @@
       const boina = /boina|casco/.test(label);
       const bolsa = /morral|bolso|mochila|camelback|tula|canguro|detodito|peluche|silla|iglu|kit de limpieza|forro cantimplora/.test(label);
       const plano = /correa|cinturon|reata|eslinga|cintela|velcro|porta fusil|corbata|panoleta|shemag|toalla|poncho|sabana|hamaca|placa|gafa|gasfa|navaja|cuchill|karambit|mona|torniquete|estera|toldillo|mimetismo|plastico|guindo|llavero|lapicero|tarjetero|portacarnet|insignia/.test(label);
-      let factor = 0.18;
-      let espejo = false;
-      if (redondo) { factor = /cepillo/.test(label) ? 0.42 : 0.9; espejo = true; }
-      else if (boina) { factor = 0.76; }
-      else if (visera) { factor = 0.66; }
-      else if (bolsa) { factor = 0.4; }
-      else if (plano || cordon) { factor = 0.05; espejo = true; }
-      else if (/guante|chapuza|funda|porta |piernera|arnes|grip|reloj|esposa/.test(label)) factor = 0.14;
-
-      const filas = 84;
-      const pasos = 40;
+      const filas = 140;
       const pixels = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
       const W = canvas.width;
       const perfil = [];
@@ -1050,66 +1040,100 @@
 
       const orden = perfil.map((punto) => punto.half).sort((a, b) => a - b);
       const mediana = orden[Math.floor(orden.length / 2)] || 0.08;
-      const proporcion = alto / Math.max(0.001, ancho);
-      const topeGrosor = proporcion < 0.9 ? proporcion * 0.42 : mediana * 1.08;
+      const menor = Math.min(ancho, alto);
+      const anchoReal = Math.min(ancho, mediana * 2 * ancho);
+      let grosor = menor * 0.08;
+      if (redondo) grosor = (/cepillo/.test(label) ? 0.34 : 0.86) * anchoReal;
+      else if (boina) grosor = menor * 0.34;
+      else if (visera) grosor = menor * 0.16;
+      else if (bolsa) grosor = menor * 0.2;
+      else if (plano || cordon) grosor = menor * 0.028;
+      else if (/guante|chapuza|funda|porta |piernera|arnes|grip|reloj|esposa/.test(label)) grosor = menor * 0.07;
       const mapa = solidMap(canvas);
-      const material = new THREE.MeshBasicMaterial({ map: mapa });
+      const foto = new THREE.MeshBasicMaterial({ map: mapa });
+      const canto = new THREE.MeshBasicMaterial({ vertexColors: true });
       const posiciones = [];
       const uvs = [];
-      const indices = [];
-      const indice = (fila, paso) => fila * (pasos + 1) + paso;
+      const colores = [];
+      const frente = [];
+      const cuerpo = [];
+      const vertice = (i, k) => i * 4 + k;
+      const tintaDeFila = [];
+      const leer = (punto, y, lado, dentro) => {
+        const x = Math.max(0, Math.min(W - 1, Math.round((punto.cx + lado * punto.half * dentro) * (W - 1))));
+        const p = (y * W + x) * 4;
+        return pixels[p + 3] > 30 ? [pixels[p] / 255, pixels[p + 1] / 255, pixels[p + 2] / 255] : [tone.r, tone.g, tone.b];
+      };
+      for (let i = 0; i < filas; i += 1) {
+        const t = i / (filas - 1);
+        const y = Math.min(canvas.height - 1, Math.round(t * (canvas.height - 1)));
+        const punto = perfil[i];
+        let color = leer(punto, y, -1, 0.98);
+        for (let dentro = 0.98; dentro >= 0.5; dentro -= 0.04) {
+          const prueba = leer(punto, y, -1, dentro);
+          const luz = prueba[0] + prueba[1] + prueba[2];
+          if (luz > 0.45 && luz < 2.55) { color = prueba; break; }
+        }
+        tintaDeFila.push(color);
+      }
+      for (let pass = 0; pass < 8; pass += 1) {
+        const copia = tintaDeFila.map((color) => color.slice());
+        for (let i = 1; i < filas - 1; i += 1) {
+          tintaDeFila[i] = [0, 1, 2].map((canal) => (copia[i - 1][canal] + copia[i][canal] * 2 + copia[i + 1][canal]) / 4);
+        }
+      }
       for (let i = 0; i < filas; i += 1) {
         const t = i / (filas - 1);
         const y = (0.5 - t) * alto;
         const punto = perfil[i];
-        let profundo = factor;
-        if (visera && t > 0.54) {
-          const mezcla = Math.min(1, (t - 0.54) / 0.14);
-          profundo = factor * (1 - mezcla) + factor * 0.08 * mezcla;
-        }
-        for (let s = 0; s <= pasos; s += 1) {
-          const angulo = s / pasos * Math.PI * 2;
-          const seno = Math.sin(angulo);
-          const cara = Math.cos(angulo);
-          const radioX = punto.half * ancho;
-          const baseZ = redondo ? Math.min(punto.half, topeGrosor) * (/cepillo/.test(label) ? 0.5 : 1) : punto.half * profundo;
-          const deFoto = cara > 0.5 || (espejo && cara < -0.5);
-          const u = deFoto
-            ? punto.cx + seno * punto.half
-            : (visera || boina || bolsa ? punto.cx + Math.sign(seno || 1) * punto.half * 0.92 : punto.cx + seno * Math.min(punto.half * 0.35, 0.06));
-          posiciones.push((punto.cx - 0.5) * ancho + seno * radioX, y, cara * baseZ * ancho);
-          uvs.push(u, 1 - t);
-        }
+        const uL = punto.cx - punto.half;
+        const uR = punto.cx + punto.half;
+        const xL = (uL - 0.5) * ancho;
+        const xR = (uR - 0.5) * ancho;
+        const v = 1 - t;
+        const z = grosor / 2;
+        const rgb = tintaDeFila[i];
+        [[xL, z, uL], [xR, z, uR], [xL, -z, uL], [xR, -z, uR]].forEach((dato, k) => {
+          posiciones.push(dato[0], y, dato[1]);
+          uvs.push(dato[2], v);
+          const claro = rgb;
+          colores.push(claro[0], claro[1], claro[2]);
+        });
       }
       for (let i = 0; i < filas - 1; i += 1) {
-        for (let s = 0; s < pasos; s += 1) {
-          const a = indice(i, s);
-          const b = indice(i, s + 1);
-          const c = indice(i + 1, s + 1);
-          const d = indice(i + 1, s);
-          indices.push(a, d, b, b, d, c);
-        }
+        const a = vertice(i, 0);
+        const b = vertice(i, 1);
+        const c = vertice(i + 1, 1);
+        const d = vertice(i + 1, 0);
+        frente.push(a, d, b, b, d, c);
+        const e = vertice(i, 2);
+        const f = vertice(i, 3);
+        const g = vertice(i + 1, 3);
+        const h = vertice(i + 1, 2);
+        cuerpo.push(e, f, h, f, g, h);
+        cuerpo.push(a, e, d, e, h, d);
+        cuerpo.push(b, c, f, f, c, g);
       }
       const tapa = (fila, arriba) => {
-        const centro = posiciones.length / 3;
-        const y = posiciones[indice(fila, 0) * 3 + 1];
-        const punto = perfil[fila];
-        posiciones.push((punto.cx - 0.5) * ancho, y, 0);
-        uvs.push(punto.cx, arriba ? 1 : 0);
-        for (let s = 0; s < pasos; s += 1) {
-          const a = indice(fila, s);
-          const b = indice(fila, s + 1);
-          indices.push(centro, arriba ? b : a, arriba ? a : b);
-        }
+        const a = vertice(fila, 0);
+        const b = vertice(fila, 1);
+        const e = vertice(fila, 2);
+        const f = vertice(fila, 3);
+        if (arriba) cuerpo.push(a, b, f, a, f, e);
+        else cuerpo.push(a, e, f, a, f, b);
       };
       tapa(0, true);
       tapa(filas - 1, false);
       const geometria = new THREE.BufferGeometry();
       geometria.setAttribute("position", new THREE.Float32BufferAttribute(posiciones, 3));
       geometria.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-      geometria.setIndex(indices);
+      geometria.setAttribute("color", new THREE.Float32BufferAttribute(colores, 3));
+      geometria.setIndex(frente.concat(cuerpo));
+      geometria.clearGroups();
+      geometria.addGroup(0, frente.length, 0);
+      geometria.addGroup(frente.length, cuerpo.length, 1);
       geometria.computeVertexNormals();
-      const malla = new THREE.Mesh(geometria, material);
+      const malla = new THREE.Mesh(geometria, [foto, canto]);
       malla.position.y = alto / 2 + 0.08;
       return malla;
     }
@@ -1187,7 +1211,7 @@
     scene.add(group);
     const sphere = new THREE.Box3().setFromObject(group).getBoundingSphere(new THREE.Sphere());
     group.position.sub(sphere.center);
-    camera.position.set(0, 0.02, sphere.radius / Math.tan(THREE.MathUtils.degToRad(15)) * 0.96);
+    camera.position.set(0, 0.02, sphere.radius / Math.tan(THREE.MathUtils.degToRad(15)) * (dressed ? 0.96 : 1.22));
     camera.lookAt(0, 0, 0);
 
     const resize = () => {
@@ -1203,7 +1227,7 @@
 
     spin = () => {
       group.rotation.y = angle * Math.PI / 180;
-      group.rotation.x = dressed ? 0 : 0.12;
+      group.rotation.x = dressed ? 0 : 0.04;
       group.updateMatrixWorld(true);
       renderer.render(scene, camera);
     };
