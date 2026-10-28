@@ -1018,9 +1018,22 @@
           if (opacoEn(x, y)) { x += 1; continue; }
           const inicio = x;
           while (x < anchoImg && !opacoEn(x, y)) x += 1;
-          if (inicio > 0 && x < anchoImg && x - inicio <= 8) {
+          if (inicio > 0 && x < anchoImg && x - inicio <= 14) {
             const origen = (y * anchoImg + inicio - 1) * 4;
             for (let k = inicio; k < x; k += 1) copiar(origen, (y * anchoImg + k) * 4);
+          } else if (inicio > 0 && x < anchoImg && x - inicio <= 70) {
+            let sellada = true;
+            for (let k = inicio; k < x; k += 2) {
+              let tapa = false;
+              for (let d = 1; d <= 3 && !tapa; d += 1) {
+                if (y - d >= 0 && y + d < altoImg && opacoEn(k, y - d) && opacoEn(k, y + d)) tapa = true;
+              }
+              if (!tapa) { sellada = false; break; }
+            }
+            if (sellada) {
+              const origen = (y * anchoImg + inicio - 1) * 4;
+              for (let k = inicio; k < x; k += 1) copiar(origen, (y * anchoImg + k) * 4);
+            }
           }
         }
       }
@@ -1030,7 +1043,7 @@
           if (opacoEn(x, y)) { y += 1; continue; }
           const inicio = y;
           while (y < altoImg && !opacoEn(x, y)) y += 1;
-          if (inicio > 0 && y < altoImg && y - inicio <= 6) {
+          if (inicio > 0 && y < altoImg && y - inicio <= 12) {
             const origen = ((inicio - 1) * anchoImg + x) * 4;
             for (let k = inicio; k < y; k += 1) copiar(origen, (k * anchoImg + x) * 4);
           }
@@ -1059,19 +1072,49 @@
         cortes.push(segs);
       }
       if (!cortes.some((fila) => fila.length)) return null;
-      const grosor = Math.min(ancho, alto) * 0.045;
+      const tintaFila = cortes.map((segs, i) => {
+        const y = Math.min(H - 1, Math.round((i + 0.5) / filas * (H - 1)));
+        const leer = (x) => {
+          const p = (y * W + Math.max(0, Math.min(W - 1, x))) * 4;
+          return [pixels[p] / 255, pixels[p + 1] / 255, pixels[p + 2] / 255];
+        };
+        const tinta = (x, dir) => {
+          let elegido = leer(x);
+          for (let s = 0; s < 16; s += 1) {
+            const color = leer(x + dir * s);
+            elegido = color;
+            if (color[0] + color[1] + color[2] < 2.15) break;
+          }
+          return elegido;
+        };
+        if (!segs.length) return { izq: [tone.r, tone.g, tone.b], der: [tone.r, tone.g, tone.b] };
+        return {
+          izq: tinta(segs[0][0], 1),
+          der: tinta(segs[segs.length - 1][1], -1)
+        };
+      });
+      for (let pass = 0; pass < 6; pass += 1) {
+        const copia = tintaFila.map((fila) => ({ izq: fila.izq.slice(), der: fila.der.slice() }));
+        for (let i = 1; i < filas - 1; i += 1) {
+          tintaFila[i].izq = [0, 1, 2].map((c) => (copia[i - 1].izq[c] + copia[i].izq[c] * 2 + copia[i + 1].izq[c]) / 4);
+          tintaFila[i].der = [0, 1, 2].map((c) => (copia[i - 1].der[c] + copia[i].der[c] * 2 + copia[i + 1].der[c]) / 4);
+        }
+      }
+      const grosor = Math.min(ancho, alto) * 0.036;
       const mapa = new THREE.CanvasTexture(canvas);
       mapa.colorSpace = THREE.SRGBColorSpace;
       mapa.anisotropy = renderer.capabilities.getMaxAnisotropy();
       const foto = new THREE.MeshBasicMaterial({ map: mapa, transparent: true, alphaTest: 0.45, side: THREE.FrontSide });
-      const canto = new THREE.MeshBasicMaterial({ color: tone });
+      const canto = new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true });
       const posiciones = [];
       const uvs = [];
+      const colores = [];
       const indices = [];
       const bordes = [];
-      const poner = (x, y, z, u, v) => {
+      const poner = (x, y, z, u, v, rgb) => {
         posiciones.push(x, y, z);
         uvs.push(u, v);
+        colores.push(rgb[0], rgb[1], rgb[2]);
         return posiciones.length / 3 - 1;
       };
       const z = grosor / 2;
@@ -1080,20 +1123,22 @@
         const y1 = (0.5 - (i + 1) / filas) * alto;
         const v0 = 1 - i / filas;
         const v1 = 1 - (i + 1) / filas;
+        const rgb = tintaFila[i];
+        const rgbAbajo = tintaFila[Math.min(filas - 1, i + 1)];
         cortes[i].forEach(([a, b]) => {
           const u0 = a / Math.max(1, W - 1);
           const u1 = b / Math.max(1, W - 1);
           const x0 = (u0 - 0.5) * ancho;
           const x1 = (u1 - 0.5) * ancho;
-          const p0 = poner(x0, y0, z, u0, v0);
-          const p1 = poner(x1, y0, z, u1, v0);
-          const p2 = poner(x1, y1, z, u1, v1);
-          const p3 = poner(x0, y1, z, u0, v1);
+          const p0 = poner(x0, y0, z, u0, v0, rgb.izq);
+          const p1 = poner(x1, y0, z, u1, v0, rgb.der);
+          const p2 = poner(x1, y1, z, u1, v1, rgbAbajo.der);
+          const p3 = poner(x0, y1, z, u0, v1, rgbAbajo.izq);
           indices.push(p0, p3, p1, p1, p3, p2);
-          const q0 = poner(x0, y0, -z, u1, v0);
-          const q1 = poner(x1, y0, -z, u0, v0);
-          const q2 = poner(x1, y1, -z, u0, v1);
-          const q3 = poner(x0, y1, -z, u1, v1);
+          const q0 = poner(x0, y0, -z, u1, v0, rgb.izq);
+          const q1 = poner(x1, y0, -z, u0, v0, rgb.der);
+          const q2 = poner(x1, y1, -z, u0, v1, rgbAbajo.der);
+          const q3 = poner(x0, y1, -z, u1, v1, rgbAbajo.izq);
           indices.push(q0, q1, q3, q1, q2, q3);
           bordes.push(p0, p3, q0, p3, q3, q0);
           bordes.push(q1, q2, p1, q2, p2, p1);
@@ -1103,6 +1148,7 @@
       const geometria = new THREE.BufferGeometry();
       geometria.setAttribute("position", new THREE.Float32BufferAttribute(posiciones, 3));
       geometria.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+      geometria.setAttribute("color", new THREE.Float32BufferAttribute(colores, 3));
       geometria.setIndex(indices.concat(bordes));
       geometria.clearGroups();
       geometria.addGroup(0, indices.length, 0);
@@ -1195,17 +1241,84 @@
       const lienzo = document.createElement("canvas");
       lienzo.width = anchoImg * 2;
       lienzo.height = altoImg;
-      const pincel = lienzo.getContext("2d");
-      const colorTapa = elegir(Math.round(altoImg * 0.06));
-      const colorCuerpo = elegir(Math.round(altoImg * 0.62));
-      const pintar = (rgb) => `rgb(${Math.round(rgb[0] * 255)},${Math.round(rgb[1] * 255)},${Math.round(rgb[2] * 255)})`;
-      pincel.fillStyle = pintar(colorCuerpo);
-      pincel.fillRect(0, 0, lienzo.width, lienzo.height);
-      pincel.fillStyle = pintar(colorTapa);
-      pincel.fillRect(0, 0, lienzo.width, Math.round(altoImg * 0.2));
-      pincel.drawImage(canvas, anchoImg * 0.5, 0, anchoImg, altoImg);
-      pincel.drawImage(canvas, 0, 0, anchoImg / 2, altoImg, lienzo.width - anchoImg / 2, 0, anchoImg / 2, altoImg);
-      pincel.drawImage(canvas, anchoImg / 2, 0, anchoImg / 2, altoImg, 0, 0, anchoImg / 2, altoImg);
+      const pincel = lienzo.getContext("2d", { willReadFrequently: true });
+      const colorFila = (y) => {
+        const fila = Math.max(0, Math.min(altoImg - 1, y));
+        const a = colorDe(fila, -1);
+        const b = colorDe(fila, 1);
+        return [(a[0] + b[0]) * 0.5, (a[1] + b[1]) * 0.5, (a[2] + b[2]) * 0.5];
+      };
+      const muro = pincel.createImageData(lienzo.width, lienzo.height);
+      const md = muro.data;
+      for (let y = 0; y < altoImg; y += 1) {
+        const c = colorFila(y);
+        const r = Math.round(c[0] * 255);
+        const g = Math.round(c[1] * 255);
+        const b = Math.round(c[2] * 255);
+        for (let x = 0; x < lienzo.width; x += 1) {
+          const i = (y * lienzo.width + x) * 4;
+          md[i] = r;
+          md[i + 1] = g;
+          md[i + 2] = b;
+          md[i + 3] = 255;
+        }
+      }
+      pincel.putImageData(muro, 0, 0);
+      const etiqueta = (anchoDest, plumaParte) => {
+        const tmp = document.createElement("canvas");
+        tmp.width = Math.max(2, Math.round(anchoDest));
+        tmp.height = altoImg;
+        const g = tmp.getContext("2d", { willReadFrequently: true });
+        g.drawImage(canvas, 0, 0, anchoImg, altoImg, 0, 0, tmp.width, tmp.height);
+        const img = g.getImageData(0, 0, tmp.width, tmp.height);
+        const datos = img.data;
+        const pluma = Math.max(2, Math.round(tmp.width * plumaParte));
+        for (let y = 0; y < tmp.height; y += 1) {
+          const pared = colorFila(y);
+          for (let x = 0; x < pluma; x += 1) {
+            const fuerza = x / pluma;
+            const suave = fuerza * fuerza * (3 - 2 * fuerza);
+            [x, tmp.width - 1 - x].forEach((col) => {
+              const i = (y * tmp.width + col) * 4;
+              datos[i] = datos[i] * suave + pared[0] * 255 * (1 - suave);
+              datos[i + 1] = datos[i + 1] * suave + pared[1] * 255 * (1 - suave);
+              datos[i + 2] = datos[i + 2] * suave + pared[2] * 255 * (1 - suave);
+              datos[i + 3] = datos[i + 3] * suave + 255 * (1 - suave);
+            });
+          }
+        }
+        g.putImageData(img, 0, 0);
+        return tmp;
+      };
+      const frente = etiqueta(Math.round(lienzo.width * 0.5), 0.11);
+      pincel.drawImage(frente, (lienzo.width - frente.width) / 2, 0);
+      const atras = etiqueta(Math.round(lienzo.width * 0.5), 0.08);
+      const mitad = Math.round(atras.width / 2);
+      pincel.drawImage(atras, 0, 0, mitad, altoImg, lienzo.width - mitad, 0, mitad, altoImg);
+      pincel.drawImage(atras, mitad, 0, atras.width - mitad, altoImg, 0, 0, atras.width - mitad, altoImg);
+      const union = pincel.getImageData(0, 0, lienzo.width, lienzo.height);
+      const ud = union.data;
+      const banda = Math.max(6, Math.round(lienzo.width * 0.07));
+      const centros = [Math.round(lienzo.width * 0.25), Math.round(lienzo.width * 0.75)];
+      for (let y = 0; y < lienzo.height; y += 1) {
+        const c = colorFila(y);
+        const r = Math.round(c[0] * 255);
+        const gch = Math.round(c[1] * 255);
+        const b = Math.round(c[2] * 255);
+        centros.forEach((cx) => {
+          for (let dx = -banda; dx <= banda; dx += 1) {
+            const dist = Math.abs(dx) / banda;
+            const suave = dist < 0.42 ? 0 : ((dist - 0.42) / 0.58);
+            const mezcla = suave * suave * (3 - 2 * suave);
+            const col = (cx + dx + lienzo.width) % lienzo.width;
+            const i = (y * lienzo.width + col) * 4;
+            ud[i] = ud[i] * mezcla + r * (1 - mezcla);
+            ud[i + 1] = ud[i + 1] * mezcla + gch * (1 - mezcla);
+            ud[i + 2] = ud[i + 2] * mezcla + b * (1 - mezcla);
+          }
+        });
+      }
+      pincel.putImageData(union, 0, 0);
       const mapa = new THREE.CanvasTexture(lienzo);
       mapa.colorSpace = THREE.SRGBColorSpace;
       mapa.wrapS = THREE.RepeatWrapping;
