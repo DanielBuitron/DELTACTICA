@@ -2828,3 +2828,257 @@ select option {
     align-items: flex-start;
   }
 }
+
+.catalog-tools .filter {
+  letter-spacing: 0.04em;
+  font-size: 13px;
+  text-transform: none;
+}
+
+.stage-bar {
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+}
+
+.facts-grid.line-board {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.line-board .line-card h2 {
+  font-size: 22px;
+}
+
+.product-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: 28px;
+  align-items: center;
+}
+
+.giro {
+  display: grid;
+  gap: 12px;
+}
+
+.giro-stage {
+  position: relative;
+  height: 560px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(255, 255, 255, 0.08), transparent 42%),
+    #070708;
+  perspective: 1400px;
+  touch-action: none;
+  cursor: grab;
+}
+
+.giro-stage.is-drag {
+  cursor: grabbing;
+}
+
+.giro-world {
+  position: absolute;
+  inset: 36px 24px 78px;
+  display: grid;
+  place-items: center;
+  transform-style: preserve-3d;
+}
+
+.giro-floor {
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  bottom: 42px;
+  height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(197, 200, 204, 0.28), transparent 72%);
+  pointer-events: none;
+}
+
+.mann,
+.horma,
+.pieza {
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.mann {
+  width: min(320px, 72vw);
+  height: 460px;
+}
+
+.mann-head,
+.horma-head {
+  width: 62px;
+  height: 74px;
+  margin: 0 auto;
+  border-radius: 48% 48% 42% 42%;
+  background: radial-gradient(circle at 32% 28%, #4a4e55, #141416 68%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+.mann-head {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  z-index: 3;
+  margin-left: -31px;
+  transform: translateZ(34px);
+}
+
+.mann-neck {
+  position: absolute;
+  top: 78px;
+  left: 50%;
+  z-index: 2;
+  width: 28px;
+  height: 36px;
+  margin-left: -14px;
+  border-radius: 8px;
+  background: linear-gradient(#3a3e44, #1a1c20);
+  transform: translateZ(28px);
+}
+
+.mann.is-lower .mann-head,
+.mann.is-lower .mann-neck {
+  display: none;
+}
+
+.mann-body,
+.horma,
+.pieza {
+  position: relative;
+  height: 370px;
+  transform-style: preserve-3d;
+}
+
+.horma,
+.pieza {
+  width: min(340px, 78vw);
+  height: 420px;
+}
+
+.mann-cloth,
+.mann-back,
+.horma-piece,
+.horma-back,
+.pieza-front,
+.pieza-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+.mann-cloth,
+.horma-piece,
+.pieza-front {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: translateZ(22px);
+  filter: drop-shadow(0 18px 18px rgba(0, 0, 0, 0.45));
+}
+
+.mann-back,
+.horma-back,
+.pieza-back {
+  transform: rotateY(180deg) translateZ(22px);
+  background:
+    radial-gradient(circle at 50% 16%, rgba(255, 255, 255, 0.16), transparent 26%),
+    linear-gradient(180deg, #32363c, #121316);
+  border-radius: 80px 80px 28px 28px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.horma-back {
+  border-radius: 50%;
+  inset: 70px 90px 40px;
+}
+
+.pieza-back {
+  border-radius: 18px;
+  inset: 40px 50px;
+}
+
+.pieza-disc {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  width: 230px;
+  height: 230px;
+  margin-left: -115px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent 58%),
+    #1b1d21;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  transform: rotateX(78deg);
+}
+
+.plate-missing,
+.giro-missing {
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  padding: 18px;
+  color: #9aa0a6;
+  text-align: center;
+}
+
+.plate-missing span,
+.giro-missing p {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.giro-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.giro-controls input[type="range"] {
+  flex: 1;
+  accent-color: #c5c8cc;
+}
+
+.giro-controls button {
+  min-height: 40px;
+}
+
+.related-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.related-row a {
+  display: grid;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.related-row img {
+  width: 100%;
+  height: 92px;
+  object-fit: contain;
+  background: #070708;
+  border: 1px solid var(--line);
+}
+
+@media (max-width: 900px) {
+  .product-layout,
+  .related-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .giro-stage {
+    height: 460px;
+  }
+}

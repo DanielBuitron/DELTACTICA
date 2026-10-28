@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/styles.css?v=busca3" />
+    <link rel="stylesheet" href="css/styles.css?v=real3" />
     <script>document.documentElement.classList.add("js");</script>
   </head>
   <body class="" data-wa="573227043082">
@@ -41,166 +41,14 @@
           <header class="page-hero">
             <p class="eyebrow">Pantalla de catálogo</p>
             <h1>Catálogo Deltactica</h1>
-            <p class="lead">Doce referencias propias. Campo, faena, abrigo, calzado y equipo. Abra la ficha o añada la referencia al carrito.</p>
+            <p class="lead">Las referencias del catálogo, separadas por categoría. Abra una pieza para girarla en 360 y añadirla al carrito. El precio lo confirma el asesor.</p>
           </header>
           <div class="catalog-tools">
             <p class="catalog-label">Línea</p>
-            <div class="filters" role="group" aria-label="Filtrar catálogo">
-              <button class="filter is-active" type="button" data-filter="todos" aria-pressed="true">Todas <b>12</b></button>
-              <button class="filter" type="button" data-filter="campo" aria-pressed="false">Campo <b>2</b></button>
-              <button class="filter" type="button" data-filter="faena" aria-pressed="false">Faena <b>2</b></button>
-              <button class="filter" type="button" data-filter="abrigo" aria-pressed="false">Abrigo <b>3</b></button>
-              <button class="filter" type="button" data-filter="calzado" aria-pressed="false">Calzado <b>1</b></button>
-              <button class="filter" type="button" data-filter="equipo" aria-pressed="false">Equipo <b>4</b></button>
-            </div>
-            <p class="count" data-count>12 referencias</p>
+            <div class="filters" role="group" aria-label="Filtrar catálogo" data-catalog-filters></div>
+            <p class="count" data-count></p>
           </div>
-          
-          <div class="grid">
-            <article class="card" data-cat="campo">
-              <div class="plate plate-photo"><img src="img/productos/dt-01.jpg" alt="Línea campo"></div>
-              <div class="card-body">
-                <p class="card-kicker"><span>DT-01</span><span>Campo</span></p>
-              
-                <h3>Conjunto de campaña</h3>
-                <p>Conjunto de camisa y pantalón para jornada de campo. El corte deja mover el hombro y la rodilla, y el refuerzo va donde la prenda roza.</p>
-                <ul class="tags"><li>Conjunto</li><li>Ripstop</li><li>Refuerzo</li></ul>
-                <p class="price" data-price="DT-01"></p><a class="consult" href="fichas/dt-01.html">Abrir ficha</a><button class="cart-add" type="button" data-add="DT-01">Añadir al carrito</button>
-                <a class="consult" data-wa-text="Hola, quiero información de la referencia DT-01, Conjunto de campaña.">Consultar referencia</a>
-              </div>
-            </article>
-            <article class="card" data-cat="faena">
-              <div class="plate plate-photo"><img src="img/productos/dt-02.jpg" alt="Línea faena"></div>
-              <div class="card-body">
-                <p class="card-kicker"><span>DT-02</span><span>Faena</span></p>
-              
-                <h3>Camisola de faena</h3>
-                <p>Camisola de manga larga para la faena diaria. Ventila en las zonas de esfuerzo y deja sitio para nombre o identificación.</p>
-                <ul class="tags"><li>Manga larga</li><li>Identificación</li></ul>
-                <p class="price" data-price="DT-02"></p><a class="consult" href="fichas/dt-02.html">Abrir ficha</a><button class="cart-add" type="button" data-add="DT-02">Añadir al carrito</button>
-                <a class="consult" data-wa-text="Hola, quiero información de la referencia DT-02, Camisola de faena.">Consultar referencia</a>
-              </div>
-            </article>
-            <article class="card" data-cat="faena">
-              <div class="plate plate-photo"><img src="img/productos/dt-03.jpg" alt="Línea faena"></div>
-              <div class="card-body">
-                <p class="card-kicker"><span>DT-03</span><span>Faena</span></p>
-              
-                <h3>Pantalón de carga</h3>
-                <p>Pantalón con tiro pensado para caminar, flexionar y permanecer de pie. Los bolsillos de carga no estorban el paso.</p>
-                <ul class="tags"><li>Cargo</li><li>Rodilla</li></ul>
-                <p class="price" data-price="DT-03"></p><a class="consult" href="fichas/dt-03.html">Abrir ficha</a><button class="cart-add" type="button" data-add="DT-03">Añadir al carrito</button>
-                <a class="consult" data-wa-text="Hola, quiero información de la referencia DT-03, Pantalón de carga.">Consultar referencia</a>
-              </div>
-            </article>
-            <article class="card" data-cat="abrigo">
-              <div class="plate plate-photo"><img src="img/productos/dt-04.jpg" alt="Línea abrigo"></div>
-              <div class="card-body">
-                <p class="card-kicker"><span>DT-04</span><span>Abrigo</span></p>
-              
-                <h3>Chaqueta cortaviento</h3>
-                <p>Chaqueta ligera que corta el viento sin perder la línea del conjunto. Se usa sobre la camisola cuando cambia el clima.</p>
-                <ul class="tags"><li>Cortaviento</li><li>Capa exterior</li></ul>
-                <p class="price" data-price="DT-04"></p><a class="consult" href="fichas/dt-04.html">Abrir ficha</a><button class="cart-add" type="button" data-add="DT-04">Añadir al carrito</button>
-                <a class="consult" data-wa-text="Hola, quiero información de la referencia DT-04, Chaqueta cortaviento.">Consultar referencia</a>
-              </div>
-            </article>
-            <article class="card" data-cat="abrigo">
-              <div class="plate plate-photo"><img src="img/productos/dt-05.jpg" alt="Línea abrigo"></div>
-              <div class="card-body">
-                <p class="card-kicker"><span>DT-05</span><span>Abrigo</span></p>
-              
-                <h3>Capa de lluvia</h3>
-                <p>Capa para lluvia continua. La capucha se regula sin tapar la vista y el cierre queda cubierto.</p>
-                <ul class="tags"><li>Lluvia</li><li>Capucha</li></ul>
-                <p class="price" data-price="DT-05"></p><a class="consult" href="fichas/dt-05.html">Abrir ficha</a><button class="cart-add" type="button" data-add="DT-05">Añadir al carrito</button>
-                <a class="consult" data-wa-text="Hola, quiero información de la referencia DT-05, Capa de lluvia.">Consultar referencia</a>
-              </div>
-            </article>
-            <article class="card" data-cat="abrigo">
-              <div class="plate plate-photo"><img src="img/productos/dt-06.jpg" alt="Línea abrigo"></div>
-              <div class="card-body">
-                <p class="card-kicker"><span>DT-06</span><span>Abrigo</span></p>
-              
-                <h3>Polar de abrigo</h3>
-                <p>Polar de capa intermedia. Abriga sin volumen y entra debajo de la chaqueta cortaviento.</p>
-                <ul class="tags"><li>Frío</li><li>Capa media</li></ul>
-                <p class="price" data-price="DT-06"></p><a class="consult" href="fichas/dt-06.html">Abrir ficha</a><button class="cart-add" type="button" data-add="DT-06">Añadir al carrito</button>
-                <a class="consult" data-wa-text="Hola, quiero información de la referencia DT-06, Polar de abrigo.">Consultar referencia</a>
-              </div>
-            </article>
-            <article class="card" data-cat="calzado">
-              <div class="plate plate-photo"><img src="img/productos/dt-07.jpg" alt="Línea calzado"></div>
-              <div class="card-body">
-                <p class="card-kicker"><span>DT-07</span><span>Calzado</span></p>
-              
-                <h3>Botín de marcha</h3>
-                <p>Botín para marcha y jornada completa. Sostiene el tobillo y la suela agarra en tierra, piedra y piso húmedo.</p>
-                <ul class="tags"><li>Tobillo</li><li>Agarre</li></ul>
-                <p class="price" data-price="DT-07"></p><a class="consult" href="fichas/dt-07.html">Abrir ficha</a><button class="cart-add" type="button" data-add="DT-07">Añadir al carrito</button>
-                <a class="consult" data-wa-text="Hola, quiero información de la referencia DT-07, Botín de marcha.">Consultar referencia</a>
-              </div>
-            </article>
-            <article class="card" data-cat="equipo">
-              <div class="plate plate-photo"><img src="img/productos/dt-08.jpg" alt="Línea equipo"></div>
-              <div class="card-body">
-                <p class="card-kicker"><span>DT-08</span><span>Equipo</span></p>
-              
-                <h3>Guante de faena</h3>
-                <p>Guante para manipular equipo, cuerda y carga. La palma resiste el roce y el puño no se sale al trabajar.</p>
-                <ul class="tags"><li>Palma</li><li>Puño</li></ul>
-                <p class="price" data-price="DT-08"></p><a class="consult" href="fichas/dt-08.html">Abrir ficha</a><button class="cart-add" type="button" data-add="DT-08">Añadir al carrito</button>
-                <a class="consult" data-wa-text="Hola, quiero información de la referencia DT-08, Guante de faena.">Consultar referencia</a>
-              </div>
-            </article>
-            <article class="card" data-cat="equipo">
-              <div class="plate plate-photo"><img src="img/productos/dt-09.jpg" alt="Línea equipo"></div>
-              <div class="card-body">
-                <p class="card-kicker"><span>DT-09</span><span>Equipo</span></p>
-              
-                <h3>Morral de campaña</h3>
-                <p>Morral de 35 litros para equipo personal de campaña. La espalda va acolchada y las correas comprimen la carga.</p>
-                <ul class="tags"><li>35 L</li><li>Espalda</li></ul>
-                <p class="price" data-price="DT-09"></p><a class="consult" href="fichas/dt-09.html">Abrir ficha</a><button class="cart-add" type="button" data-add="DT-09">Añadir al carrito</button>
-                <a class="consult" data-wa-text="Hola, quiero información de la referencia DT-09, Morral de campaña.">Consultar referencia</a>
-              </div>
-            </article>
-            <article class="card" data-cat="equipo">
-              <div class="plate plate-photo"><img src="img/productos/dt-10.jpg" alt="Línea equipo"></div>
-              <div class="card-body">
-                <p class="card-kicker"><span>DT-10</span><span>Equipo</span></p>
-              
-                <h3>Cinturón de equipo</h3>
-                <p>Cinturón para llevar equipo de faena pegado al cuerpo. La hebilla no se abre sola y las anillas reciben portaherramientas.</p>
-                <ul class="tags"><li>Cintura</li><li>Anillas</li></ul>
-                <p class="price" data-price="DT-10"></p><a class="consult" href="fichas/dt-10.html">Abrir ficha</a><button class="cart-add" type="button" data-add="DT-10">Añadir al carrito</button>
-                <a class="consult" data-wa-text="Hola, quiero información de la referencia DT-10, Cinturón de equipo.">Consultar referencia</a>
-              </div>
-            </article>
-            <article class="card" data-cat="campo">
-              <div class="plate plate-photo"><img src="img/productos/dt-11.jpg" alt="Línea campo"></div>
-              <div class="card-body">
-                <p class="card-kicker"><span>DT-11</span><span>Campo</span></p>
-              
-                <h3>Gorra de campaña</h3>
-                <p>Gorra de visera firme para sol y lluvia ligera. El bordado se define con la unidad.</p>
-                <ul class="tags"><li>Visera</li><li>Bordado</li></ul>
-                <p class="price" data-price="DT-11"></p><a class="consult" href="fichas/dt-11.html">Abrir ficha</a><button class="cart-add" type="button" data-add="DT-11">Añadir al carrito</button>
-                <a class="consult" data-wa-text="Hola, quiero información de la referencia DT-11, Gorra de campaña.">Consultar referencia</a>
-              </div>
-            </article>
-            <article class="card" data-cat="equipo">
-              <div class="plate plate-photo"><img src="img/productos/dt-12.jpg" alt="Línea equipo"></div>
-              <div class="card-body">
-                <p class="card-kicker"><span>DT-12</span><span>Equipo</span></p>
-              
-                <h3>Bolso de pierna</h3>
-                <p>Bolso de muslo para lo que se necesita a la mano. Se fija al cinturón y a la pierna, y no baila al caminar.</p>
-                <ul class="tags"><li>Muslo</li><li>Acceso</li></ul>
-                <p class="price" data-price="DT-12"></p><a class="consult" href="fichas/dt-12.html">Abrir ficha</a><button class="cart-add" type="button" data-add="DT-12">Añadir al carrito</button>
-                <a class="consult" data-wa-text="Hola, quiero información de la referencia DT-12, Bolso de pierna.">Consultar referencia</a>
-              </div>
-            </article></div>
+          <div class="grid" data-catalog-grid></div>
         </div>
       </section>
     </main>
@@ -215,7 +63,8 @@
       <span class="wa-fab-label">Asesor comercial</span>
       <span class="wa-fab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.52 3.48A11.86 11.86 0 0 0 12.06 0C5.5 0 .16 5.33.16 11.89c0 2.1.55 4.14 1.59 5.95L0 24l6.3-1.65a11.9 11.9 0 0 0 5.76 1.47h.01c6.56 0 11.9-5.34 11.9-11.9 0-3.18-1.24-6.16-3.45-8.44zM12.07 21.3h-.01a9.4 9.4 0 0 1-4.79-1.31l-.34-.2-3.74.98 1-3.64-.22-.37a9.36 9.36 0 0 1-1.44-5.01c0-5.18 4.22-9.4 9.41-9.4 2.51 0 4.87.98 6.65 2.76a9.35 9.35 0 0 1 2.75 6.64c0 5.18-4.22 9.4-9.4 9.4zm5.16-7.03c-.28-.14-1.67-.82-1.93-.92-.26-.1-.45-.14-.64.14-.19.28-.73.92-.9 1.11-.16.19-.33.21-.61.07-.28-.14-1.18-.43-2.25-1.39-.83-.74-1.39-1.65-1.55-1.93-.16-.28-.02-.43.12-.57.13-.13.28-.33.42-.5.14-.16.19-.28.28-.47.09-.19.05-.35-.02-.5-.07-.14-.64-1.54-.88-2.11-.23-.55-.47-.48-.64-.49h-.55c-.19 0-.5.07-.76.35-.26.28-1 1-1 2.43s1.02 2.82 1.17 3.01c.14.19 2.01 3.07 4.87 4.3.68.29 1.21.47 1.62.6.68.22 1.3.19 1.79.11.55-.08 1.67-.68 1.9-1.34.24-.66.24-1.22.17-1.34-.07-.11-.26-.18-.54-.32z"/></svg></span>
     </a>
-    <script src="js/store.js?v=busca3" defer></script>
-    <script src="js/main.js?v=busca3" defer></script>
+    <script src="js/productos.js?v=real3" defer></script>
+    <script src="js/store.js?v=real3" defer></script>
+    <script src="js/main.js?v=real3" defer></script>
   </body>
 </html>

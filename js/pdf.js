@@ -259,13 +259,13 @@
       pdf.text(44, y, 11, line.id, { bold: true });
       pdf.text(110, y, 11, line.name);
       pdf.text(372, y, 11, String(line.qty));
-      pdf.text(430, y, 11, assets.money(line.price));
-      pdf.text(PAGE_W - 44, y, 11, assets.money(line.price * line.qty), { align: "right" });
+      pdf.text(430, y, 11, line.price ? assets.money(line.price) : "A consultar");
+      pdf.text(PAGE_W - 44, y, 11, line.price ? assets.money(line.price * line.qty) : "A consultar", { align: "right" });
       y -= 26;
     });
     y -= 8;
     pdf.rect(360, y - 10, PAGE_W - 396, 32, "#070708");
-    pdf.text(PAGE_W - 44, y + 2, 14, assets.money(order.total), { bold: true, color: "#f4f5f6", align: "right" });
+    pdf.text(PAGE_W - 44, y + 2, 14, order.total ? assets.money(order.total) : "A consultar", { bold: true, color: "#f4f5f6", align: "right" });
     y -= 36;
     pdf.text(36, y, 11, `Pago: ${customer.metodo || ""}`, { color: "#161616" });
     if (customer.pago) pdf.text(36, y - 16, 11, customer.pago, { color: "#5c6168" });
@@ -334,7 +334,7 @@
           wrap(item.note || "", 8, cellW).slice(0, 2).forEach((line, lineIndex) => {
             pdf.text(x, top - photoH - 64 - lineIndex * 11, 8, line, { color: "#5c6168" });
           });
-          pdf.text(x, top - photoH - 96, 11, assets.money(item.price), { bold: true, color: "#161616" });
+          pdf.text(x, top - photoH - 96, 11, item.price ? assets.money(item.price) : "A consultar", { bold: true, color: "#161616" });
         });
         const pageNumber = Math.floor(index / perPage) + 2;
         pdf.text(PAGE_W - margin, 22, 9, String(pageNumber), { color: "#8d939a", align: "right" });

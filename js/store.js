@@ -1,45 +1,12 @@
-const PRODUCTS = [
-  ["DT-01", "Conjunto de campaña", "Campo", 285000, 48, 12, "Pasillo A"],
-  ["DT-02", "Camisola de faena", "Faena", 98000, 80, 20, "Pasillo A"],
-  ["DT-03", "Pantalón de carga", "Faena", 125000, 64, 16, "Pasillo A"],
-  ["DT-04", "Chaqueta cortaviento", "Abrigo", 165000, 36, 10, "Pasillo B"],
-  ["DT-05", "Capa de lluvia", "Abrigo", 89000, 40, 10, "Pasillo B"],
-  ["DT-06", "Polar de abrigo", "Abrigo", 110000, 42, 10, "Pasillo B"],
-  ["DT-07", "Botín de marcha", "Calzado", 245000, 30, 8, "Pasillo C"],
-  ["DT-08", "Guante de faena", "Equipo", 42000, 120, 24, "Pasillo D"],
-  ["DT-09", "Morral de campaña", "Equipo", 198000, 28, 8, "Pasillo D"],
-  ["DT-10", "Cinturón de equipo", "Equipo", 68000, 70, 15, "Pasillo D"],
-  ["DT-11", "Gorra de campaña", "Campo", 38000, 90, 20, "Pasillo A"],
-  ["DT-12", "Bolso de pierna", "Equipo", 92000, 34, 8, "Pasillo D"],
-].map(([id, name, line, price, stock, min, place]) => ({ id, name, line, price, stock, min, place }));
-
-const NOTES = {
-  "DT-01": "Dos piezas en ripstop, con refuerzo en codo y rodilla.",
-  "DT-02": "Manga larga, ventilación y espacio para identificación.",
-  "DT-03": "Bolsillos de carga y refuerzo de rodilla.",
-  "DT-04": "Capa exterior para clima variable.",
-  "DT-05": "Impermeable con capucha regulable.",
-  "DT-06": "Capa intermedia para frío.",
-  "DT-07": "Soporte de tobillo y suela de agarre.",
-  "DT-08": "Palma reforzada y puño ajustable.",
-  "DT-09": "35 litros, espalda acolchada.",
-  "DT-10": "Cinturón rígido con anillas de fijación.",
-  "DT-11": "Visera estructurada y ajuste posterior.",
-  "DT-12": "Acceso al equipo personal sin quitar el morral.",
-};
-
-const LINES = ["Campo", "Faena", "Abrigo", "Calzado", "Equipo"];
+const PRODUCTS = (window.DT_CATALOG || []).map((item) => ({ ...item }));
+const NOTES = Object.fromEntries(PRODUCTS.map((item) => [item.id, item.stage === "ropa" ? "Prenda sobre maniquí, con giro." : "Pieza con giro para consultar."]));
+const LINES = [...new Set(PRODUCTS.map((item) => item.line))];
 
 const KEYS = { cart: "dt-cart", orders: "dt-orders", stock: "dt-stock", admin: "dt-admin", examples: "dt-examples-v1", wa: "dt-wa", wompi: "dt-wompi", internal: "dt-internal", trace: "dt-trace" };
 const ADMIN = { user: "delta", password: "admin123", name: "Admin" };
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-const LINE_COLORS = {
-  Campo: "#f4f5f6",
-  Faena: "#c5c8cc",
-  Abrigo: "#8d939a",
-  Calzado: "#d7c4a3",
-  Equipo: "#6d737a",
-};
+const LINE_PALETTE = ["#f4f5f6", "#c5c8cc", "#8d939a", "#d7c4a3", "#6d737a", "#b7bcc2", "#9aa0a6", "#e4e6e8"];
+const LINE_COLORS = Object.fromEntries(LINES.map((line, index) => [line, LINE_PALETTE[index % LINE_PALETTE.length]]));
 const root = /\/fichas\//.test(location.pathname) ? "../" : "";
 
 function money(value) {
@@ -111,10 +78,10 @@ function traceKey(storage, key) {
 function currentPage() {
   const path = location.pathname.toLowerCase();
   if (path.includes("admin.html")) return null;
-  const ficha = path.match(/dt-(\d{2})\.html/);
-  if (ficha) {
-    const id = `DT-${ficha[1]}`;
-    return product(id) ? { name: `Ficha ${id}`, product: id } : { name: "Ficha", product: "" };
+  if (path.endsWith("producto.html")) {
+    const id = new URLSearchParams(location.search).get("id") || "";
+    const item = product(id);
+    return item ? { name: `Ficha ${item.id}`, product: item.id } : { name: "Ficha", product: "" };
   }
   if (path.endsWith("/") || /\/deltactica\/?$/.test(path)) return { name: "Inicio", product: "" };
   const names = [
@@ -186,18 +153,11 @@ function beginTrace() {
 }
 
 const SEARCH_WORDS = {
-  "DT-01": "conjunto camisa pantalon ripstop campana uniforme dos piezas",
-  "DT-02": "camisola camisa faena manga identificacion",
-  "DT-03": "pantalon cargo bolsillo rodilla carga",
-  "DT-04": "chaqueta cortaviento viento abrigo capa",
-  "DT-05": "capa lluvia impermeable capucha agua",
-  "DT-06": "polar frio abrigo sueter",
-  "DT-07": "botin bota calzado marcha tobillo zapato",
-  "DT-08": "guante mano faena palma",
-  "DT-09": "morral maleta campana espalda litro mochila",
-  "DT-10": "cinturon anilla hebilla correa equipo",
-  "DT-11": "gorra visera cachucha campana",
-  "DT-12": "bolso pierna muslo cartera",
+  bota: "botin calzado zapato",
+  gorra: "cachucha kepis boina pava",
+  morral: "bolso maleta mochila tula",
+  chaqueta: "chaqueta buzo abrigo",
+  uniforme: "prenda camisa pantalon",
 };
 
 function plainText(value) {
@@ -208,7 +168,7 @@ function matchProducts(query) {
   const words = plainText(query).split(/\s+/).filter((word) => word.length > 1);
   if (!words.length) return [];
   return PRODUCTS.filter((item) => {
-    const hay = plainText(`${item.id} ${item.name} ${item.line} ${NOTES[item.id] || ""} ${SEARCH_WORDS[item.id] || ""}`);
+    const hay = plainText(`${item.id} ${item.name} ${item.line} ${NOTES[item.id] || ""} ${Object.entries(SEARCH_WORDS).filter(([key]) => plainText(item.name).includes(plainText(key)) || plainText(item.line).includes(plainText(key))).map(([, words]) => words).join(" ")}`);
     return words.every((word) => hay.includes(word));
   });
 }
@@ -235,7 +195,7 @@ function mountMenuSearch() {
       input.setAttribute("aria-expanded", "false");
       return;
     }
-    const rows = found.slice(0, 6).map((item) => `<a href="${root}fichas/${item.id.toLowerCase()}.html"><img src="${root}img/productos/${item.id.toLowerCase()}.jpg" alt=""><span><b>${item.id} · ${escapeHtml(item.name)}</b><small>${escapeHtml(item.line)} · ${money(item.price)}</small></span></a>`).join("");
+    const rows = found.slice(0, 6).map((item) => `<a href="${root}producto.html?id=${item.id}"><img src="${productImage(item)}" alt="" data-product="${item.id}"><span><b>${item.id} · ${escapeHtml(item.name)}</b><small>${escapeHtml(item.line)} · ${priceLabel(item)}</small></span></a>`).join("");
     const more = found.length > 6 ? `<a class="menu-more" href="${root}catalogo.html?q=${encodeURIComponent(query)}"><span><b>Ver las ${found.length} referencias</b><small>Abrir el catálogo con esta búsqueda</small></span></a>` : "";
     list.innerHTML = rows || `<p>Ninguna referencia coincide con “${escapeHtml(query)}”.</p>`;
     if (more) list.innerHTML += more;
@@ -278,12 +238,27 @@ function product(id) {
   return PRODUCTS.find((item) => item.id === String(id || "").toUpperCase());
 }
 
+function priceLabel(item) {
+  return item && item.price ? money(item.price) : "A consultar";
+}
+
+function productImage(item) {
+  if (!item) return "";
+  return photoUrls.get(item.id) || `${root}${item.image || ""}`;
+}
+
 function stockMap() {
-  const saved = read(KEYS.stock, null);
-  if (saved) return saved;
-  const seeded = Object.fromEntries(PRODUCTS.map((item) => [item.id, item.stock]));
-  write(KEYS.stock, seeded);
-  return seeded;
+  const saved = read(KEYS.stock, {}) || {};
+  const next = { ...saved };
+  let changed = !read(KEYS.stock, null);
+  PRODUCTS.forEach((item) => {
+    if (next[item.id] == null) {
+      next[item.id] = item.stock;
+      changed = true;
+    }
+  });
+  if (changed) write(KEYS.stock, next);
+  return next;
 }
 
 function monthsBack(n, day) {
@@ -313,55 +288,16 @@ function buildExample(id, date, status, customer, lines) {
 }
 
 function exampleOrders() {
-  return [
-    buildExample("DT-E2401", monthsBack(0, 8), "Recibido", {
-      nombre: "Ana Ríos", institucion: "Escuela de instrucción", ciudad: "Bogotá",
-      telefono: "3001112233", direccion: "Calle 45 # 12-30", metodo: "Transferencia", nota: "Entrega en portería.",
-    }, [orderLine("DT-01", 6), orderLine("DT-11", 15)]),
-    buildExample("DT-E2402", monthsBack(0, 18), "En preparación", {
-      nombre: "Luis Herrera", institucion: "Grupo de custodia", ciudad: "Medellín",
-      telefono: "3012223344", direccion: "Carrera 70 # 44-18", metodo: "Pago contraentrega", nota: "",
-    }, [orderLine("DT-09", 4), orderLine("DT-08", 20)]),
-    buildExample("DT-E2318", monthsBack(1, 6), "Despachado", {
-      nombre: "Marta Gil", institucion: "Centro de formación", ciudad: "Cali",
-      telefono: "3023334455", direccion: "Avenida 6N # 28-40", metodo: "Transferencia", nota: "",
-    }, [orderLine("DT-04", 8), orderLine("DT-06", 10)]),
-    buildExample("DT-E2311", monthsBack(1, 21), "Entregado", {
-      nombre: "Pedro Salas", institucion: "Unidad de apoyo", ciudad: "Barranquilla",
-      telefono: "3045556677", direccion: "Calle 84 # 51-20", metodo: "Transferencia", nota: "",
-    }, [orderLine("DT-03", 14), orderLine("DT-02", 10)]),
-    buildExample("DT-E2204", monthsBack(2, 11), "Entregado", {
-      nombre: "Elena Cruz", institucion: "Programa de marcha", ciudad: "Bucaramanga",
-      telefono: "3056667788", direccion: "Carrera 27 # 34-10", metodo: "Pago contraentrega", nota: "",
-    }, [orderLine("DT-07", 10)]),
-    buildExample("DT-E2209", monthsBack(2, 24), "Entregado", {
-      nombre: "Julián Mora", institucion: "Base de entrenamiento", ciudad: "Pereira",
-      telefono: "3107778899", direccion: "Calle 19 # 8-55", metodo: "Transferencia", nota: "",
-    }, [orderLine("DT-02", 18), orderLine("DT-10", 12)]),
-    buildExample("DT-E2116", monthsBack(3, 9), "Entregado", {
-      nombre: "Sofía León", institucion: "Curso de campo", ciudad: "Manizales",
-      telefono: "3118889900", direccion: "Avenida Santander # 62-15", metodo: "Transferencia", nota: "",
-    }, [orderLine("DT-01", 4), orderLine("DT-05", 12)]),
-    buildExample("DT-E2007", monthsBack(4, 15), "Entregado", {
-      nombre: "Camilo Díaz", institucion: "Dotación interna", ciudad: "Bogotá",
-      telefono: "3129990011", direccion: "Carrera 15 # 93-40", metodo: "Transferencia", nota: "",
-    }, [orderLine("DT-12", 10), orderLine("DT-08", 30)]),
-    buildExample("DT-E1903", monthsBack(5, 5), "Entregado", {
-      nombre: "Ricardo Peña", institucion: "Jornada de abrigo", ciudad: "Cali",
-      telefono: "3131213141", direccion: "Calle 5 # 40-22", metodo: "Pago contraentrega", nota: "",
-    }, [orderLine("DT-07", 6), orderLine("DT-04", 5)]),
-  ];
+  return [];
 }
 
 function orders() {
   const saved = read(KEYS.orders, null);
-  if (localStorage.getItem(KEYS.examples) !== "1") {
-    const current = Array.isArray(saved) ? saved : [];
-    const ids = new Set(current.map((order) => order.id));
-    const next = [...exampleOrders().filter((order) => !ids.has(order.id)), ...current];
-    write(KEYS.orders, next);
-    localStorage.setItem(KEYS.examples, "1");
-    return next;
+  if (localStorage.getItem(KEYS.examples) !== "2") {
+    const current = Array.isArray(saved) ? saved.filter((order) => !order.example) : [];
+    write(KEYS.orders, current);
+    localStorage.setItem(KEYS.examples, "2");
+    return current;
   }
   if (Array.isArray(saved)) return saved;
   write(KEYS.orders, []);
@@ -434,8 +370,9 @@ function escapeHtml(value) {
 function placeOrder(customer) {
   const lines = cart().map((line) => {
     const item = product(line.id);
+    if (!item) return null;
     return { id: line.id, name: item.name, price: item.price, qty: line.qty };
-  });
+  }).filter(Boolean);
   if (!lines.length) return null;
   for (const line of lines) {
     if (line.qty > available(line.id)) return null;
@@ -467,7 +404,7 @@ function placeOrder(customer) {
 function paintPrices() {
   document.querySelectorAll("[data-price]").forEach((node) => {
     const item = product(node.dataset.price);
-    if (item) node.textContent = money(item.price);
+    if (item) node.textContent = priceLabel(item);
   });
   document.querySelectorAll("[data-stock]").forEach((node) => {
     const item = product(node.dataset.stock);
@@ -487,16 +424,18 @@ function renderCart() {
   }
   const rows = lines.map((line) => {
     const item = product(line.id);
+    if (!item) return "";
     return `<tr>
-      <td><div class="cart-product"><img src="${root}img/productos/${item.id.toLowerCase()}.jpg" alt=""><div><strong>${escapeHtml(item.name)}</strong><span>${item.id} · ${escapeHtml(item.line)}</span></div></div></td>
-      <td>${money(item.price)}</td>
+      <td><div class="cart-product"><img src="${productImage(item)}" alt="" data-product="${item.id}"><div><strong>${escapeHtml(item.name)}</strong><span>${item.id} · ${escapeHtml(item.line)}</span></div></div></td>
+      <td>${priceLabel(item)}</td>
       <td><div class="qty"><button type="button" data-qty-change="${item.id}" data-dir="-1" aria-label="Restar una unidad">−</button><span>${line.qty}</span><button type="button" data-qty-change="${item.id}" data-dir="1" aria-label="Sumar una unidad">+</button></div></td>
-      <td>${money(item.price * line.qty)}</td>
+      <td>${item.price ? money(item.price * line.qty) : "A consultar"}</td>
       <td><button class="linkish" type="button" data-remove="${item.id}">Quitar</button></td>
     </tr>`;
   }).join("");
+  const total = cartTotal();
   rootNode.innerHTML = `<table class="cart-table"><thead><tr><th>Artículo</th><th>Precio</th><th>Cantidad</th><th>Total</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="cart-foot"><button class="linkish" type="button" data-clear-cart>Vaciar carrito</button><div><p class="eyebrow">Total</p><p class="cart-total">${money(cartTotal())}</p></div></div>
+    <div class="cart-foot"><button class="linkish" type="button" data-clear-cart>Vaciar carrito</button><div><p class="eyebrow">Total</p><p class="cart-total">${total ? money(total) : "A consultar"}</p></div></div>
     <div class="hero-actions"><a class="btn btn-metal" href="${root}compra.html">Continuar con los datos del cliente</a></div>
     <p class="admin-note">El siguiente paso pide quién pide, quién recibe y la dirección. Sin esos datos el pedido no sigue.</p>
     <p class="admin-note" data-cart-msg></p>`;
@@ -535,9 +474,11 @@ function renderCheckout() {
   }
   const rows = cart().map((line) => {
     const item = product(line.id);
-    return `<tr><td>${escapeHtml(item.name)}</td><td>${line.qty}</td><td>${money(item.price * line.qty)}</td></tr>`;
+    if (!item) return "";
+    return `<tr><td>${escapeHtml(item.name)}</td><td>${line.qty}</td><td>${item.price ? money(item.price * line.qty) : "A consultar"}</td></tr>`;
   }).join("");
-  summary.innerHTML = `<p class="eyebrow">Resumen</p><table class="summary-line"><tbody>${rows}</tbody></table><p class="cart-total">${money(cartTotal())}</p>`;
+  const total = cartTotal();
+  summary.innerHTML = `<p class="eyebrow">Resumen</p><table class="summary-line"><tbody>${rows}</tbody></table><p class="cart-total">${total ? money(total) : "A consultar"}</p>`;
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     const data = new FormData(form);
@@ -597,13 +538,13 @@ function waLink(text) {
 
 function receiptText(order) {
   const customer = order.customer;
-  const lines = order.lines.map((line) => `${line.id} ${line.name} x${line.qty} · ${money(line.price * line.qty)}`).join("\n");
+  const lines = order.lines.map((line) => `${line.id} ${line.name} x${line.qty} · ${line.price ? money(line.price * line.qty) : "A consultar"}`).join("\n");
   return [
     `Recibo Deltactica ${order.id}`,
     new Date(order.date).toLocaleString("es-CO"),
     "",
     lines,
-    `Total: ${money(order.total)}`,
+    `Total: ${order.total ? money(order.total) : "A consultar"}`,
     `Pago: ${customer.metodo || ""}`,
     "",
     "Envío",
@@ -623,12 +564,12 @@ function receiptText(order) {
 
 function receiptView(order) {
   const customer = order.customer;
-  const rows = order.lines.map((line) => `<tr><td>${escapeHtml(line.id)}</td><td>${escapeHtml(line.name)}</td><td>${line.qty}</td><td>${money(line.price)}</td><td>${money(line.price * line.qty)}</td></tr>`).join("");
+  const rows = order.lines.map((line) => `<tr><td>${escapeHtml(line.id)}</td><td>${escapeHtml(line.name)}</td><td>${line.qty}</td><td>${line.price ? money(line.price) : "A consultar"}</td><td>${line.price ? money(line.price * line.qty) : "A consultar"}</td></tr>`).join("");
   const link = waLink(receiptText(order));
   return `<article class="receipt">
     <header class="receipt-banner"><img class="receipt-logo" src="${root}img/logo.png" alt="Deltactica"><div><p class="eyebrow">Recibo</p><h2>${escapeHtml(order.id)}</h2><p>${new Date(order.date).toLocaleString("es-CO")}</p></div></header>
     <table class="summary-line"><thead><tr><th>Ref.</th><th>Artículo</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="cart-total">${money(order.total)}</p>
+    <p class="cart-total">${order.total ? money(order.total) : "A consultar"}</p>
     <p>Pago: ${escapeHtml(customer.metodo || "")}</p>
     ${customer.pago ? `<p>${escapeHtml(customer.pago)}</p>` : ""}
     <div class="receipt-ship">
@@ -926,10 +867,15 @@ function photoDb() {
 }
 
 function idFromFileName(name) {
-  const match = String(name || "").toUpperCase().match(/DT[\s_-]?(\d{1,2})(?!\d)/);
-  if (!match) return "";
-  const id = `DT-${match[1].padStart(2, "0")}`;
-  return product(id) ? id : "";
+  const raw = String(name || "");
+  const match = raw.toUpperCase().match(/DT[\s_-]?(\d{3,4})/);
+  if (match) {
+    const id = `DT-${match[1]}`;
+    if (product(id)) return id;
+  }
+  const stem = plainText(raw.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "));
+  const found = PRODUCTS.find((item) => plainText(item.name) === stem);
+  return found ? found.id : "";
 }
 
 function rememberPhoto(id, blob) {
@@ -1005,13 +951,9 @@ async function clearPhotos() {
 }
 
 function applyPhotos() {
-  document.querySelectorAll("img").forEach((img) => {
-    const src = img.getAttribute("src") || "";
-    const match = src.match(/productos\/(dt-\d{2})\./i);
-    if (!match) return;
-    const url = photoUrls.get(match[1].toUpperCase());
+  document.querySelectorAll("img[data-product]").forEach((img) => {
+    const url = photoUrls.get(img.dataset.product);
     if (!url) return;
-    img.dataset.photoBase = src;
     img.src = url;
   });
 }
@@ -1021,8 +963,8 @@ function paintPhotoDesk() {
   if (!grid) return;
   grid.innerHTML = PRODUCTS.map((item) => {
     const custom = photoUrls.has(item.id);
-    const src = custom ? photoUrls.get(item.id) : `${root}img/productos/${item.id.toLowerCase()}.jpg`;
-    return `<figure class="photo-card"><img src="${src}" alt="${escapeHtml(item.name)}"><figcaption><strong>${item.id}</strong> ${escapeHtml(item.name)}${custom ? "<em>Cargada</em>" : ""}</figcaption>${custom ? `<button class="linkish" type="button" data-photo-remove="${item.id}">Quitar</button>` : ""}</figure>`;
+    const src = custom ? photoUrls.get(item.id) : productImage(item);
+    return `<figure class="photo-card"><img src="${src}" alt="${escapeHtml(item.name)}" loading="lazy" data-product="${item.id}"><figcaption><strong>${item.id}</strong> ${escapeHtml(item.name)}${custom ? "<em>Cargada</em>" : ""}</figcaption>${custom ? `<button class="linkish" type="button" data-photo-remove="${item.id}">Quitar</button>` : ""}</figure>`;
   }).join("");
 }
 
@@ -1032,7 +974,7 @@ function photoStatus(matched, skipped) {
   const ready = matched.length === 1 ? "1 imagen quedó en su referencia" : `${matched.length} imágenes quedaron en su referencia`;
   const names = matched.length ? `: ${matched.join(", ")}.` : ".";
   const ignored = skipped.length
-    ? ` ${skipped.length} ${skipped.length === 1 ? "archivo no tenía" : "archivos no tenían"} una referencia DT-01, DT-02…`
+    ? ` ${skipped.length} ${skipped.length === 1 ? "archivo no coincidió" : "archivos no coincidieron"} con una referencia del catálogo`
     : "";
   status.textContent = matched.length ? `${ready}${names}${ignored}` : `Ningún archivo coincidió con una referencia.${ignored}`;
 }
@@ -1191,7 +1133,7 @@ function traceBoard() {
   const leastNote = !best
     ? "Todavía no hay compras confirmadas."
     : unsold.length > 1
-      ? `También sin vender: ${unsold.slice(1).map((row) => row.id).join(", ")}`
+      ? `También sin vender: ${unsold.length - 1} referencias.`
       : productName(unsold[0] || lowest);
   const table = rows
     .slice()
@@ -1277,7 +1219,7 @@ function renderAdmin() {
   const sold = list.reduce((sum, order) => sum + order.total, 0);
   const pending = list.filter((order) => order.status !== "Entregado").length;
   const low = PRODUCTS.filter((item) => (stock[item.id] ?? 0) <= item.min);
-  const units = Object.values(stock).reduce((sum, value) => sum + value, 0);
+  const units = PRODUCTS.reduce((sum, item) => sum + (stock[item.id] ?? 0), 0);
   const byMonth = salesByMonth(list);
   const byLine = salesByLine(list);
   const byStatus = ["Recibido", "En preparación", "Despachado", "Entregado"].map((status) => ({
@@ -1311,13 +1253,13 @@ function renderAdmin() {
     </div>
     <div class="chart-grid">
       <article class="admin-block"><p class="eyebrow">Estado de pedidos</p>${meterList(byStatus)}</article>
-      <article class="admin-block"><p class="eyebrow">Unidades por línea</p><p class="admin-note">${low.length ? `Reponer ${low.map((item) => item.id).join(", ")}.` : "Ninguna referencia está en el mínimo."}</p>${meterList(byPlace)}</article>
+      <article class="admin-block"><p class="eyebrow">Unidades por línea</p><p class="admin-note">${low.length ? `Reponer ${low.slice(0, 8).map((item) => item.id).join(", ")}${low.length > 8 ? ` y ${low.length - 8} más` : ""}.` : "Ninguna referencia está en el mínimo."}</p>${meterList(byPlace)}</article>
     </div>`;
 
   const saleRows = list.length
     ? list.map((order) => `<tr><td>${escapeHtml(order.id)}${order.example ? '<span class="example-tag">Ejemplo</span>' : ""}</td><td>${new Date(order.date).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}</td><td>${escapeHtml(order.customer.nombre)}<br>${escapeHtml(order.customer.institucion || "")}</td><td>${escapeHtml(order.customer.ciudad)}<br>${escapeHtml(order.customer.metodo || "")}</td><td>${money(order.total)}</td><td><select class="status-select" data-status="${escapeHtml(order.id)}">${["Recibido", "En preparación", "Despachado", "Entregado"].map((status) => `<option style="background:#141416;color:#f3f4f5" ${status === order.status ? "selected" : ""}>${status}</option>`).join("")}</select></td></tr>`).join("")
     : `<tr><td colspan="6">Todavía no hay pedidos.</td></tr>`;
-  sales.innerHTML = `<div class="chart-grid chart-grid-sales"><article class="admin-block"><p class="eyebrow">Ventas por mes</p>${barChart(byMonth, "Ventas de los últimos seis meses")}</article><article class="admin-block"><p class="eyebrow">Por cobrar y despachar</p><p class="admin-note">Total ${money(sold)}. ${pending} pedidos siguen abiertos.</p>${meterList(byStatus)}</article></div><div class="admin-block"><p class="eyebrow">Pedidos</p><p class="admin-note">Los marcados como ejemplo ilustran el panel. Una compra confirmada entra en la misma tabla.</p><div class="table-wrap"><table class="admin-table"><thead><tr><th>Pedido</th><th>Fecha</th><th>Cliente</th><th>Ciudad</th><th>Total</th><th>Estado</th></tr></thead><tbody>${saleRows}</tbody></table></div></div>`;
+  sales.innerHTML = `<div class="chart-grid chart-grid-sales"><article class="admin-block"><p class="eyebrow">Ventas por mes</p>${barChart(byMonth, "Ventas de los últimos seis meses")}</article><article class="admin-block"><p class="eyebrow">Por cobrar y despachar</p><p class="admin-note">Total ${money(sold)}. ${pending} pedidos siguen abiertos.</p>${meterList(byStatus)}</article></div><div class="admin-block"><p class="eyebrow">Pedidos</p><p class="admin-note">Una compra confirmada entra en esta tabla. El precio queda a consultar hasta que el asesor lo cierre.</p><div class="table-wrap"><table class="admin-table"><thead><tr><th>Pedido</th><th>Fecha</th><th>Cliente</th><th>Ciudad</th><th>Total</th><th>Estado</th></tr></thead><tbody>${saleRows}</tbody></table></div></div>`;
 
   const scale = Math.max(...PRODUCTS.map((item) => Math.max(stock[item.id] ?? 0, item.min)), 1);
   const stockMeters = PRODUCTS.map((item) => {
@@ -1331,7 +1273,7 @@ function renderAdmin() {
     const mark = left <= item.min ? "low" : "";
     return `<tr class="${mark}"><td>${item.id}</td><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item.line)}</td><td>${escapeHtml(item.place)}</td><td>${item.min}</td><td><form class="stock-edit" data-stock-form="${item.id}"><input name="qty" type="number" min="0" value="${left}" aria-label="Existencia de ${item.id}"><button class="linkish" type="submit">Guardar</button></form></td><td>${left <= item.min ? "Reponer" : "Disponible"}</td></tr>`;
   }).join("");
-  warehouse.innerHTML = `<div class="admin-block"><p class="eyebrow">Imágenes del catálogo</p><p class="admin-note">En Drive use Descargar. Si baja un .zip, súbalo tal cual. Si baja la carpeta ya abierta, use Subir carpeta. Cada archivo tiene que llamarse como la referencia: DT-01.jpg, DT-02.png o DT-12.webp. La foto entra sola en su ficha, en el catálogo y en el carrito de este navegador.</p><div class="photo-drop" data-photo-drop><p>Suelte aquí la carpeta o las imágenes.</p><div class="photo-actions"><label class="btn btn-metal">Subir carpeta<input data-photo-folder type="file" webkitdirectory mozdirectory directory multiple></label><label class="btn btn-ghost">Elegir imágenes o zip<input data-photo-files type="file" accept="image/*,.zip" multiple></label><button class="btn btn-ghost" type="button" data-photo-clear>Quitar cargadas</button></div></div><p data-photo-status></p><div class="photo-grid" data-photo-grid></div></div><div class="admin-block"><p class="eyebrow">Existencia frente al mínimo</p><p class="admin-note">La marca vertical es el mínimo de reposición. Al confirmar una compra, la existencia baja.</p><ul class="meters stock-meters">${stockMeters}</ul></div><div class="admin-block"><p class="eyebrow">Bodega</p><div class="table-wrap"><table class="admin-table"><thead><tr><th>Ref.</th><th>Artículo</th><th>Línea</th><th>Ubicación</th><th>Mínimo</th><th>Existencia</th><th>Estado</th></tr></thead><tbody>${stockRows}</tbody></table></div></div>`;
+  warehouse.innerHTML = `<div class="admin-block"><p class="eyebrow">Imágenes del catálogo</p><p class="admin-note">En Drive use Descargar. Si baja un .zip, súbalo tal cual. Si baja la carpeta ya abierta, use Subir carpeta. Cada archivo puede llamarse como la referencia (DT-1001.png) o como el nombre del producto. La foto entra en la ficha, el catálogo y el carrito de este navegador.</p><div class="photo-drop" data-photo-drop><p>Suelte aquí la carpeta o las imágenes.</p><div class="photo-actions"><label class="btn btn-metal">Subir carpeta<input data-photo-folder type="file" webkitdirectory mozdirectory directory multiple></label><label class="btn btn-ghost">Elegir imágenes o zip<input data-photo-files type="file" accept="image/*,.zip" multiple></label><button class="btn btn-ghost" type="button" data-photo-clear>Quitar cargadas</button></div></div><p data-photo-status></p><div class="photo-grid" data-photo-grid></div></div><div class="admin-block"><p class="eyebrow">Existencia frente al mínimo</p><p class="admin-note">La marca vertical es el mínimo de reposición. Al confirmar una compra, la existencia baja.</p><ul class="meters stock-meters">${stockMeters}</ul></div><div class="admin-block"><p class="eyebrow">Bodega</p><div class="table-wrap"><table class="admin-table"><thead><tr><th>Ref.</th><th>Artículo</th><th>Línea</th><th>Ubicación</th><th>Mínimo</th><th>Existencia</th><th>Estado</th></tr></thead><tbody>${stockRows}</tbody></table></div></div>`;
 
   const trace = document.querySelector('[data-admin-panel="trazabilidad"]');
   if (trace) trace.innerHTML = traceBoard();
@@ -1555,8 +1497,10 @@ async function catalogPhoto(id) {
     request.onsuccess = () => resolve(request.result || null);
     request.onerror = () => reject(request.error);
   });
+  const item = product(id);
+  if (!item) return "";
   if (blob) return blobToDataUrl(blob);
-  return new URL(`img/productos/${id.toLowerCase()}.jpg`, location.href).href;
+  return new URL(item.image, location.href).href;
 }
 
 async function catalogFile(items, lines) {
@@ -1569,7 +1513,7 @@ async function catalogFile(items, lines) {
         <p>${escapeHtml(item.id)} · ${escapeHtml(item.line)}</p>
         <h2>${escapeHtml(item.name)}</h2>
         <p>${escapeHtml(NOTES[item.id] || "")}</p>
-        <p>${money(item.price)} · Existencia ${stock[item.id] ?? 0} · ${escapeHtml(item.place)}</p>
+        <p>${priceLabel(item)} · Existencia ${stock[item.id] ?? 0} · ${escapeHtml(item.place)}</p>
       </div>
     </article>`;
   }))).join("");
@@ -1614,7 +1558,7 @@ async function saveCatalog() {
     : lines.length === LINES.length ? "Catálogo completo" : lines.join(", ");
   const sheets = [];
   for (const item of items) {
-    const src = photoUrls.get(item.id) || `${root}img/productos/${item.id.toLowerCase()}.jpg`;
+    const src = productImage(item);
     const photo = await window.DTPDF.loadJpeg(src, "#f3f4f5").catch(() => null);
     sheets.push({ id: item.id, name: item.name, line: item.line, note: NOTES[item.id] || "", price: item.price, photo });
   }
@@ -1738,6 +1682,69 @@ document.addEventListener("drop", (event) => {
   });
 });
 
+function renderPublic() {
+  const filters = document.querySelector("[data-catalog-filters]");
+  const grid = document.querySelector("[data-catalog-grid]");
+  if (filters && grid) {
+    const counts = {};
+    PRODUCTS.forEach((item) => {
+      counts[item.slug] = (counts[item.slug] || 0) + 1;
+    });
+    filters.innerHTML = [`<button class="filter is-active" type="button" data-filter="todos" aria-pressed="true">Todas <b>${PRODUCTS.length}</b></button>`,
+      ...LINES.map((line) => {
+        const slug = PRODUCTS.find((item) => item.line === line)?.slug || "";
+        return `<button class="filter" type="button" data-filter="${slug}" aria-pressed="false">${escapeHtml(line)} <b>${counts[slug] || 0}</b></button>`;
+      })].join("");
+    grid.innerHTML = PRODUCTS.map((item) => {
+      const frame = item.photo === false
+        ? `<div class="plate plate-photo plate-missing"><span>Foto por reemplazar</span></div>`
+        : `<a class="plate plate-photo" href="${root}producto.html?id=${item.id}"><img src="${productImage(item)}" alt="${escapeHtml(item.name)}" loading="lazy" data-product="${item.id}"></a>`;
+      return `<article class="card" data-cat="${item.slug}">
+      ${frame}
+      <div class="card-body">
+        <p class="card-kicker"><span>${item.id}</span><span>${escapeHtml(item.line)}</span></p>
+        <h3>${escapeHtml(item.name)}</h3>
+        <p class="price">${priceLabel(item)}</p>
+        <a class="consult" href="${root}producto.html?id=${item.id}">Ver en 360</a>
+        <button class="cart-add" type="button" data-add="${item.id}">Añadir al carrito</button>
+        <a class="consult" data-wa-text="Hola, quiero información de la referencia ${item.id}, ${item.name}.">Consultar referencia</a>
+      </div>
+    </article>`;
+    }).join("");
+    const count = document.querySelector("[data-count]");
+    if (count) count.textContent = PRODUCTS.length === 1 ? "1 referencia" : `${PRODUCTS.length} referencias`;
+  }
+  const bar = document.querySelector("[data-stage-bar]");
+  if (bar) {
+    bar.innerHTML = LINES.map((line, index) => {
+      const slug = PRODUCTS.find((item) => item.line === line)?.slug || "";
+      return `<a href="${root}lineas.html#${slug}"><span>${String(index + 1).padStart(2, "0")}</span>${escapeHtml(line)}</a>`;
+    }).join("");
+  }
+  const board = document.querySelector("[data-line-board]");
+  if (board) {
+    board.innerHTML = LINES.map((line) => {
+      const group = PRODUCTS.filter((item) => item.line === line);
+      const item = group.find((entry) => entry.photo !== false) || group[0];
+      if (!item) return "";
+      return `<article class="line-card" id="${item.slug}"><img src="${productImage(item)}" alt="${escapeHtml(line)}" data-product="${item.id}"><div><h2>${escapeHtml(line)}</h2><p>${group.length} referencias.</p><a class="btn btn-metal line-open" href="${root}catalogo.html?linea=${item.slug}">Abrir línea</a></div></article>`;
+    }).join("");
+  }
+  const mosaic = document.querySelector("[data-home-mosaic]");
+  const thumbs = document.querySelector("[data-home-thumbs]");
+  if (mosaic && thumbs) {
+    const picks = LINES.map((line) => PRODUCTS.find((item) => item.line === line && item.photo !== false) || PRODUCTS.find((item) => item.line === line)).filter(Boolean);
+    const tile = (item, extra) => `<article class="tile ${extra}"><a class="tile-hit" href="${root}producto.html?id=${item.id}"><img src="${productImage(item)}" alt="${escapeHtml(item.name)}" data-product="${item.id}"><span class="tile-copy"><span>${item.id} · ${escapeHtml(item.line)}</span><strong>${escapeHtml(item.name)}</strong><em>Gire la pieza en su ficha.</em></span></a><button class="cart-add" type="button" data-add="${item.id}">Añadir al carrito</button></article>`;
+    mosaic.innerHTML = picks.slice(0, 6).map((item, index) => tile(item, index === 0 ? "tile-lead" : index === 5 ? "tile-wide" : "")).join("");
+    thumbs.innerHTML = picks.slice(6, 12).map((item) => `<a class="thumb" href="${root}producto.html?id=${item.id}"><img src="${productImage(item)}" alt="" data-product="${item.id}"><span>${item.id} · ${escapeHtml(item.line)}</span><strong>${escapeHtml(item.name)}</strong></a>`).join("");
+  }
+  const interest = document.querySelector("[data-interest]");
+  if (interest) {
+    interest.innerHTML = `<option value="" selected disabled>Seleccione una línea</option>${LINES.map((line) => `<option>${escapeHtml(line)}</option>`).join("")}<option>Dotación completa</option><option>Otra consulta</option>`;
+  }
+}
+
+renderPublic();
 mountMenuSearch();
 beginTrace();
 applyAdvisorPhone();
