@@ -2968,6 +2968,7 @@ select option {
     linear-gradient(#efeae2, #d4cdc2 62%, #c3bbb0);
   touch-action: none;
   cursor: grab;
+  overflow: hidden;
 }
 
 .giro-cam {

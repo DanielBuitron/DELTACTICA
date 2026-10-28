@@ -997,18 +997,23 @@
       image.src = src;
       image.alt = index ? "" : item.name;
       image.draggable = false;
-      image.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;visibility:hidden;transition:none;";
+      image.decoding = "sync";
+      image.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;visibility:hidden;transition:none;transform-origin:50% 46%;pointer-events:none;";
       stage.append(image);
       return image;
     });
     spin = () => {
       let turn = angle % 360;
       if (turn < 0) turn += 360;
-      const index = Math.floor(turn / 360 * frames.length) % frames.length;
+      const pos = turn / 360 * frames.length;
+      const index = Math.floor(pos) % frames.length;
+      const frac = pos - Math.floor(pos);
+      const yaw = (frac - 0.5) * 34;
       frames.forEach((image, key) => {
         const on = key === index;
         image.style.opacity = on ? "1" : "0";
         image.style.visibility = on ? "visible" : "hidden";
+        image.style.transform = on ? `perspective(1600px) rotateY(${yaw.toFixed(2)}deg)` : "none";
       });
     };
     spin();
@@ -1023,7 +1028,7 @@
         terminar();
         return;
       }
-      const src = `img/vueltas/${clave}-${String(numero).padStart(2, "0")}.jpg?v=3`;
+      const src = `img/vueltas/${clave}-${String(numero).padStart(2, "0")}.jpg?v=4`;
       const image = new Image();
       image.onload = () => {
         urls.push(src);
@@ -1064,9 +1069,9 @@
   });
   stage.addEventListener("pointermove", (event) => {
     if (!dragging) return;
-    if (porAncho) angle = anchorA + (anchorX - event.clientX) / Math.max(1, stage.clientWidth) * 360;
+    if (porAncho) angle = anchorA + (anchorX - event.clientX) / Math.max(1, stage.clientWidth) * 720;
     else {
-      angle += (event.clientX - lastX) * 0.45;
+      angle += (event.clientX - lastX) * 0.95;
       lastX = event.clientX;
     }
     paint();
