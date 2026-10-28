@@ -242,7 +242,15 @@ function priceLabel(item) {
   return item && item.price ? money(item.price) : "A consultar";
 }
 
-window.DT_VISTAS = window.DT_VISTAS || { "DT-1299": 4 };
+window.DT_VISTAS = window.DT_VISTAS || {
+  "DT-1079": 4, "DT-1080": 4, "DT-1188": 4, "DT-1299": 4,
+  "DT-1300": 4, "DT-1301": 4, "DT-1302": 4, "DT-1303": 4, "DT-1304": 4, "DT-1305": 4,
+  "DT-1306": 4, "DT-1307": 4, "DT-1308": 4, "DT-1309": 4, "DT-1310": 4, "DT-1311": 4,
+  "DT-1312": 4, "DT-1313": 4, "DT-1314": 4, "DT-1315": 4, "DT-1316": 4, "DT-1317": 4,
+  "DT-1318": 4, "DT-1319": 4, "DT-1320": 4, "DT-1321": 4, "DT-1322": 4, "DT-1323": 4,
+  "DT-1324": 4, "DT-1325": 4, "DT-1326": 4, "DT-1327": 4, "DT-1328": 4, "DT-1329": 4,
+  "DT-1330": 4, "DT-1331": 4, "DT-1332": 4, "DT-1333": 4, "DT-1334": 4, "DT-1335": 4
+};
 
 function productImage(item) {
   if (!item) return "";
