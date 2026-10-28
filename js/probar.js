@@ -1,10 +1,22 @@
 (function () {
   const grid = document.querySelector("[data-fit-grid]");
-  if (!grid || !window.DT_CATALOG) return;
+  const tabs = document.querySelector("[data-fit-tabs]");
+  if (!grid || !tabs || !window.DT_CATALOG) return;
   const escapeHtml = (value) => String(value || "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
   const plain = (value) => String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const abajo = new Set(["DT-1079", "DT-1080", "DT-1323", "DT-1325", "DT-1326", "DT-1327", "DT-1328", "DT-1329", "DT-1330"]);
   const completo = new Set(["DT-1324", "DT-1331", "DT-1332", "DT-1333", "DT-1334", "DT-1335"]);
+  const nombres = [
+    ["camisas", "Camisas"],
+    ["chaquetas", "Chaquetas"],
+    ["chalecos", "Chalecos"],
+    ["pantalones", "Pantalones"],
+    ["uniformes", "Uniformes"],
+    ["gorras", "Gorras"],
+    ["botas", "Botas"],
+    ["reatas", "Reatas"],
+    ["guantes", "Guantes"]
+  ];
   const catalogo = window.DT_CATALOG.filter((item) => item.photo !== false);
   const stage = document.querySelector("[data-fit-stage]");
   const name = document.querySelector("[data-fit-name]");
@@ -12,7 +24,7 @@
   const picksEl = document.querySelector("[data-fit-picks]");
   const add = document.querySelector("[data-fit-add]");
   const puesto = { arriba: null, abajo: null, completo: null, cabeza: null, pies: null, cintura: null, manos: null, extra: [] };
-  let tab = "prendas";
+  let tab = "camisas";
   let frames = [];
   let extras = [];
   let angle = 0;
@@ -24,17 +36,34 @@
     return !!(window.DT_VISTAS && window.DT_VISTAS[item.id]);
   }
 
+  function categoria(item) {
+    const nombre = plain(item.name);
+    const texto = plain(`${item.name} ${item.line}`);
+    if (esPrenda(item)) {
+      if (/uniforme|overol/.test(nombre)) return "uniformes";
+      if (/chaqueta/.test(nombre)) return "chaquetas";
+      if (/chaleco/.test(nombre)) return "chalecos";
+      if (/\bpantalon|\bfalda|\blicra\b/.test(nombre)) return "pantalones";
+      return "camisas";
+    }
+    if (item.stage === "cabeza" || /gorra|boina|pasamontan|cachucha|casco/.test(texto)) return "gorras";
+    if (item.stage === "pie" || /bota|zapato/.test(texto)) return "botas";
+    if (/reata|correa|cinturon/.test(texto)) return "reatas";
+    if (/guante|gafa/.test(texto)) return "guantes";
+    return "";
+  }
+
   function zona(item) {
     if (esPrenda(item)) {
       if (abajo.has(item.id)) return "abajo";
       if (completo.has(item.id)) return "completo";
       return "arriba";
     }
-    const texto = plain(`${item.line} ${item.name} ${item.stage}`);
-    if (item.stage === "cabeza" || /gorra|boina|pasamontan|cachucha|casco/.test(texto)) return "cabeza";
-    if (item.stage === "pie" || /bota|zapato|calzado/.test(texto)) return "pies";
-    if (/reata|correa|cinturon/.test(texto)) return "cintura";
-    if (/gafa|guante|linterna/.test(texto)) return "manos";
+    const grupo = categoria(item);
+    if (grupo === "gorras") return "cabeza";
+    if (grupo === "botas") return "pies";
+    if (grupo === "reatas") return "cintura";
+    if (grupo === "guantes") return "manos";
     return "extra";
   }
 
@@ -59,6 +88,19 @@
     return [...prendasPuestas(), ...accesoriosPuestos()];
   }
 
+  function estaPuesto(id) {
+    return todosPuestos().some((item) => item.id === id);
+  }
+
+  function maniqui() {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "fit-blank");
+    svg.setAttribute("viewBox", "0 0 300 640");
+    svg.setAttribute("aria-hidden", "true");
+    svg.innerHTML = '<ellipse cx="150" cy="72" rx="36" ry="44" fill="#f4f5f6"/><path fill="#f7f8f8" d="M128 112h44l8 36H120z"/><path fill="#f4f5f6" d="M78 168c22-22 122-22 144 0l22 78c8 86-8 168-28 196h-28l-12-120-16 16-16-16-12 120H104c-20-28-36-110-28-196z"/><path fill="#eceeed" d="M78 176c-40 36-46 120-38 176 4 16 18 18 24 4 10-48 16-110 36-148z"/><path fill="#eceeed" d="M222 176c40 36 46 120 38 176-4 16-18 18-24 4-10-48-16-110-36-148z"/><path fill="#f4f5f6" d="M112 430h34l-4 168h-34z"/><path fill="#f4f5f6" d="M154 430h34l4 168h-34z"/>';
+    return svg;
+  }
+
   function frame(item, numero, clase) {
     const image = document.createElement("img");
     image.src = esPrenda(item) ? vista(item, numero) : foto(item);
@@ -66,11 +108,10 @@
     image.draggable = false;
     image.className = clase;
     image.dataset.capa = "prenda";
-    image.style.cssText = "position:absolute;width:100%;object-fit:contain;opacity:0;visibility:hidden;pointer-events:none;";
+    image.style.cssText = "position:absolute;width:100%;object-fit:contain;opacity:0;visibility:hidden;pointer-events:none;z-index:1;";
     if (clase === "fit-arriba") image.style.cssText += "top:0;height:64%;";
     else if (clase === "fit-abajo") image.style.cssText += "bottom:0;height:54%;";
     else image.style.cssText += "inset:0;height:100%;";
-    stage.append(image);
     return image;
   }
 
@@ -112,17 +153,16 @@
 
   function render() {
     const prendas = prendasPuestas();
-    const accesorios = accesoriosPuestos();
-    name.textContent = todosPuestos().map((item) => item.name).join(" + ") || "Elige una prenda o un accesorio";
+    const puestos = todosPuestos();
+    name.textContent = puestos.map((item) => item.name).join(" + ") || "Maniquí en blanco";
     note.textContent = prendas.length
-      ? "Arrastre para girar la prenda. Los accesorios se ven de frente, sobre el uniforme."
-      : "Añada una prenda y luego los accesorios: gorra, botas, reata, guantes o lo que lleve el avatar.";
-    add.hidden = !todosPuestos().length;
-    stage.replaceChildren();
+      ? "Arrastre para girar. Toque la pieza puesta para quitarla y probar otra."
+      : "El maniquí está en blanco. Elija una categoría y ponga la primera pieza.";
+    add.hidden = !puestos.length;
+    stage.replaceChildren(maniqui());
     frames = [];
     extras = [];
-    const doble = puesto.arriba && puesto.abajo && !puesto.completo;
-    const cuerpo = puesto.completo ? [puesto.completo] : doble ? [puesto.arriba, puesto.abajo] : prendas;
+    const cuerpo = puesto.completo ? [puesto.completo] : prendas;
     cuerpo.forEach((item) => {
       const clase = !puesto.completo && puesto.arriba && puesto.abajo
         ? (abajo.has(item.id) ? "fit-abajo" : "fit-arriba")
@@ -135,7 +175,7 @@
       }
     });
     let extraIndex = 0;
-    accesorios.forEach((item) => {
+    accesoriosPuestos().forEach((item) => {
       const image = document.createElement("img");
       image.src = foto(item);
       image.alt = item.name;
@@ -163,6 +203,11 @@
   }
 
   function poner(item) {
+    if (estaPuesto(item.id)) {
+      quitar(item.id);
+      render();
+      return;
+    }
     const zone = zona(item);
     if (zone === "arriba") {
       puesto.arriba = item;
@@ -184,31 +229,33 @@
     render();
   }
 
+  function pintarTabs() {
+    const visibles = nombres.filter(([id]) => catalogo.some((item) => categoria(item) === id));
+    tabs.innerHTML = visibles.map(([id, etiqueta]) => `<button class="filter${id === tab ? " is-active" : ""}" type="button" data-fit-tab="${id}">${etiqueta}</button>`).join("");
+  }
+
   function pintarGrid() {
-    const lista = catalogo.filter((item) => {
-      if (tab === "prendas") return esPrenda(item);
-      if (tab === "accesorios") return !esPrenda(item);
-      return true;
-    });
+    const lista = catalogo.filter((item) => categoria(item) === tab);
     grid.innerHTML = lista.map((item) => {
-      const prenda = esPrenda(item);
-      return `<article class="card">
+      const puestoAhora = estaPuesto(item.id);
+      return `<article class="card${puestoAhora ? " is-on" : ""}">
         <button class="plate plate-photo" type="button" data-fit-try="${item.id}"><img src="${foto(item)}" alt="${escapeHtml(item.name)}"></button>
         <div class="card-body">
-          <p class="card-kicker"><span>${item.id}</span><span>${escapeHtml(item.line)}</span></p>
+          <p class="card-kicker"><span>${item.id}</span></p>
           <h3>${escapeHtml(item.name)}</h3>
-          <button class="consult" type="button" data-fit-try="${item.id}">${prenda ? "Probar" : "Añadir"}</button>
-          <a class="consult" href="producto.html?id=${item.id}">${prenda ? "Ver en 360" : "Ver foto"}</a>
+          <button class="consult" type="button" data-fit-try="${item.id}">${puestoAhora ? "Quitar" : "Poner"}</button>
         </div>
       </article>`;
-    }).join("");
+    }).join("") || `<p class="lead">En esta categoría no hay fotos listas.</p>`;
   }
 
   grid.addEventListener("click", (event) => {
     const button = event.target.closest("[data-fit-try]");
     if (!button) return;
     const item = catalogo.find((entry) => entry.id === button.dataset.fitTry);
-    if (item) poner(item);
+    if (!item) return;
+    poner(item);
+    pintarGrid();
   });
 
   picksEl.addEventListener("click", (event) => {
@@ -216,14 +263,15 @@
     if (!button) return;
     quitar(button.dataset.fitDrop);
     render();
+    pintarGrid();
   });
 
-  document.querySelectorAll("[data-fit-tab]").forEach((button) => {
-    button.addEventListener("click", () => {
-      tab = button.dataset.fitTab;
-      document.querySelectorAll("[data-fit-tab]").forEach((item) => item.classList.toggle("is-active", item === button));
-      pintarGrid();
-    });
+  tabs.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-fit-tab]");
+    if (!button) return;
+    tab = button.dataset.fitTab;
+    pintarTabs();
+    pintarGrid();
   });
 
   stage.addEventListener("pointerdown", (event) => {
@@ -265,18 +313,22 @@
       saved = [];
     }
     const ids = (Array.isArray(saved) ? saved : []).map((line) => line.id);
-    const items = ids.map((id) => catalogo.find((item) => item.id === id)).filter(Boolean);
+    const items = ids.map((id) => catalogo.find((item) => item.id === id)).filter((item) => item && categoria(item));
     if (!items.length) {
-      note.textContent = "En el carrito no hay productos para armar el avatar.";
+      note.textContent = "En el carrito no hay prendas ni accesorios para vestir el maniquí.";
       return;
     }
     ["arriba", "abajo", "completo", "cabeza", "pies", "cintura", "manos"].forEach((key) => { puesto[key] = null; });
     puesto.extra = [];
     items.forEach((item) => poner(item));
+    pintarGrid();
   });
 
-  pintarGrid();
   const preset = catalogo.find((item) => item.id === String(new URLSearchParams(location.search).get("id") || "").toUpperCase());
-  if (preset) poner(preset);
+  if (preset && categoria(preset)) tab = categoria(preset);
+  pintarTabs();
+  pintarGrid();
+  if (preset && categoria(preset)) poner(preset);
   else render();
+  pintarGrid();
 })();

@@ -982,6 +982,34 @@ button.consult {
   cursor: grab;
 }
 
+.fit-blank {
+  position: absolute;
+  z-index: 0;
+  top: 2%;
+  bottom: 2%;
+  left: 50%;
+  height: 96%;
+  width: auto;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.fit-room [data-fit-name] {
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.fit-grid .card.is-on {
+  outline: 1px solid #f4f5f6;
+}
+
 .fit-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -1032,6 +1060,16 @@ button.consult {
   height: 72px;
   object-fit: contain;
   background: radial-gradient(ellipse at 50% 42%, #f7f4ee, #d8d1c6 74%);
+}
+
+.fit-pick span {
+  display: block;
+  overflow: hidden;
+  padding: 0 4px 4px;
+  font-size: 11px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .fit-piece {
@@ -3507,5 +3545,80 @@ select option {
 
   .wrap {
     width: min(1180px, calc(100% - 24px));
+  }
+}
+
+.giro-stage.fit-stage {
+  height: min(68vh, 640px);
+}
+
+@media (max-width: 900px) {
+  .fit-page {
+    padding-top: 18px;
+  }
+
+  .fit-page .page-hero {
+    margin-bottom: 12px;
+  }
+
+  .fit-page .page-hero h1 {
+    font-size: 36px;
+  }
+
+  .fit-page .lead {
+    margin-top: 6px;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .fit-room {
+    position: sticky;
+    top: calc(var(--header) + 6px);
+    z-index: 6;
+  }
+
+  .giro-stage.fit-stage {
+    height: min(56svh, 520px);
+  }
+
+  .fit-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .fit-tabs .filter {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .fit-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fit-grid .plate img {
+    height: 128px;
+  }
+
+  .fit-room .lead {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .fit-page .page-hero h1 {
+    font-size: 32px;
+  }
+
+  .giro-stage.fit-stage {
+    height: min(52svh, 460px);
+  }
+
+  .fit-grid .card-kicker {
+    display: none;
+  }
+
+  .fit-room [data-fit-name] {
+    font-size: 16px;
   }
 }

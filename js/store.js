@@ -87,6 +87,7 @@ function currentPage() {
   const names = [
     ["catalogo-impreso.html", "Catálogo impreso"],
     ["catalogo.html", "Catálogo"],
+    ["probar.html", "Prueba tu uniforme"],
     ["lineas.html", "Líneas"],
     ["institucional.html", "Institucional"],
     ["dotacion.html", "Dotación"],
