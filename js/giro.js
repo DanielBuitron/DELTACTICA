@@ -225,7 +225,7 @@
     const wearTop = item.stage === "ropa" && (full || !lower);
     const wearLegs = item.stage === "ropa" && (full || lower);
     const wearHead = item.stage === "cabeza";
-    const dressed = item.stage === "ropa";
+    const dressed = item.stage === "ropa" && !!(window.DT_VISTAS && window.DT_VISTAS[item.id]);
     const tone = new THREE.Color((tex.tone?.r || 96) / 255, (tex.tone?.g || 100) / 255, (tex.tone?.b || 96) / 255);
     const photo = tex.cut || tex.front;
     const map = new THREE.CanvasTexture(photo);
@@ -1059,14 +1059,16 @@
         cortes.push(segs);
       }
       if (!cortes.some((fila) => fila.length)) return null;
-      const grosor = Math.min(ancho, alto) * 0.012;
+      const grosor = Math.min(ancho, alto) * 0.045;
       const mapa = new THREE.CanvasTexture(canvas);
       mapa.colorSpace = THREE.SRGBColorSpace;
       mapa.anisotropy = renderer.capabilities.getMaxAnisotropy();
       const foto = new THREE.MeshBasicMaterial({ map: mapa, transparent: true, alphaTest: 0.45, side: THREE.FrontSide });
+      const canto = new THREE.MeshBasicMaterial({ color: tone });
       const posiciones = [];
       const uvs = [];
       const indices = [];
+      const bordes = [];
       const poner = (x, y, z, u, v) => {
         posiciones.push(x, y, z);
         uvs.push(u, v);
@@ -1093,15 +1095,20 @@
           const q2 = poner(x1, y1, -z, u0, v1);
           const q3 = poner(x0, y1, -z, u1, v1);
           indices.push(q0, q1, q3, q1, q2, q3);
+          bordes.push(p0, p3, q0, p3, q3, q0);
+          bordes.push(q1, q2, p1, q2, p2, p1);
         });
       }
       if (!indices.length) return null;
       const geometria = new THREE.BufferGeometry();
       geometria.setAttribute("position", new THREE.Float32BufferAttribute(posiciones, 3));
       geometria.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-      geometria.setIndex(indices);
+      geometria.setIndex(indices.concat(bordes));
+      geometria.clearGroups();
+      geometria.addGroup(0, indices.length, 0);
+      geometria.addGroup(indices.length, bordes.length, 1);
       geometria.computeVertexNormals();
-      const malla = new THREE.Mesh(geometria, foto);
+      const malla = new THREE.Mesh(geometria, [foto, canto]);
       malla.position.y = alto / 2 + 0.08;
       return malla;
     }
@@ -1249,7 +1256,7 @@
         width = 1.35;
         height = width / aspect;
       }
-      const lataFoto = /aceite|gas pimienta|linterna|pipeta|repelente|cantimplora|marmita|tarro/.test(label) || siluetaLata(photo);
+      const lataFoto = /aceite|gas pimienta/.test(label);
       if (lataFoto) {
         group.add(envase(photo, width, height));
       } else {
