@@ -35,7 +35,7 @@
     return;
   }
   if (related) {
-    related.innerHTML = list.filter((entry) => entry.line === item.line && entry.id !== item.id && entry.photo !== false).slice(0, 4).map((entry) => `<a href="producto.html?id=${entry.id}"><img src="${entry.image}" alt=""><span>${entry.name}</span></a>`).join("");
+    related.innerHTML = list.filter((entry) => entry.line === item.line && entry.id !== item.id && entry.photo !== false).slice(0, 4).map((entry) => `<a href="producto.html?id=${entry.id}"><img src="${typeof productImage === "function" ? productImage(entry) : entry.image}" alt=""><span>${entry.name}</span></a>`).join("");
   }
 
   host.innerHTML = `<div class="giro">
@@ -45,6 +45,7 @@
     <div class="giro-controls">
       <button class="btn btn-ghost" type="button" data-giro-play>Pausar</button>
       <input data-giro-range type="range" min="0" max="359" value="12" aria-label="Girar 360 grados">
+      <button class="btn btn-ghost" type="button" data-giro-zoom>Ver grande</button>
     </div>
   </div>`;
   const stage = host.querySelector("[data-giro-stage]");
@@ -53,6 +54,9 @@
   let angle = 12;
   let dragging = false;
   let lastX = 0;
+  let anchorX = 0;
+  let anchorA = 0;
+  let porAncho = false;
   let auto = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let spin = null;
   if (!auto && play) play.textContent = "Girar";
@@ -956,12 +960,68 @@
     spin();
   }
 
-  cutout(item.image).then((tex) => {
-    if (!tex) return;
-    import("https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js").then((THREE) => mount(THREE, tex)).catch(() => {
-      stage.innerHTML = `<p class="giro-missing">No se pudo abrir el visor 3D.</p>`;
+  function mostrarVistas(urls) {
+    porAncho = true;
+    angle = 0;
+    if (range) range.value = "0";
+    if (note) note.textContent = "Arrastre de lado a lado para dar la vuelta. A la mitad se ve la espalda.";
+    const frames = urls.map((src, index) => {
+      const image = document.createElement("img");
+      image.src = src;
+      image.alt = index ? "" : item.name;
+      image.draggable = false;
+      image.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;";
+      stage.append(image);
+      return image;
     });
-  });
+    spin = () => {
+      let turn = angle % 360;
+      if (turn < 0) turn += 360;
+      const pos = turn / 360 * frames.length;
+      const index = Math.floor(pos) % frames.length;
+      const frac = pos - Math.floor(pos);
+      frames.forEach((image, key) => {
+        let opacity = 0;
+        if (key === index) opacity = 1 - frac;
+        else if (key === (index + 1) % frames.length) opacity = frac;
+        image.style.opacity = String(opacity);
+      });
+    };
+    spin();
+  }
+
+  function buscarVistas() {
+    const clave = item.id.toLowerCase().replace(/-/g, "");
+    const urls = [];
+    let numero = 1;
+    const paso = () => {
+      if (numero > 8) {
+        terminar();
+        return;
+      }
+      const src = `img/vueltas/${clave}-${String(numero).padStart(2, "0")}.jpg?v=1`;
+      const image = new Image();
+      image.onload = () => {
+        urls.push(src);
+        numero += 1;
+        paso();
+      };
+      image.onerror = () => terminar();
+      image.src = src;
+    };
+    const terminar = () => {
+      if (urls.length > 1) mostrarVistas(urls);
+      else cutout(item.image).then((tex) => {
+        if (!tex) return;
+        import("https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js").then((THREE) => mount(THREE, tex)).catch(() => {
+          stage.innerHTML = `<p class="giro-missing">No se pudo abrir el visor 3D.</p>`;
+        });
+      });
+    };
+    paso();
+  }
+
+  buscarVistas();
 
   function paint() {
     const turn = (angle % 360 + 360) % 360;
@@ -973,13 +1033,18 @@
     dragging = true;
     auto = false;
     lastX = event.clientX;
+    anchorX = event.clientX;
+    anchorA = angle;
     stage.setPointerCapture(event.pointerId);
     if (play) play.textContent = "Girar";
   });
   stage.addEventListener("pointermove", (event) => {
     if (!dragging) return;
-    angle += (event.clientX - lastX) * 0.45;
-    lastX = event.clientX;
+    if (porAncho) angle = anchorA + (anchorX - event.clientX) / Math.max(1, stage.clientWidth) * 360;
+    else {
+      angle += (event.clientX - lastX) * 0.45;
+      lastX = event.clientX;
+    }
     paint();
   });
   const release = () => { dragging = false; };
@@ -994,6 +1059,20 @@
   play.addEventListener("click", () => {
     auto = !auto;
     play.textContent = auto ? "Pausar" : "Girar";
+  });
+  const zoom = host.querySelector("[data-giro-zoom]");
+  if (zoom) zoom.addEventListener("click", () => {
+    const luz = document.createElement("dialog");
+    luz.style.cssText = "border:0;padding:0;background:#f4efe6;max-width:min(920px,94vw);";
+    const grande = document.createElement("img");
+    grande.src = item.image;
+    grande.alt = item.name;
+    grande.style.cssText = "display:block;width:100%;height:auto;";
+    luz.append(grande);
+    luz.addEventListener("click", () => luz.close());
+    luz.addEventListener("close", () => luz.remove());
+    document.body.append(luz);
+    luz.showModal();
   });
   window.addEventListener("keydown", (event) => {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
