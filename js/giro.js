@@ -193,7 +193,7 @@
     renderer.setSize(stage.clientWidth, stage.clientHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.08;
+    renderer.toneMappingExposure = 1.22;
     stage.appendChild(renderer.domElement);
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(30, 1, 0.08, 50);
@@ -205,9 +205,12 @@
     const fill = new THREE.DirectionalLight(0xd5deee, 0.7);
     fill.position.set(-4.4, 1.8, 2.8);
     scene.add(fill);
-    const rim = new THREE.DirectionalLight(0xfff2e4, 1);
-    rim.position.set(-1.6, 3.2, -4.6);
+    const rim = new THREE.DirectionalLight(0xfff2e4, 2.4);
+    rim.position.set(-2.2, 3.4, -4.2);
     scene.add(rim);
+    const rim2 = new THREE.DirectionalLight(0xd7e2ea, 1.5);
+    rim2.position.set(3.2, 2.4, -3.2);
+    scene.add(rim2);
 
     const label = plain(item.name);
     const lower = /pantalon|falda|short|pantaloneta|bermuda/.test(label);
@@ -248,185 +251,438 @@
       return mesh;
     }
 
-    const worn = [];
-    function dress(mesh, span) {
-      const material = cloth.clone();
-      material.customProgramCacheKey = () => "prenda-foto";
-      material.onBeforeCompile = (shader) => {
-        shader.uniforms.garmentMap = { value: map };
-        shader.uniforms.meshMatrix = { value: mesh.matrix.clone() };
-        shader.uniforms.span = { value: span };
-        material.userData.shader = shader;
-        shader.vertexShader = `uniform mat4 meshMatrix;\nvarying vec3 vWearP;\nvarying vec3 vWearN;\n${shader.vertexShader}`;
-        shader.vertexShader = shader.vertexShader.replace(
-          "#include <begin_vertex>",
-          `#include <begin_vertex>
-          vWearP = (meshMatrix * vec4(position, 1.0)).xyz;
-          vWearN = normalize(mat3(meshMatrix) * normal);`
-        );
-        shader.fragmentShader = `uniform sampler2D garmentMap;\nuniform vec4 span;\nvarying vec3 vWearP;\nvarying vec3 vWearN;\n${shader.fragmentShader}`;
-        shader.fragmentShader = shader.fragmentShader.replace(
-          "#include <color_fragment>",
-          `#include <color_fragment>
-          {
-            float gu = (vWearP.x - span.x) / (span.y - span.x);
-            float gv = (vWearP.y - span.z) / (span.w - span.z);
-            vec4 gtex = texture2D(garmentMap, vec2(gu, gv));
-            float gfront = smoothstep(0.02, 0.62, vWearN.z);
-            float gok = gfront * step(0.0, gu) * step(gu, 1.0) * step(0.0, gv) * step(gv, 1.0) * smoothstep(0.18, 0.62, gtex.a);
-            diffuseColor.rgb = mix(diffuseColor.rgb, gtex.rgb, gok);
-          }`
-        );
-      };
-      mesh.material = material;
-      worn.push(mesh);
+    function slice(canvas, x0, y0, x1, y1) {
+      const width = Math.max(1, Math.round((x1 - x0) * canvas.width));
+      const height = Math.max(1, Math.round((y1 - y0) * canvas.height));
+      const cut = document.createElement("canvas");
+      cut.width = width;
+      cut.height = height;
+      cut.getContext("2d").drawImage(canvas, x0 * canvas.width, y0 * canvas.height, width, height, 0, 0, width, height);
+      return cut;
+    }
+
+    function averageColor(canvas) {
+      const pixels = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
+      let red = 0;
+      let green = 0;
+      let blue = 0;
+      let count = 0;
+      for (let index = 0; index < pixels.length; index += 24) {
+        if (pixels[index + 3] < 40) continue;
+        red += pixels[index];
+        green += pixels[index + 1];
+        blue += pixels[index + 2];
+        count += 1;
+      }
+      if (!count) return tone.clone();
+      return new THREE.Color(red / count / 255, green / count / 255, blue / count / 255);
+    }
+
+    function wrapMap(crop) {
+      const size = 1024;
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const paint = canvas.getContext("2d");
+      const ink = averageColor(crop);
+      paint.fillStyle = `#${ink.getHexString()}`;
+      paint.fillRect(0, 0, size, size);
+      paint.drawImage(crop, 0, 0, size, size);
+      const band = size * 0.5;
+      paint.drawImage(crop, (size - band) / 2, 0, band, size);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      texture.offset.x = 0.5;
+      return { texture, ink };
+    }
+
+    function erode(canvas, radius) {
+      const source = document.createElement("canvas");
+      source.width = canvas.width;
+      source.height = canvas.height;
+      const paint = source.getContext("2d", { willReadFrequently: true });
+      paint.drawImage(canvas, 0, 0);
+      const image = paint.getImageData(0, 0, source.width, source.height);
+      const copy = new Uint8ClampedArray(image.data);
+      const width = source.width;
+      const height = source.height;
+      let kept = 0;
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          const index = (y * width + x) * 4;
+          if (copy[index + 3] < 24) continue;
+          let edge = false;
+          for (let dy = -radius; dy <= radius && !edge; dy += 1) {
+            for (let dx = -radius; dx <= radius; dx += 1) {
+              const xx = x + dx;
+              const yy = y + dy;
+              if (xx < 0 || yy < 0 || xx >= width || yy >= height || copy[(yy * width + xx) * 4 + 3] < 24) {
+                edge = true;
+                break;
+              }
+            }
+          }
+          if (edge) image.data[index + 3] = 0;
+          else kept += 1;
+        }
+      }
+      if (kept < 80) return canvas;
+      paint.putImageData(image, 0, 0);
+      return source;
+    }
+
+    function tube(crop, radiusTop, radiusBottom, length, open) {
+      const wrapped = wrapMap(tight(erode(crop, 6)));
+      const side = new THREE.MeshPhysicalMaterial({
+        map: wrapped.texture,
+        color: 0xffffff,
+        roughness: 0.45,
+        metalness: 0.02,
+        sheen: 0.5,
+        sheenRoughness: 0.42,
+        sheenColor: wrapped.ink,
+      });
+      const geometry = new THREE.CylinderGeometry(radiusTop, radiusBottom, length, 48, 1, !!open);
+      if (open) return new THREE.Mesh(geometry, side);
+      const cap = new THREE.MeshPhysicalMaterial({ color: wrapped.ink, roughness: 0.7, sheen: 0.35, sheenColor: wrapped.ink });
+      return new THREE.Mesh(geometry, [side, cap, cap]);
+    }
+
+    function limb(crop, radiusTop, radiusBottom, from, to) {
+      const dx = to[0] - from[0];
+      const dy = to[1] - from[1];
+      const dz = to[2] - from[2];
+      const length = Math.max(0.05, Math.hypot(dx, dy, dz));
+      const mesh = tube(crop, radiusTop, radiusBottom, length);
+      mesh.position.set((from[0] + to[0]) / 2, (from[1] + to[1]) / 2, (from[2] + to[2]) / 2);
+      const up = new THREE.Vector3(-dx, -dy, -dz).normalize();
+      const front = Math.abs(up.z) > 0.92 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
+      const side = new THREE.Vector3().crossVectors(up, front).normalize();
+      const facing = new THREE.Vector3().crossVectors(side, up).normalize();
+      mesh.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(side, up, facing));
       return mesh;
     }
 
-    function body(parent) {
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 40, 28), skin);
-      head.scale.set(0.9, 1.08, 0.88);
-      head.position.set(0, 1.7, 0.02);
-      parent.add(head);
-      const neck = new THREE.Mesh(new THREE.CapsuleGeometry(0.046, 0.05, 6, 16), skin);
-      neck.position.set(0, 1.54, 0.01);
-      parent.add(neck);
-      if (!wearTop) {
-        const profile = [
-          [0.15, 0.78],
-          [0.19, 0.98],
-          [0.2, 1.18],
-          [0.16, 1.36],
-          [0.07, 1.48],
-        ].map((point) => new THREE.Vector2(point[0], point[1]));
-        parent.add(new THREE.Mesh(new THREE.LatheGeometry(profile, 40), under));
-        [-1, 1].forEach((side) => {
-          const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.05, 0.42, 6, 16), under);
-          arm.position.set(side * 0.26, 1.08, 0);
-          arm.rotation.z = side * 0.16;
-          parent.add(arm);
-          const hand = new THREE.Mesh(new THREE.SphereGeometry(0.04, 16, 12), skin);
-          hand.position.set(side * 0.32, 0.82, 0.03);
-          parent.add(hand);
+    function tight(canvas) {
+      const pixels = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
+      let minX = canvas.width;
+      let minY = canvas.height;
+      let maxX = 0;
+      let maxY = 0;
+      let found = 0;
+      for (let y = 0; y < canvas.height; y += 2) {
+        for (let x = 0; x < canvas.width; x += 2) {
+          if (pixels[(y * canvas.width + x) * 4 + 3] < 40) continue;
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+          found += 1;
+        }
+      }
+      if (!found) return canvas;
+      return slice(canvas, minX / canvas.width, minY / canvas.height, Math.min(1, (maxX + 2) / canvas.width), Math.min(1, (maxY + 2) / canvas.height));
+    }
+
+    function part(canvas, x0, x1) {
+      return tight(slice(canvas, x0, 0.01, x1, 0.99));
+    }
+
+    function loopsOf(canvas) {
+      const cols = 200;
+      const rows = Math.max(12, Math.round(cols * canvas.height / Math.max(1, canvas.width)));
+      const pixels = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
+      const grid = new Uint8Array((cols + 1) * (rows + 1));
+      const stride = cols + 1;
+      for (let y = 0; y <= rows; y += 1) {
+        for (let x = 0; x <= cols; x += 1) {
+          const px = Math.min(canvas.width - 1, Math.round(x / cols * (canvas.width - 1)));
+          const py = Math.min(canvas.height - 1, Math.round(y / rows * (canvas.height - 1)));
+          grid[y * stride + x] = pixels[(py * canvas.width + px) * 4 + 3] > 90 ? 1 : 0;
+        }
+      }
+      const segments = [];
+      const links = [
+        [],
+        [[0, 3]],
+        [[3, 1]],
+        [[0, 1]],
+        [[1, 2]],
+        [[0, 2], [1, 3]],
+        [[3, 2]],
+        [[0, 2]],
+        [[2, 0]],
+        [[2, 3]],
+        [[2, 1], [0, 3]],
+        [[2, 1]],
+        [[1, 0]],
+        [[1, 3]],
+        [[3, 0]],
+      ];
+      for (let y = 0; y < rows; y += 1) {
+        for (let x = 0; x < cols; x += 1) {
+          const code = grid[y * stride + x]
+            | (grid[y * stride + x + 1] << 1)
+            | (grid[(y + 1) * stride + x + 1] << 2)
+            | (grid[(y + 1) * stride + x] << 3);
+          const edge = [
+            [x, y + 0.5],
+            [x + 1, y + 0.5],
+            [x + 0.5, y + 1],
+            [x + 0.5, y],
+          ];
+          (links[code] || []).forEach(([from, to]) => segments.push([edge[from], edge[to]]));
+        }
+      }
+      const next = new Map();
+      const stamp = (point) => `${point[0].toFixed(1)},${point[1].toFixed(1)}`;
+      segments.forEach(([from, to]) => {
+        const key = stamp(from);
+        if (!next.has(key)) next.set(key, []);
+        next.get(key).push(to);
+      });
+      const used = new Set();
+      const loops = [];
+      segments.forEach(([from, to]) => {
+        const start = stamp(from);
+        if (used.has(`${start}>${stamp(to)}`)) return;
+        const loop = [from.slice()];
+        let current = to;
+        for (let guard = 0; guard < segments.length + 2; guard += 1) {
+          const mark = `${stamp(loop[loop.length - 1])}>${stamp(current)}`;
+          if (used.has(mark)) break;
+          used.add(mark);
+          if (stamp(current) === start) break;
+          loop.push(current.slice());
+          const options = next.get(stamp(current)) || [];
+          const following = options.find((point) => !used.has(`${stamp(current)}>${stamp(point)}`));
+          if (!following) break;
+          current = following;
+        }
+        if (loop.length > 14 && stamp(current) === start) loops.push(loop);
+      });
+      const area = (loop) => {
+        let sum = 0;
+        for (let index = 0; index < loop.length; index += 1) {
+          const a = loop[index];
+          const b = loop[(index + 1) % loop.length];
+          sum += a[0] * b[1] - b[0] * a[1];
+        }
+        return sum / 2;
+      };
+      const contains = (point, loop) => {
+        let hits = 0;
+        for (let index = 0; index < loop.length; index += 1) {
+          const a = loop[index];
+          const b = loop[(index + 1) % loop.length];
+          if ((a[1] > point[1]) === (b[1] > point[1])) continue;
+          const x = a[0] + (b[0] - a[0]) * (point[1] - a[1]) / (b[1] - a[1]);
+          if (x > point[0]) hits += 1;
+        }
+        return hits % 2 === 1;
+      };
+      const smooth = (loop) => {
+        let points = loop;
+        if (points.length > 280) {
+          const kept = [];
+          const step = points.length / 220;
+          for (let index = 0; index < 220; index += 1) kept.push(points[Math.floor(index * step)]);
+          points = kept;
+        }
+        for (let pass = 0; pass < 3; pass += 1) {
+          const nextPoints = [];
+          for (let index = 0; index < points.length; index += 1) {
+            const a = points[index];
+            const b = points[(index + 1) % points.length];
+            nextPoints.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25]);
+            nextPoints.push([a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]);
+          }
+          points = nextPoints;
+        }
+        return points;
+      };
+      const shapes = loops
+        .map((loop) => ({ source: loop, loop: smooth(loop), area: Math.abs(area(loop)) }))
+        .filter((entry) => entry.area > cols * rows * 0.004)
+        .sort((a, b) => b.area - a.area);
+      return shapes
+        .filter((entry, index) => !shapes.slice(0, index).some((outer) => contains(entry.source[0], outer.loop)))
+        .map((entry) => {
+          const holes = loops.filter((loop) => loop !== entry.source && Math.abs(area(loop)) > 30 && contains(loop[0], entry.loop) && !loops.some((other) => other !== entry.source && other !== loop && contains(other[0], entry.loop) && contains(loop[0], other)));
+          return { outer: entry.loop, holes: holes.map(smooth) };
         });
-      }
-      [-1, 1].forEach((side) => {
-        const legMat = wearLegs && !wearTop ? cloth.clone() : (wearLegs ? cloth : under);
-        const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.078, 0.5, 8, 18), legMat);
-        leg.scale.set(1.35, 1, 0.78);
-        leg.position.set(side * 0.11, 0.4, 0);
-        parent.add(leg);
-        if (wearLegs && !wearTop) dress(leg, new THREE.Vector4(-0.38, 0.38, 0.08, 0.78));
-        const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.065, 0.22), shoeMat);
-        shoe.position.set(side * 0.11, 0.045, 0.03);
-        parent.add(shoe);
-      });
-      if (wearHead) {
-        const crown = new THREE.Mesh(new THREE.SphereGeometry(0.145, 36, 22, 0, Math.PI * 2, 0, Math.PI * 0.58), cloth);
-        crown.scale.set(1.2, 0.7, 1.08);
-        crown.position.set(0, 1.76, 0.02);
-        parent.add(crown);
-        dress(crown, new THREE.Vector4(-0.22, 0.22, 1.58, 1.9));
-      }
     }
 
-    function roundedRect(width, height, radius) {
-      const shape = new THREE.Shape();
-      const x = -width / 2;
-      const y = -height / 2;
-      const r = Math.min(radius, width / 2 - 0.001, height / 2 - 0.001);
-      shape.moveTo(x + r, y);
-      shape.lineTo(x + width - r, y);
-      shape.absarc(x + width - r, y + r, r, -Math.PI / 2, 0, false);
-      shape.lineTo(x + width, y + height - r);
-      shape.absarc(x + width - r, y + height - r, r, 0, Math.PI / 2, false);
-      shape.lineTo(x + r, y + height);
-      shape.absarc(x + r, y + height - r, r, Math.PI / 2, Math.PI, false);
-      shape.lineTo(x, y + r);
-      shape.absarc(x + r, y + r, r, Math.PI, Math.PI * 1.5, false);
-      return shape;
+    function solidMap(canvas) {
+      const baked = document.createElement("canvas");
+      baked.width = canvas.width;
+      baked.height = canvas.height;
+      const paint = baked.getContext("2d");
+      paint.fillStyle = `#${tone.getHexString()}`;
+      paint.fillRect(0, 0, baked.width, baked.height);
+      paint.drawImage(canvas, 0, 0);
+      const texture = new THREE.CanvasTexture(baked);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      return texture;
     }
 
-    function showpiece(width, height, depth) {
-      const faceW = width * 0.96;
-      const faceH = height * 0.96;
-      const geometry = new THREE.ExtrudeGeometry(roundedRect(faceW, faceH, Math.min(faceW, faceH) * 0.08), {
-        depth,
-        bevelEnabled: true,
-        bevelThickness: depth * 0.16,
-        bevelSize: Math.min(faceW, faceH) * 0.025,
-        bevelSegments: 3,
-        curveSegments: 10,
-      });
-      geometry.translate(0, 0, -depth / 2);
-      geometry.computeVertexNormals();
+    function formMesh(canvas, width, height, depth) {
+      const pieces = loopsOf(canvas);
+      if (!pieces.length) {
+        const rows = 160;
+        const pixels = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
+        const left = [];
+        const right = [];
+        for (let row = 0; row < rows; row += 1) {
+          const y = Math.min(canvas.height - 1, Math.round(row / (rows - 1) * (canvas.height - 1)));
+          let min = -1;
+          let max = -1;
+          for (let x = 0; x < canvas.width; x += 2) {
+            if (pixels[(y * canvas.width + x) * 4 + 3] > 80) { min = x; break; }
+          }
+          for (let x = canvas.width - 1; x >= 0; x -= 2) {
+            if (pixels[(y * canvas.width + x) * 4 + 3] > 80) { max = x; break; }
+          }
+          if (min < 0) continue;
+          const worldY = (0.5 - row / (rows - 1)) * height;
+          left.push([(min / canvas.width - 0.5) * width, worldY]);
+          right.push([(max / canvas.width - 0.5) * width, worldY]);
+        }
+        if (left.length > 8) {
+          let ring = left.concat(right.reverse());
+          for (let pass = 0; pass < 2; pass += 1) {
+            const next = [];
+            for (let index = 0; index < ring.length; index += 1) {
+              const a = ring[index];
+              const b = ring[(index + 1) % ring.length];
+              next.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25]);
+              next.push([a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]);
+            }
+            ring = next;
+          }
+          const shape = new THREE.Shape();
+          ring.forEach((point, index) => (index ? shape.lineTo(point[0], point[1]) : shape.moveTo(point[0], point[1])));
+          pieces.push({ shape });
+        }
+      }
+      if (!pieces.length) return null;
+      const texture = solidMap(canvas);
       const face = new THREE.MeshPhysicalMaterial({
-        map,
+        map: texture,
         color: 0xffffff,
-        roughness: 0.4,
-        metalness: 0.05,
-        clearcoat: 0.28,
-        clearcoatRoughness: 0.32,
+        roughness: 0.42,
+        metalness: 0.04,
+        clearcoat: 0.22,
+        clearcoatRoughness: 0.35,
       });
       face.onBeforeCompile = (shader) => {
         shader.vertexShader = shader.vertexShader.replace(
           "#include <uv_vertex>",
-          `vMapUv = vec2(position.x / ${faceW.toFixed(4)} + 0.5, position.y / ${faceH.toFixed(4)} + 0.5);`
+          `vMapUv = vec2(position.x / ${width.toFixed(4)} + 0.5, position.y / ${height.toFixed(4)} + 0.5);`
         );
       };
-      face.customProgramCacheKey = () => `pieza-${faceW.toFixed(2)}-${faceH.toFixed(2)}`;
-      const edge = new THREE.MeshPhysicalMaterial({
+      face.customProgramCacheKey = () => `forma-${width.toFixed(2)}-${height.toFixed(2)}`;
+      const bodyTone = new THREE.MeshPhysicalMaterial({
         color: tone,
-        roughness: 0.38,
-        metalness: 0.16,
-        clearcoat: 0.45,
-        clearcoatRoughness: 0.22,
+        roughness: 0.46,
+        metalness: 0.08,
+        clearcoat: 0.18,
+        clearcoatRoughness: 0.3,
       });
-      const mesh = new THREE.Mesh(geometry, [face, edge]);
-      mesh.position.y = height / 2 + 0.08;
-      return mesh;
+      const holder = new THREE.Group();
+      pieces.forEach((piece) => {
+        const shape = piece.shape || new THREE.Shape();
+        if (piece.shape) {
+          /* listo */
+        } else {
+        const rows = Math.max(12, Math.round(200 * canvas.height / Math.max(1, canvas.width)));
+        const world = (point) => [(point[0] / 200 - 0.5) * width, (0.5 - point[1] / rows) * height];
+        const ringArea = (path) => {
+          let sum = 0;
+          for (let index = 0; index < path.length; index += 1) {
+            const a = world(path[index]);
+            const b = world(path[(index + 1) % path.length]);
+            sum += a[0] * b[1] - b[0] * a[1];
+          }
+          return sum;
+        };
+        const place = (path, target) => {
+          path.forEach((point, index) => {
+            const [x, y] = world(point);
+            if (index === 0) target.moveTo(x, y);
+            else target.lineTo(x, y);
+          });
+        };
+        const outer = piece.outer.slice();
+        if (ringArea(outer) < 0) outer.reverse();
+        place(outer, shape);
+        piece.holes.forEach((hole) => {
+          const path = new THREE.Path();
+          const ring = hole.slice();
+          if (ringArea(ring) > 0) ring.reverse();
+          place(ring, path);
+          shape.holes.push(path);
+        });
+        }
+        const geometry = new THREE.ExtrudeGeometry(shape, {
+          depth,
+          bevelEnabled: true,
+          bevelThickness: depth * 0.12,
+          bevelSize: Math.min(width, height) * 0.012,
+          bevelSegments: 2,
+          curveSegments: 8,
+        });
+        geometry.translate(0, 0, -depth / 2);
+        geometry.computeVertexNormals();
+        const index = geometry.getIndex();
+        const normal = geometry.getAttribute("normal");
+        if (index && normal) {
+          const front = [];
+          const back = [];
+          const side = [];
+          for (let vertex = 0; vertex < index.count; vertex += 3) {
+            const a = index.getX(vertex);
+            const b = index.getX(vertex + 1);
+            const c = index.getX(vertex + 2);
+            const facing = (normal.getZ(a) + normal.getZ(b) + normal.getZ(c)) / 3;
+            const bucket = facing > 0.45 ? front : facing < -0.45 ? back : side;
+            bucket.push(a, b, c);
+          }
+          geometry.setIndex(front.concat(back, side));
+          geometry.clearGroups();
+          geometry.addGroup(0, front.length, 0);
+          geometry.addGroup(front.length, back.length, 1);
+          geometry.addGroup(front.length + back.length, side.length, 2);
+        }
+        holder.add(new THREE.Mesh(geometry, [face, bodyTone, bodyTone]));
+      });
+      holder.position.y = height / 2 + 0.08;
+      return holder;
     }
 
     const group = new THREE.Group();
     const aspect = photo.width / Math.max(1, photo.height);
+    const worn = wearTop || wearLegs;
 
-    function garment(width, height) {
-      const geometry = new THREE.PlaneGeometry(width, height, 48, 20);
-      const position = geometry.attributes.position;
-      const radius = Math.max(0.34, width * 0.46);
-      for (let index = 0; index < position.count; index += 1) {
-        const x = position.getX(index);
-        const y = position.getY(index);
-        const across = width ? x / (width * 0.5) : 0;
-        const theta = across * 0.95;
-        const lift = Math.cos((y / Math.max(height, 0.01)) * 0.35);
-        position.setX(index, Math.sin(theta) * radius);
-        position.setZ(index, Math.cos(theta) * radius * lift);
+    if (worn) {
+      let height = 1.4;
+      let width = height * aspect;
+      if (width > 1.45) {
+        width = 1.45;
+        height = width / aspect;
       }
-      geometry.translate(0, 0, -radius + 0.12);
-      geometry.computeVertexNormals();
-      return new THREE.Mesh(geometry, new THREE.MeshPhysicalMaterial({
-        map,
-        color: 0xffffff,
-        roughness: 0.48,
-        metalness: 0.02,
-        clearcoat: 0.18,
-        clearcoatRoughness: 0.35,
-        alphaTest: 0.25,
-        side: THREE.DoubleSide,
-      }));
-    }
-
-    if (dressed) {
-      body(group);
-      if (wearTop) {
-        const height = full ? 1.18 : 1.05;
-        const width = Math.min(1.05, height * aspect);
-        const shirt = garment(width, height);
-        shirt.position.set(0, full ? 1.0 : 1.12, 0);
-        group.add(shirt);
-      }
-      group.add(shadowDisc(0.48));
+      const depth = Math.max(0.2, Math.min(width, height) * 0.26);
+      const piece = formMesh(photo, width, height, depth);
+      if (piece) group.add(piece);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.1, 40, 28), skin);
+      head.scale.set(0.9, 1.06, 0.84);
+      head.position.set(0, height + 0.14, 0.02);
+      group.add(head);
+      group.add(shadowDisc(Math.max(0.42, width * 0.34)));
     } else {
       let height = item.stage === "pie" ? 1.15 : 1.02;
       let width = height * aspect;
@@ -434,8 +690,9 @@
         width = 1.28;
         height = width / aspect;
       }
-      const depth = item.stage === "pie" ? Math.min(0.42, height * 0.34) : Math.max(0.18, Math.min(width, height) * 0.26);
-      group.add(showpiece(width, height, depth));
+      const depth = item.stage === "pie" ? Math.min(0.48, Math.max(width, height) * 0.28) : Math.max(0.16, Math.min(width, height) * 0.32);
+      const piece = formMesh(photo, width, height, depth);
+      if (piece) group.add(piece);
       const reach = Math.min(0.72, Math.max(0.36, width * 0.42));
       const plinth = new THREE.Mesh(
         new THREE.CylinderGeometry(reach * 0.78, reach, 0.055, 64),
@@ -465,12 +722,8 @@
 
     spin = () => {
       group.rotation.y = angle * Math.PI / 180;
-      group.rotation.x = dressed ? 0.03 : 0.08;
+      group.rotation.x = worn ? 0.03 : 0.08;
       group.updateMatrixWorld(true);
-      worn.forEach((mesh) => {
-        const shader = mesh.material.userData.shader;
-        if (shader) shader.uniforms.meshMatrix.value.copy(mesh.matrix);
-      });
       renderer.render(scene, camera);
     };
     spin();
