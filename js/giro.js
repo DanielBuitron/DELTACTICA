@@ -1157,6 +1157,87 @@
       return grupo;
     }
 
+    function siluetaLata(canvas) {
+      const datos = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
+      const anchoImg = canvas.width;
+      const altoImg = canvas.height;
+      const anchos = [];
+      for (let i = 0; i < 28; i += 1) {
+        const y = Math.round((i + 0.5) / 28 * (altoImg - 1));
+        let min = anchoImg;
+        let max = -1;
+        for (let x = 0; x < anchoImg; x += 2) {
+          if (datos[(y * anchoImg + x) * 4 + 3] > 40) {
+            if (x < min) min = x;
+            if (x > max) max = x;
+          }
+        }
+        if (max > min) anchos.push(max - min);
+      }
+      if (anchos.length < 14) return false;
+      anchos.sort((a, b) => a - b);
+      const media = anchos[anchos.length >> 1];
+      const mayor = anchos[anchos.length - 1];
+      return media / mayor > 0.8 && altoImg > anchoImg * 1.2;
+    }
+
+    function envase(canvas, ancho, alto) {
+      const radio = ancho / 2;
+      const pixeles = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
+      const anchoImg = canvas.width;
+      const altoImg = canvas.height;
+      const colorDe = (y, lado) => {
+        const fila = Math.max(0, Math.min(altoImg - 1, y));
+        let min = anchoImg;
+        let max = -1;
+        for (let x = 0; x < anchoImg; x += 1) {
+          if (pixeles[(fila * anchoImg + x) * 4 + 3] > 40) {
+            if (x < min) min = x;
+            if (x > max) max = x;
+          }
+        }
+        if (max < 0) return [tone.r, tone.g, tone.b];
+        const margen = Math.max(2, Math.round((max - min) * 0.1));
+        const x = lado < 0 ? Math.min(anchoImg - 1, min + margen) : Math.max(0, max - margen);
+        const p = (fila * anchoImg + x) * 4;
+        return [pixeles[p] / 255, pixeles[p + 1] / 255, pixeles[p + 2] / 255];
+      };
+      const elegir = (y) => {
+        const a = colorDe(y, -1);
+        const b = colorDe(y, 1);
+        const luz = (c) => c[0] + c[1] + c[2];
+        const usable = (c) => luz(c) > 0.28 && luz(c) < 2.65;
+        if (usable(a)) return a;
+        if (usable(b)) return b;
+        return luz(a) < luz(b) ? a : b;
+      };
+      const lienzo = document.createElement("canvas");
+      lienzo.width = anchoImg * 2;
+      lienzo.height = altoImg;
+      const pincel = lienzo.getContext("2d");
+      for (let y = 0; y < altoImg; y += 1) {
+        const rgb = elegir(y);
+        pincel.fillStyle = `rgb(${Math.round(rgb[0] * 255)},${Math.round(rgb[1] * 255)},${Math.round(rgb[2] * 255)})`;
+        pincel.fillRect(0, y, lienzo.width, 1);
+      }
+      pincel.drawImage(canvas, anchoImg * 0.5, 0, anchoImg, altoImg);
+      const mapa = new THREE.CanvasTexture(lienzo);
+      mapa.colorSpace = THREE.SRGBColorSpace;
+      mapa.wrapS = THREE.RepeatWrapping;
+      mapa.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      const arriba = elegir(Math.round(altoImg * 0.04));
+      const abajo = elegir(Math.round(altoImg * 0.96));
+      const tapa = new THREE.MeshBasicMaterial({ color: new THREE.Color(arriba[0], arriba[1], arriba[2]) });
+      const base = new THREE.MeshBasicMaterial({ color: new THREE.Color(abajo[0], abajo[1], abajo[2]) });
+      const cuerpo = new THREE.Mesh(
+        new THREE.CylinderGeometry(radio, radio * 0.985, alto, 72, 1, false),
+        [new THREE.MeshBasicMaterial({ map: mapa }), tapa, base]
+      );
+      cuerpo.rotation.y = Math.PI;
+      cuerpo.position.y = alto / 2 + 0.04;
+      return cuerpo;
+    }
+
     if (dressed) {
       let height = wearHead ? 0.9 : 1.25;
       let width = height * aspect;
@@ -1192,6 +1273,8 @@
       }
       const hoops = /candonga|argolla|arete/.test(label);
       const donut = /\bdona\b/.test(label);
+      const tin = /betun/.test(label);
+      const lataFoto = /aceite|gas pimienta|linterna|pipeta|repelente|cantimplora|marmita|tarro/.test(label) || siluetaLata(photo);
       if (hoops || donut) {
         const gold = new THREE.MeshPhysicalMaterial({ color: 0xffd978, metalness: 0.92, roughness: 0.16, clearcoat: 0.7, clearcoatRoughness: 0.08 });
         const count = hoops ? 2 : 1;
@@ -1209,6 +1292,10 @@
           hinge.position.set(side * 0.58, 0.58 + major + pipe, 0.02);
           group.add(hinge);
         }
+      } else if (tin) {
+        group.add(lata(photo, width, height));
+      } else if (lataFoto) {
+        group.add(envase(photo, width, height));
       } else {
         const pieza = barrido(photo, width, height);
         if (pieza) group.add(pieza);
