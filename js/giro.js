@@ -995,6 +995,125 @@
       return grupo;
     }
 
+    function barrido(canvas, ancho, alto) {
+      const cordon = /cordon|plantilla|liga/.test(label);
+      const redondo = !cordon && /media|calcetin|bota|zapato|linterna|binocular|marmita|cantimplora|pito|aceite|repelente|pipeta|cortau|cepillo|gas pimienta/.test(label);
+      const visera = /gorra|kepis|pava/.test(label);
+      const boina = /boina|casco/.test(label);
+      const bolsa = /morral|bolso|mochila|camelback|tula|canguro|detodito|peluche|silla|iglu|kit de limpieza|forro cantimplora/.test(label);
+      const plano = /correa|cinturon|reata|eslinga|cintela|velcro|porta fusil|corbata|panoleta|shemag|toalla|poncho|sabana|hamaca|placa|gafa|gasfa|navaja|cuchill|karambit|mona|torniquete|estera|toldillo|mimetismo|plastico|guindo|llavero|lapicero|tarjetero|portacarnet|insignia/.test(label);
+      let factor = 0.18;
+      let espejo = false;
+      if (redondo) { factor = /cepillo/.test(label) ? 0.42 : 0.9; espejo = true; }
+      else if (boina) { factor = 0.76; }
+      else if (visera) { factor = 0.66; }
+      else if (bolsa) { factor = 0.4; }
+      else if (plano || cordon) { factor = 0.05; espejo = true; }
+      else if (/guante|chapuza|funda|porta |piernera|arnes|grip|reloj|esposa/.test(label)) factor = 0.14;
+
+      const filas = 84;
+      const pasos = 40;
+      const pixels = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
+      const W = canvas.width;
+      const perfil = [];
+      for (let i = 0; i < filas; i += 1) {
+        const y = Math.min(canvas.height - 1, Math.round(i / (filas - 1) * (canvas.height - 1)));
+        let min = W;
+        let max = -1;
+        for (let x = 0; x < W; x += 1) {
+          if (pixels[(y * W + x) * 4 + 3] > 36) {
+            if (x < min) min = x;
+            if (x > max) max = x;
+          }
+        }
+        perfil.push(max < 0 ? null : { cx: (min + max) / 2 / W, half: Math.max(0.004, (max - min) / 2 / W) });
+      }
+      if (!perfil.some(Boolean)) return null;
+      for (let i = 0; i < filas; i += 1) {
+        if (perfil[i]) continue;
+        let previo = null;
+        let siguiente = null;
+        for (let j = i - 1; j >= 0; j -= 1) if (perfil[j]) { previo = perfil[j]; break; }
+        for (let j = i + 1; j < filas; j += 1) if (perfil[j]) { siguiente = perfil[j]; break; }
+        const base = previo && siguiente
+          ? { cx: (previo.cx + siguiente.cx) / 2, half: Math.min(previo.half, siguiente.half) * 0.35 }
+          : (previo || siguiente || { cx: 0.5, half: 0.02 });
+        perfil[i] = { cx: base.cx, half: base.half };
+      }
+      for (let pass = 0; pass < 2; pass += 1) {
+        const copia = perfil.map((punto) => ({ cx: punto.cx, half: punto.half }));
+        for (let i = 1; i < filas - 1; i += 1) {
+          perfil[i].cx = (copia[i - 1].cx + copia[i].cx * 2 + copia[i + 1].cx) / 4;
+          perfil[i].half = (copia[i - 1].half + copia[i].half * 2 + copia[i + 1].half) / 4;
+        }
+      }
+
+      const orden = perfil.map((punto) => punto.half).sort((a, b) => a - b);
+      const mediana = orden[Math.floor(orden.length / 2)] || 0.08;
+      const proporcion = alto / Math.max(0.001, ancho);
+      const topeGrosor = proporcion < 0.9 ? proporcion * 0.42 : mediana * 1.08;
+      const mapa = solidMap(canvas);
+      const material = new THREE.MeshBasicMaterial({ map: mapa });
+      const posiciones = [];
+      const uvs = [];
+      const indices = [];
+      const indice = (fila, paso) => fila * (pasos + 1) + paso;
+      for (let i = 0; i < filas; i += 1) {
+        const t = i / (filas - 1);
+        const y = (0.5 - t) * alto;
+        const punto = perfil[i];
+        let profundo = factor;
+        if (visera && t > 0.54) {
+          const mezcla = Math.min(1, (t - 0.54) / 0.14);
+          profundo = factor * (1 - mezcla) + factor * 0.08 * mezcla;
+        }
+        for (let s = 0; s <= pasos; s += 1) {
+          const angulo = s / pasos * Math.PI * 2;
+          const seno = Math.sin(angulo);
+          const cara = Math.cos(angulo);
+          const radioX = punto.half * ancho;
+          const baseZ = redondo ? Math.min(punto.half, topeGrosor) * (/cepillo/.test(label) ? 0.5 : 1) : punto.half * profundo;
+          const deFoto = cara > 0.5 || (espejo && cara < -0.5);
+          const u = deFoto
+            ? punto.cx + seno * punto.half
+            : (visera || boina || bolsa ? punto.cx + Math.sign(seno || 1) * punto.half * 0.92 : punto.cx + seno * Math.min(punto.half * 0.35, 0.06));
+          posiciones.push((punto.cx - 0.5) * ancho + seno * radioX, y, cara * baseZ * ancho);
+          uvs.push(u, 1 - t);
+        }
+      }
+      for (let i = 0; i < filas - 1; i += 1) {
+        for (let s = 0; s < pasos; s += 1) {
+          const a = indice(i, s);
+          const b = indice(i, s + 1);
+          const c = indice(i + 1, s + 1);
+          const d = indice(i + 1, s);
+          indices.push(a, d, b, b, d, c);
+        }
+      }
+      const tapa = (fila, arriba) => {
+        const centro = posiciones.length / 3;
+        const y = posiciones[indice(fila, 0) * 3 + 1];
+        const punto = perfil[fila];
+        posiciones.push((punto.cx - 0.5) * ancho, y, 0);
+        uvs.push(punto.cx, arriba ? 1 : 0);
+        for (let s = 0; s < pasos; s += 1) {
+          const a = indice(fila, s);
+          const b = indice(fila, s + 1);
+          indices.push(centro, arriba ? b : a, arriba ? a : b);
+        }
+      };
+      tapa(0, true);
+      tapa(filas - 1, false);
+      const geometria = new THREE.BufferGeometry();
+      geometria.setAttribute("position", new THREE.Float32BufferAttribute(posiciones, 3));
+      geometria.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+      geometria.setIndex(indices);
+      geometria.computeVertexNormals();
+      const malla = new THREE.Mesh(geometria, material);
+      malla.position.y = alto / 2 + 0.08;
+      return malla;
+    }
+
     if (dressed) {
       let height = wearHead ? 0.9 : 1.25;
       let width = height * aspect;
@@ -1026,7 +1145,6 @@
         width = 1.35;
         height = width / aspect;
       }
-      const depth = 0.04;
       const hoops = /candonga|argolla|arete/.test(label);
       const donut = /\bdona\b/.test(label);
       const cream = /brillametal|crema/.test(label);
@@ -1053,8 +1171,8 @@
       } else if (cream) {
         group.add(crema(photo, width, height));
       } else {
-        const piece = formMesh(photo, width, height, depth, true);
-        if (piece) group.add(piece);
+        const pieza = barrido(photo, width, height);
+        if (pieza) group.add(pieza);
       }
       const reach = Math.min(0.42, Math.max(0.22, width * 0.22));
       const plinth = new THREE.Mesh(
