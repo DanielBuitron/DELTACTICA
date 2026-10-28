@@ -2953,7 +2953,8 @@ select option {
   height: 620px;
   border: 1px solid var(--line);
   background:
-    radial-gradient(ellipse at 50% 46%, rgba(255, 255, 255, 0.07), transparent 46%),
+    radial-gradient(ellipse at 50% 38%, rgba(255, 246, 230, 0.16), transparent 36%),
+    radial-gradient(ellipse at 50% 82%, rgba(255, 255, 255, 0.05), transparent 24%),
     #070708;
   touch-action: none;
   cursor: grab;
