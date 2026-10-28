@@ -23,8 +23,8 @@
   if (price) price.textContent = item.price ? new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(item.price) : "A consultar";
   if (add) add.dataset.add = item.id;
   const copy = {
-    ropa: "La prenda va puesta en el maniquí. Arrastre para dar la vuelta.",
-    cabeza: "La pieza va sobre el maniquí. Arrastre para dar la vuelta.",
+    ropa: "Arrastre para dar la vuelta.",
+    cabeza: "Arrastre para dar la vuelta.",
     pie: "El calzado está en vitrina. Arrastre para dar la vuelta.",
     objeto: "La pieza está en vitrina. Arrastre para dar la vuelta.",
   };
@@ -75,16 +75,20 @@
         const total = canvas.width * canvas.height;
         let borderCount = 0;
         let lightBorder = 0;
+        let darkBorder = 0;
         const edge = 6;
         for (let y = 0; y < canvas.height; y += 3) {
           for (let x = 0; x < canvas.width; x += 3) {
             if (x > edge && y > edge && x < canvas.width - edge && y < canvas.height - edge) continue;
             const index = (y * canvas.width + x) * 4;
             borderCount += 1;
+            if (pixels[index + 3] < 16) continue;
             if (pixels[index] > 236 && pixels[index + 1] > 236 && pixels[index + 2] > 236) lightBorder += 1;
+            else if (pixels[index] < 18 && pixels[index + 1] < 18 && pixels[index + 2] < 18) darkBorder += 1;
           }
         }
         const light = borderCount && lightBorder / borderCount > 0.8;
+        const dark = borderCount && darkBorder / borderCount > 0.8;
         const open = new Uint8Array(total);
         for (let i = 0; i < total; i += 1) {
           const p = i * 4;
@@ -92,7 +96,7 @@
             open[i] = 1;
             continue;
           }
-          if (pixels[p] < 26 && pixels[p + 1] < 26 && pixels[p + 2] < 26) open[i] = 1;
+          if (dark && pixels[p] < 18 && pixels[p + 1] < 18 && pixels[p + 2] < 18) open[i] = 1;
           else if (light && pixels[p] > 236 && pixels[p + 1] > 236 && pixels[p + 2] > 236) open[i] = 1;
         }
         const stack = [];
@@ -139,9 +143,8 @@
             if (y > maxY) maxY = y;
           }
         }
-        const source = keyed > (pixels.length / 4) * 0.72 || maxX <= minX ? canvas : null;
         let trimmed = canvas;
-        if (!source && maxX > minX) {
+        if (maxX > minX) {
           const pad = 16;
           const cropX = Math.max(0, minX - pad);
           const cropY = Math.max(0, minY - pad);
@@ -888,11 +891,33 @@
         height = width / aspect;
       }
       const depth = item.stage === "pie" ? Math.min(0.48, Math.max(width, height) * 0.28) : Math.max(0.16, Math.min(width, height) * 0.32);
-      const piece = goods(photo, width, height);
-      if (piece && piece.children.length) group.add(piece);
-      else {
-        const fallback = formMesh(photo, width, height, depth);
-        if (fallback) group.add(fallback);
+      const hoops = /candonga|argolla|arete/.test(label);
+      const donut = /\bdona\b/.test(label);
+      const cream = /brillametal/.test(label);
+      if (hoops || donut) {
+        const gold = new THREE.MeshPhysicalMaterial({ color: 0xffe3a3, metalness: 0.88, roughness: 0.22, clearcoat: 0.4, clearcoatRoughness: 0.18 });
+        const count = hoops ? 2 : 1;
+        for (let index = 0; index < count; index += 1) {
+          const side = count === 1 ? 0 : index === 0 ? -1 : 1;
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.058, 28, 80), gold);
+          ring.position.set(side * 0.42, 0.48, 0);
+          ring.rotation.x = 1.05;
+          ring.rotation.y = side * 0.35;
+          ring.rotation.z = side * 0.15;
+          group.add(ring);
+          if (hoops) {
+            const latch = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.018, 0.02), gold);
+            latch.position.set(side * 0.42, 0.84, 0.04);
+            latch.rotation.z = -side * 0.55;
+            group.add(latch);
+          }
+        }
+      } else if (cream) {
+        const piece = goods(photo, width, height);
+        if (piece && piece.children.length) group.add(piece);
+      } else {
+        const piece = formMesh(photo, width, height, depth);
+        if (piece) group.add(piece);
       }
       const reach = Math.min(0.72, Math.max(0.36, width * 0.42));
       const plinth = new THREE.Mesh(
@@ -923,14 +948,42 @@
 
     spin = () => {
       group.rotation.y = angle * Math.PI / 180;
-      group.rotation.x = worn ? 0.02 : 0.22;
+      group.rotation.x = worn ? 0.02 : 0.12;
       group.updateMatrixWorld(true);
       renderer.render(scene, camera);
     };
     spin();
   }
 
-  cutout(item.image).then((tex) => {
+  function mountPhoto() {
+    const scene = document.createElement("div");
+    scene.style.cssText = "width:92%;height:92%;position:relative;";
+    const face = (back) => {
+      const image = document.createElement("img");
+      image.src = item.image;
+      image.alt = back ? "" : item.name;
+      image.draggable = false;
+      image.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;filter:" + (back ? "brightness(.42) saturate(.55) drop-shadow(0 18px 28px rgba(0,0,0,.55))" : "drop-shadow(0 18px 28px rgba(0,0,0,.55))");
+      return image;
+    };
+    const front = face(false);
+    const back = face(true);
+    scene.append(front, back);
+    stage.style.display = "grid";
+    stage.style.placeItems = "center";
+    stage.append(scene);
+    spin = () => {
+      const turn = ((angle % 360) + 360) % 360;
+      const facing = Math.cos(turn * Math.PI / 180);
+      front.style.opacity = facing >= 0 ? "1" : "0";
+      back.style.opacity = facing >= 0 ? "0" : "1";
+      scene.style.transform = `scaleX(${Math.max(0.08, Math.abs(facing))})`;
+    };
+    spin();
+  }
+
+  if (item.stage === "ropa" || item.stage === "cabeza") mountPhoto();
+  else cutout(item.image).then((tex) => {
     if (!tex) return;
     import("https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js").then((THREE) => mount(THREE, tex)).catch(() => {
       stage.innerHTML = `<p class="giro-missing">No se pudo abrir el visor 3D.</p>`;
