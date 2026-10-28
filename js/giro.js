@@ -996,138 +996,112 @@
     }
 
     function barrido(canvas, ancho, alto) {
-      const cordon = /cordon|plantilla|liga/.test(label);
-      const redondo = !cordon && /media|calcetin|bota|zapato|linterna|binocular|marmita|cantimplora|pito|aceite|repelente|pipeta|cortau|cepillo|gas pimienta/.test(label);
-      const visera = /gorra|kepis|pava/.test(label);
-      const boina = /boina|casco/.test(label);
-      const bolsa = /morral|bolso|mochila|camelback|tula|canguro|detodito|peluche|silla|iglu|kit de limpieza|forro cantimplora/.test(label);
-      const plano = /correa|cinturon|reata|eslinga|cintela|velcro|porta fusil|corbata|panoleta|shemag|toalla|poncho|sabana|hamaca|placa|gafa|gasfa|navaja|cuchill|karambit|mona|torniquete|estera|toldillo|mimetismo|plastico|guindo|llavero|lapicero|tarjetero|portacarnet|insignia/.test(label);
-      const filas = 140;
-      const pixels = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
-      const W = canvas.width;
-      const perfil = [];
-      for (let i = 0; i < filas; i += 1) {
-        const y = Math.min(canvas.height - 1, Math.round(i / (filas - 1) * (canvas.height - 1)));
-        let min = W;
-        let max = -1;
-        for (let x = 0; x < W; x += 1) {
-          if (pixels[(y * W + x) * 4 + 3] > 36) {
-            if (x < min) min = x;
-            if (x > max) max = x;
+      const cerrado = document.createElement("canvas");
+      cerrado.width = canvas.width;
+      cerrado.height = canvas.height;
+      const ctx = cerrado.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(canvas, 0, 0);
+      const img = ctx.getImageData(0, 0, cerrado.width, cerrado.height);
+      const datos = img.data;
+      const anchoImg = cerrado.width;
+      const altoImg = cerrado.height;
+      const opacoEn = (x, y) => datos[(y * anchoImg + x) * 4 + 3] > 48;
+      const copiar = (desde, hacia) => {
+        datos[hacia] = datos[desde];
+        datos[hacia + 1] = datos[desde + 1];
+        datos[hacia + 2] = datos[desde + 2];
+        datos[hacia + 3] = 255;
+      };
+      for (let y = 0; y < altoImg; y += 1) {
+        let x = 0;
+        while (x < anchoImg) {
+          if (opacoEn(x, y)) { x += 1; continue; }
+          const inicio = x;
+          while (x < anchoImg && !opacoEn(x, y)) x += 1;
+          if (inicio > 0 && x < anchoImg && x - inicio <= 8) {
+            const origen = (y * anchoImg + inicio - 1) * 4;
+            for (let k = inicio; k < x; k += 1) copiar(origen, (y * anchoImg + k) * 4);
           }
         }
-        perfil.push(max < 0 ? null : { cx: (min + max) / 2 / W, half: Math.max(0.004, (max - min) / 2 / W) });
       }
-      if (!perfil.some(Boolean)) return null;
-      for (let i = 0; i < filas; i += 1) {
-        if (perfil[i]) continue;
-        let previo = null;
-        let siguiente = null;
-        for (let j = i - 1; j >= 0; j -= 1) if (perfil[j]) { previo = perfil[j]; break; }
-        for (let j = i + 1; j < filas; j += 1) if (perfil[j]) { siguiente = perfil[j]; break; }
-        const base = previo && siguiente
-          ? { cx: (previo.cx + siguiente.cx) / 2, half: Math.min(previo.half, siguiente.half) * 0.35 }
-          : (previo || siguiente || { cx: 0.5, half: 0.02 });
-        perfil[i] = { cx: base.cx, half: base.half };
-      }
-      for (let pass = 0; pass < 2; pass += 1) {
-        const copia = perfil.map((punto) => ({ cx: punto.cx, half: punto.half }));
-        for (let i = 1; i < filas - 1; i += 1) {
-          perfil[i].cx = (copia[i - 1].cx + copia[i].cx * 2 + copia[i + 1].cx) / 4;
-          perfil[i].half = (copia[i - 1].half + copia[i].half * 2 + copia[i + 1].half) / 4;
+      for (let x = 0; x < anchoImg; x += 1) {
+        let y = 0;
+        while (y < altoImg) {
+          if (opacoEn(x, y)) { y += 1; continue; }
+          const inicio = y;
+          while (y < altoImg && !opacoEn(x, y)) y += 1;
+          if (inicio > 0 && y < altoImg && y - inicio <= 6) {
+            const origen = ((inicio - 1) * anchoImg + x) * 4;
+            for (let k = inicio; k < y; k += 1) copiar(origen, (k * anchoImg + x) * 4);
+          }
         }
       }
-
-      const orden = perfil.map((punto) => punto.half).sort((a, b) => a - b);
-      const mediana = orden[Math.floor(orden.length / 2)] || 0.08;
-      const menor = Math.min(ancho, alto);
-      const anchoReal = Math.min(ancho, mediana * 2 * ancho);
-      const grosor = Math.min(ancho, alto) * 0.04;
-      const mapa = solidMap(canvas);
-      const foto = new THREE.MeshBasicMaterial({ map: mapa });
-      const canto = new THREE.MeshBasicMaterial({ vertexColors: true });
+      ctx.putImageData(img, 0, 0);
+      canvas = cerrado;
+      const filas = 180;
+      const pixels = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
+      const W = canvas.width;
+      const H = canvas.height;
+      const cortes = [];
+      for (let i = 0; i < filas; i += 1) {
+        const y = Math.min(H - 1, Math.round((i + 0.5) / filas * (H - 1)));
+        const segs = [];
+        let inicio = -1;
+        for (let x = 0; x < W; x += 1) {
+          const opaco = pixels[(y * W + x) * 4 + 3] > 48;
+          if (opaco && inicio < 0) inicio = x;
+          if (!opaco && inicio >= 0) {
+            if (x - inicio > 2) segs.push([inicio, x - 1]);
+            inicio = -1;
+          }
+        }
+        if (inicio >= 0 && W - inicio > 2) segs.push([inicio, W - 1]);
+        cortes.push(segs);
+      }
+      if (!cortes.some((fila) => fila.length)) return null;
+      const grosor = Math.min(ancho, alto) * 0.012;
+      const mapa = new THREE.CanvasTexture(canvas);
+      mapa.colorSpace = THREE.SRGBColorSpace;
+      mapa.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      const foto = new THREE.MeshBasicMaterial({ map: mapa, transparent: true, alphaTest: 0.45, side: THREE.FrontSide });
       const posiciones = [];
       const uvs = [];
-      const colores = [];
-      const frente = [];
-      const cuerpo = [];
-      const vertice = (i, k) => i * 4 + k;
-      const tintaDeFila = [];
-      const leer = (punto, y, lado, dentro) => {
-        const x = Math.max(0, Math.min(W - 1, Math.round((punto.cx + lado * punto.half * dentro) * (W - 1))));
-        const p = (y * W + x) * 4;
-        return pixels[p + 3] > 30 ? [pixels[p] / 255, pixels[p + 1] / 255, pixels[p + 2] / 255] : [tone.r, tone.g, tone.b];
+      const indices = [];
+      const poner = (x, y, z, u, v) => {
+        posiciones.push(x, y, z);
+        uvs.push(u, v);
+        return posiciones.length / 3 - 1;
       };
+      const z = grosor / 2;
       for (let i = 0; i < filas; i += 1) {
-        const t = i / (filas - 1);
-        const y = Math.min(canvas.height - 1, Math.round(t * (canvas.height - 1)));
-        const punto = perfil[i];
-        let color = leer(punto, y, -1, 0.98);
-        for (let dentro = 0.98; dentro >= 0.5; dentro -= 0.04) {
-          const prueba = leer(punto, y, -1, dentro);
-          const luz = prueba[0] + prueba[1] + prueba[2];
-          if (luz > 0.45 && luz < 2.55) { color = prueba; break; }
-        }
-        tintaDeFila.push(color);
-      }
-      for (let pass = 0; pass < 8; pass += 1) {
-        const copia = tintaDeFila.map((color) => color.slice());
-        for (let i = 1; i < filas - 1; i += 1) {
-          tintaDeFila[i] = [0, 1, 2].map((canal) => (copia[i - 1][canal] + copia[i][canal] * 2 + copia[i + 1][canal]) / 4);
-        }
-      }
-      for (let i = 0; i < filas; i += 1) {
-        const t = i / (filas - 1);
-        const y = (0.5 - t) * alto;
-        const punto = perfil[i];
-        const uL = punto.cx - punto.half;
-        const uR = punto.cx + punto.half;
-        const xL = (uL - 0.5) * ancho;
-        const xR = (uR - 0.5) * ancho;
-        const v = 1 - t;
-        const z = grosor / 2;
-        const rgb = tintaDeFila[i];
-        [[xL, z, uL], [xR, z, uR], [xL, -z, uL], [xR, -z, uR]].forEach((dato, k) => {
-          posiciones.push(dato[0], y, dato[1]);
-          uvs.push(dato[2], v);
-          const claro = rgb;
-          colores.push(claro[0], claro[1], claro[2]);
+        const y0 = (0.5 - i / filas) * alto;
+        const y1 = (0.5 - (i + 1) / filas) * alto;
+        const v0 = 1 - i / filas;
+        const v1 = 1 - (i + 1) / filas;
+        cortes[i].forEach(([a, b]) => {
+          const u0 = a / Math.max(1, W - 1);
+          const u1 = b / Math.max(1, W - 1);
+          const x0 = (u0 - 0.5) * ancho;
+          const x1 = (u1 - 0.5) * ancho;
+          const p0 = poner(x0, y0, z, u0, v0);
+          const p1 = poner(x1, y0, z, u1, v0);
+          const p2 = poner(x1, y1, z, u1, v1);
+          const p3 = poner(x0, y1, z, u0, v1);
+          indices.push(p0, p3, p1, p1, p3, p2);
+          const q0 = poner(x0, y0, -z, u1, v0);
+          const q1 = poner(x1, y0, -z, u0, v0);
+          const q2 = poner(x1, y1, -z, u0, v1);
+          const q3 = poner(x0, y1, -z, u1, v1);
+          indices.push(q0, q1, q3, q1, q2, q3);
         });
       }
-      for (let i = 0; i < filas - 1; i += 1) {
-        const a = vertice(i, 0);
-        const b = vertice(i, 1);
-        const c = vertice(i + 1, 1);
-        const d = vertice(i + 1, 0);
-        frente.push(a, d, b, b, d, c);
-        const e = vertice(i, 2);
-        const f = vertice(i, 3);
-        const g = vertice(i + 1, 3);
-        const h = vertice(i + 1, 2);
-        cuerpo.push(e, f, h, f, g, h);
-        cuerpo.push(a, e, d, e, h, d);
-        cuerpo.push(b, c, f, f, c, g);
-      }
-      const tapa = (fila, arriba) => {
-        const a = vertice(fila, 0);
-        const b = vertice(fila, 1);
-        const e = vertice(fila, 2);
-        const f = vertice(fila, 3);
-        if (arriba) cuerpo.push(a, b, f, a, f, e);
-        else cuerpo.push(a, e, f, a, f, b);
-      };
-      tapa(0, true);
-      tapa(filas - 1, false);
+      if (!indices.length) return null;
       const geometria = new THREE.BufferGeometry();
       geometria.setAttribute("position", new THREE.Float32BufferAttribute(posiciones, 3));
       geometria.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-      geometria.setAttribute("color", new THREE.Float32BufferAttribute(colores, 3));
-      geometria.setIndex(frente.concat(cuerpo));
-      geometria.clearGroups();
-      geometria.addGroup(0, frente.length, 0);
-      geometria.addGroup(frente.length, cuerpo.length, 1);
+      geometria.setIndex(indices);
       geometria.computeVertexNormals();
-      const malla = new THREE.Mesh(geometria, [foto, canto]);
+      const malla = new THREE.Mesh(geometria, foto);
       malla.position.y = alto / 2 + 0.08;
       return malla;
     }
@@ -1215,12 +1189,16 @@
       lienzo.width = anchoImg * 2;
       lienzo.height = altoImg;
       const pincel = lienzo.getContext("2d");
-      for (let y = 0; y < altoImg; y += 1) {
-        const rgb = elegir(y);
-        pincel.fillStyle = `rgb(${Math.round(rgb[0] * 255)},${Math.round(rgb[1] * 255)},${Math.round(rgb[2] * 255)})`;
-        pincel.fillRect(0, y, lienzo.width, 1);
-      }
+      const colorTapa = elegir(Math.round(altoImg * 0.06));
+      const colorCuerpo = elegir(Math.round(altoImg * 0.62));
+      const pintar = (rgb) => `rgb(${Math.round(rgb[0] * 255)},${Math.round(rgb[1] * 255)},${Math.round(rgb[2] * 255)})`;
+      pincel.fillStyle = pintar(colorCuerpo);
+      pincel.fillRect(0, 0, lienzo.width, lienzo.height);
+      pincel.fillStyle = pintar(colorTapa);
+      pincel.fillRect(0, 0, lienzo.width, Math.round(altoImg * 0.2));
       pincel.drawImage(canvas, anchoImg * 0.5, 0, anchoImg, altoImg);
+      pincel.drawImage(canvas, 0, 0, anchoImg / 2, altoImg, lienzo.width - anchoImg / 2, 0, anchoImg / 2, altoImg);
+      pincel.drawImage(canvas, anchoImg / 2, 0, anchoImg / 2, altoImg, 0, 0, anchoImg / 2, altoImg);
       const mapa = new THREE.CanvasTexture(lienzo);
       mapa.colorSpace = THREE.SRGBColorSpace;
       mapa.wrapS = THREE.RepeatWrapping;
@@ -1271,30 +1249,8 @@
         width = 1.35;
         height = width / aspect;
       }
-      const hoops = /candonga|argolla|arete/.test(label);
-      const donut = /\bdona\b/.test(label);
-      const tin = /betun/.test(label);
       const lataFoto = /aceite|gas pimienta|linterna|pipeta|repelente|cantimplora|marmita|tarro/.test(label) || siluetaLata(photo);
-      if (hoops || donut) {
-        const gold = new THREE.MeshPhysicalMaterial({ color: 0xffd978, metalness: 0.92, roughness: 0.16, clearcoat: 0.7, clearcoatRoughness: 0.08 });
-        const count = hoops ? 2 : 1;
-        const major = hoops ? 0.42 : 0.48;
-        const pipe = major * (hoops ? 0.16 : 0.22);
-        for (let index = 0; index < count; index += 1) {
-          const side = count === 1 ? 0 : index === 0 ? -1 : 1;
-          const ring = new THREE.Mesh(new THREE.TorusGeometry(major, pipe, 36, 96), gold);
-          ring.position.set(side * 0.58, 0.58, 0);
-          ring.rotation.x = 1.02;
-          ring.rotation.y = side * 0.38;
-          ring.rotation.z = side * 0.12;
-          group.add(ring);
-          const hinge = new THREE.Mesh(new THREE.BoxGeometry(pipe * 2.4, pipe * 0.7, pipe * 0.7), gold);
-          hinge.position.set(side * 0.58, 0.58 + major + pipe, 0.02);
-          group.add(hinge);
-        }
-      } else if (tin) {
-        group.add(lata(photo, width, height));
-      } else if (lataFoto) {
+      if (lataFoto) {
         group.add(envase(photo, width, height));
       } else {
         const pieza = barrido(photo, width, height);
