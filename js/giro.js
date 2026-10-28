@@ -1132,11 +1132,32 @@
           tintaFila[i].der = [0, 1, 2].map((c) => (copia[i - 1].der[c] + copia[i].der[c] * 2 + copia[i + 1].der[c]) / 4);
         }
       }
-      const grosor = Math.min(ancho, alto) * 0.09;
-      const panza = grosor * 0.22;
+      const trazos = [];
+      cortes.forEach((segs) => segs.forEach(([desde, hasta]) => {
+        trazos.push((hasta - desde) / Math.max(1, W - 1) * ancho);
+      }));
+      trazos.sort((a, b) => a - b);
+      const trazo = trazos.length ? trazos[trazos.length >> 1] : ancho * 0.25;
+      const menor = Math.min(ancho, alto);
+      const alambre = /candonga|argolla/.test(label) || trazo / Math.max(ancho, 0.001) < 0.16;
+      const tarro = /betun|crema|cera|pomada/.test(label);
+      const grosor = alambre
+        ? Math.max(menor * 0.012, Math.min(trazo * 0.62, menor * 0.05))
+        : menor * (tarro ? 0.36 : 0.09);
+      const panza = alambre ? 0 : grosor * (tarro ? 0.28 : 0.18);
+      if (tarro) {
+        tintaFila.forEach((fila) => {
+          const luz = (c) => c[0] + c[1] + c[2];
+          if (luz(fila.izq) < 0.45 && luz(fila.der) > 0.75) fila.izq = fila.der.slice();
+          if (luz(fila.der) < 0.45 && luz(fila.izq) > 0.75) fila.der = fila.izq.slice();
+        });
+      }
       const mapa = new THREE.CanvasTexture(canvas);
       mapa.colorSpace = THREE.SRGBColorSpace;
       mapa.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      mapa.magFilter = THREE.LinearFilter;
+      mapa.minFilter = THREE.LinearFilter;
+      mapa.generateMipmaps = false;
       const foto = new THREE.MeshBasicMaterial({ map: mapa, transparent: true, alphaTest: 0.45, side: THREE.FrontSide });
       const canto = new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true });
       const posiciones = [];
@@ -1174,12 +1195,10 @@
           const p1 = poner(x1, y0, z, u1, v0, der);
           const p2 = poner(x1, y1, z, u1, v1, derAbajo);
           const p3 = poner(x0, y1, z, u0, v1, izqAbajo);
-          indices.push(p0, p3, p1, p1, p3, p2);
           const q0 = poner(x0, y0, -z, u1, v0, izq);
           const q1 = poner(x1, y0, -z, u0, v0, der);
           const q2 = poner(x1, y1, -z, u0, v1, derAbajo);
           const q3 = poner(x0, y1, -z, u1, v1, izqAbajo);
-          indices.push(q0, q1, q3, q1, q2, q3);
           const ml0 = poner(x0 - panza, y0, 0, u0, v0, rgb.izq);
           const ml1 = poner(x0 - panza, y1, 0, u0, v1, rgbAbajo.izq);
           const mr0 = poner(x1 + panza, y0, 0, u1, v0, rgb.der);
@@ -1212,19 +1231,28 @@
         }
         anterior = actual;
       }
-      if (!indices.length) return null;
+      if (!bordes.length) return null;
       const geometria = new THREE.BufferGeometry();
       geometria.setAttribute("position", new THREE.Float32BufferAttribute(posiciones, 3));
       geometria.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
       geometria.setAttribute("color", new THREE.Float32BufferAttribute(colores, 3));
-      geometria.setIndex(indices.concat(bordes));
-      geometria.clearGroups();
-      geometria.addGroup(0, indices.length, 0);
-      geometria.addGroup(indices.length, bordes.length, 1);
+      geometria.setIndex(bordes);
       geometria.computeVertexNormals();
-      const malla = new THREE.Mesh(geometria, [foto, canto]);
-      malla.position.y = alto / 2 + 0.08;
-      return malla;
+      const cantoMalla = new THREE.Mesh(geometria, canto);
+      cantoMalla.position.y = alto / 2 + 0.08;
+      cantoMalla.scale.set(0.972, 0.972, 1);
+      const frente = new THREE.Mesh(new THREE.PlaneGeometry(ancho, alto), foto);
+      frente.position.set(0, alto / 2 + 0.08, z);
+      frente.renderOrder = 2;
+      const detras = new THREE.Mesh(new THREE.PlaneGeometry(ancho, alto), foto);
+      detras.rotation.y = Math.PI;
+      detras.position.set(0, alto / 2 + 0.08, -z);
+      detras.renderOrder = 2;
+      cantoMalla.renderOrder = 1;
+      const pieza = new THREE.Group();
+      pieza.add(frente, detras);
+      if (!alambre) pieza.add(cantoMalla);
+      return pieza;
     }
 
     function ficha(canvas) {
