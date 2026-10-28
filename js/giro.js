@@ -23,8 +23,8 @@
   if (price) price.textContent = item.price ? new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(item.price) : "A consultar";
   if (add) add.dataset.add = item.id;
   const copy = {
-    ropa: "Arrastre para dar la vuelta.",
-    cabeza: "Arrastre para dar la vuelta.",
+    ropa: "Va puesta en el maniquí, con el largo de una talla M. Arrastre para dar la vuelta.",
+    cabeza: "Va sobre el maniquí. Arrastre para dar la vuelta.",
     pie: "El calzado está en vitrina. Arrastre para dar la vuelta.",
     objeto: "La pieza está en vitrina. Arrastre para dar la vuelta.",
   };
@@ -44,13 +44,13 @@
     </div>
     <div class="giro-controls">
       <button class="btn btn-ghost" type="button" data-giro-play>Pausar</button>
-      <input data-giro-range type="range" min="0" max="359" value="18" aria-label="Girar 360 grados">
+      <input data-giro-range type="range" min="0" max="359" value="36" aria-label="Girar 360 grados">
     </div>
   </div>`;
   const stage = host.querySelector("[data-giro-stage]");
   const range = host.querySelector("[data-giro-range]");
   const play = host.querySelector("[data-giro-play]");
-  let angle = 18;
+  let angle = 36;
   let dragging = false;
   let lastX = 0;
   let auto = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -196,7 +196,7 @@
     renderer.setSize(stage.clientWidth, stage.clientHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.22;
+    renderer.toneMappingExposure = 1.45;
     stage.appendChild(renderer.domElement);
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(30, 1, 0.08, 50);
@@ -833,84 +833,99 @@
     const pant = new THREE.MeshPhysicalMaterial({ color: 0xf3f0ea, roughness: 0.78, metalness: 0, sheen: 0.25, sheenColor: 0xf7f4ee });
     const shoeWhite = new THREE.MeshPhysicalMaterial({ color: 0xf7f6f3, roughness: 0.42, clearcoat: 0.18, clearcoatRoughness: 0.4 });
 
-    if (worn) {
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.105, 40, 28), skin);
-      head.scale.set(0.92, 1.05, 0.88);
-      head.position.set(0, 1.54, 0.02);
-      group.add(head);
-      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.062, 0.08, 24), skin);
-      neck.position.set(0, 1.47, 0.015);
-      group.add(neck);
-      if (wearTop) {
-        const torso = tube(part(photo, 0.33, 0.67), 0.2, 0.155, 0.74, true);
-        torso.scale.z = 0.8;
-        torso.position.set(0, 1.04, 0);
-        group.add(torso);
-        const collarInk = averageColor(part(photo, 0.4, 0.6));
-        const collar = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.072, 0.095, 0.11, 32),
-          new THREE.MeshPhysicalMaterial({ color: collarInk, roughness: 0.55, sheen: 0.45, sheenColor: collarInk })
-        );
-        collar.position.set(0, 1.44, 0.02);
-        group.add(collar);
-        const sleeves = longSleeves(photo);
-        [-1, 1].forEach((side) => {
-          const crop = part(photo, side < 0 ? 0 : 0.62, side < 0 ? 0.38 : 1);
-          if (sleeves) {
-            group.add(limb(crop, 0.095, 0.05, [side * 0.02, 1.38, 0.05], [side * 0.18, 0.62, 0.08]));
-          } else {
-            group.add(limb(crop, 0.078, 0.06, [side * 0.17, 1.28, 0.05], [side * 0.3, 1.02, 0.07]));
-            const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.04, 0.28, 6, 12), skin);
-            arm.position.set(side * 0.32, 0.82, 0.06);
-            arm.rotation.z = side * 0.12;
-            group.add(arm);
-            const hand = new THREE.Mesh(new THREE.SphereGeometry(0.04, 16, 12), skin);
-            hand.position.set(side * 0.34, 0.64, 0.08);
-            group.add(hand);
-          }
-        });
+    if (dressed) {
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.11, 48, 32), skin);
+      head.scale.set(0.92, 1.08, 0.9);
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.058, 0.08, 28), skin);
+      if (wearHead && !wearTop && !wearLegs) {
+        head.position.set(0, 0.92, 0);
+        neck.position.set(0, 0.78, 0);
+        const bust = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.22, 8, 16), skin);
+        bust.position.set(0, 0.5, 0);
+        group.add(bust, neck, head);
+        let capH = 0.26;
+        let capW = capH * aspect;
+        if (capW > 0.62) {
+          capW = 0.62;
+          capH = capW / aspect;
+        }
+        const cap = formMesh(photo, capW, capH, Math.max(0.16, capH * 0.85));
+        if (cap) {
+          cap.position.set(0, 1.08, 0.03);
+          group.add(cap);
+        }
+      } else if (wearLegs && !wearTop) {
+        let legH = 1.04;
+        let legW = legH * aspect;
+        if (legW > 0.72) {
+          legW = 0.72;
+          legH = legW / aspect;
+        }
+        const pants = formMesh(photo, legW, legH, 0.22);
+        if (pants) group.add(pants);
+        const hip = legH + 0.12;
+        const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.26, 8, 16), skin);
+        torso.position.set(0, hip, 0);
+        neck.position.set(0, hip + 0.24, 0);
+        head.position.set(0, hip + 0.4, 0);
+        group.add(torso, neck, head);
       } else {
-        const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.42, 8, 16), pant);
-        torso.position.set(0, 1.1, 0);
-        group.add(torso);
+        let bodyH = full ? 1.45 : 0.74;
+        let bodyW = bodyH * aspect;
+        if (bodyW > 1.05) {
+          bodyW = 1.05;
+          bodyH = bodyW / aspect;
+        }
+        const garment = formMesh(photo, bodyW, bodyH, full ? 0.2 : 0.16);
+        const lift = full ? 0.04 : 0.5;
+        if (garment) {
+          garment.position.y += lift;
+          group.add(garment);
+        }
+        const collar = bodyH + 0.08 + lift;
+        neck.position.set(0, collar + 0.01, 0.02);
+        head.position.set(0, collar + 0.15, 0.02);
+        group.add(neck, head);
+        if (!full) {
+          [-1, 1].forEach((side) => {
+            const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.4, 8, 16), pant);
+            leg.position.set(side * 0.09, 0.26, 0);
+            group.add(leg);
+            const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.05, 0.2), shoeWhite);
+            shoe.position.set(side * 0.09, 0.04, 0.04);
+            group.add(shoe);
+          });
+        }
       }
-      [-1, 1].forEach((side) => {
-        const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.072, 0.5, 8, 16), pant);
-        leg.position.set(side * 0.09, 0.36, 0);
-        group.add(leg);
-        const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.18), shoeWhite);
-        shoe.position.set(side * 0.09, 0.045, 0.03);
-        group.add(shoe);
-      });
-      group.add(shadowDisc(0.42));
+      group.add(shadowDisc(0.48));
     } else {
-      let height = item.stage === "pie" ? 1.15 : 1.02;
+      const holster = /chapuza|funda|pistolera|holster/.test(label);
+      let height = item.stage === "pie" ? 1.2 : holster ? 1.35 : 1.15;
       let width = height * aspect;
-      if (width > 1.28) {
-        width = 1.28;
+      if (width > 1.35) {
+        width = 1.35;
         height = width / aspect;
       }
-      const depth = item.stage === "pie" ? Math.min(0.48, Math.max(width, height) * 0.28) : Math.max(0.16, Math.min(width, height) * 0.32);
+      const depth = item.stage === "pie" ? height * 0.42 : holster ? height * 0.24 : Math.max(0.2, Math.min(width, height) * 0.3);
       const hoops = /candonga|argolla|arete/.test(label);
       const donut = /\bdona\b/.test(label);
       const cream = /brillametal/.test(label);
       if (hoops || donut) {
-        const gold = new THREE.MeshPhysicalMaterial({ color: 0xffe3a3, metalness: 0.88, roughness: 0.22, clearcoat: 0.4, clearcoatRoughness: 0.18 });
+        const gold = new THREE.MeshPhysicalMaterial({ color: 0xffd978, metalness: 0.92, roughness: 0.16, clearcoat: 0.7, clearcoatRoughness: 0.08 });
         const count = hoops ? 2 : 1;
+        const major = hoops ? 0.42 : 0.48;
+        const pipe = major * (hoops ? 0.16 : 0.22);
         for (let index = 0; index < count; index += 1) {
           const side = count === 1 ? 0 : index === 0 ? -1 : 1;
-          const ring = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.058, 28, 80), gold);
-          ring.position.set(side * 0.42, 0.48, 0);
-          ring.rotation.x = 1.05;
-          ring.rotation.y = side * 0.35;
-          ring.rotation.z = side * 0.15;
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(major, pipe, 36, 96), gold);
+          ring.position.set(side * 0.58, 0.58, 0);
+          ring.rotation.x = 1.02;
+          ring.rotation.y = side * 0.38;
+          ring.rotation.z = side * 0.12;
           group.add(ring);
-          if (hoops) {
-            const latch = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.018, 0.02), gold);
-            latch.position.set(side * 0.42, 0.84, 0.04);
-            latch.rotation.z = -side * 0.55;
-            group.add(latch);
-          }
+          const hinge = new THREE.Mesh(new THREE.BoxGeometry(pipe * 2.4, pipe * 0.7, pipe * 0.7), gold);
+          hinge.position.set(side * 0.58, 0.58 + major + pipe, 0.02);
+          group.add(hinge);
         }
       } else if (cream) {
         const piece = goods(photo, width, height);
@@ -919,7 +934,7 @@
         const piece = formMesh(photo, width, height, depth);
         if (piece) group.add(piece);
       }
-      const reach = Math.min(0.72, Math.max(0.36, width * 0.42));
+      const reach = Math.min(0.42, Math.max(0.22, width * 0.22));
       const plinth = new THREE.Mesh(
         new THREE.CylinderGeometry(reach * 0.78, reach, 0.055, 64),
         new THREE.MeshPhysicalMaterial({ color: 0x3a4048, roughness: 0.28, metalness: 0.72, clearcoat: 0.4, clearcoatRoughness: 0.25 })
@@ -932,7 +947,7 @@
     scene.add(group);
     const sphere = new THREE.Box3().setFromObject(group).getBoundingSphere(new THREE.Sphere());
     group.position.sub(sphere.center);
-    camera.position.set(0, 0.02, sphere.radius / Math.tan(THREE.MathUtils.degToRad(15)) * 1.28);
+    camera.position.set(0, 0.04, sphere.radius / Math.tan(THREE.MathUtils.degToRad(15)) * 1.08);
     camera.lookAt(0, 0, 0);
 
     const resize = () => {
@@ -948,42 +963,14 @@
 
     spin = () => {
       group.rotation.y = angle * Math.PI / 180;
-      group.rotation.x = worn ? 0.02 : 0.12;
+      group.rotation.x = dressed ? 0.04 : 0.16;
       group.updateMatrixWorld(true);
       renderer.render(scene, camera);
     };
     spin();
   }
 
-  function mountPhoto() {
-    const scene = document.createElement("div");
-    scene.style.cssText = "width:92%;height:92%;position:relative;";
-    const face = (back) => {
-      const image = document.createElement("img");
-      image.src = item.image;
-      image.alt = back ? "" : item.name;
-      image.draggable = false;
-      image.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;filter:" + (back ? "brightness(.42) saturate(.55) drop-shadow(0 18px 28px rgba(0,0,0,.55))" : "drop-shadow(0 18px 28px rgba(0,0,0,.55))");
-      return image;
-    };
-    const front = face(false);
-    const back = face(true);
-    scene.append(front, back);
-    stage.style.display = "grid";
-    stage.style.placeItems = "center";
-    stage.append(scene);
-    spin = () => {
-      const turn = ((angle % 360) + 360) % 360;
-      const facing = Math.cos(turn * Math.PI / 180);
-      front.style.opacity = facing >= 0 ? "1" : "0";
-      back.style.opacity = facing >= 0 ? "0" : "1";
-      scene.style.transform = `scaleX(${Math.max(0.08, Math.abs(facing))})`;
-    };
-    spin();
-  }
-
-  if (item.stage === "ropa" || item.stage === "cabeza") mountPhoto();
-  else cutout(item.image).then((tex) => {
+  cutout(item.image).then((tex) => {
     if (!tex) return;
     import("https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js").then((THREE) => mount(THREE, tex)).catch(() => {
       stage.innerHTML = `<p class="giro-missing">No se pudo abrir el visor 3D.</p>`;
