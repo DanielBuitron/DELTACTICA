@@ -537,7 +537,60 @@
       return texture;
     }
 
-    function formMesh(canvas, width, height, depth) {
+    function campoDistancia(canvas) {
+      const w = 96;
+      const h = 96;
+      const sample = document.createElement("canvas");
+      sample.width = w;
+      sample.height = h;
+      const paint = sample.getContext("2d", { willReadFrequently: true });
+      paint.drawImage(canvas, 0, 0, w, h);
+      const data = paint.getImageData(0, 0, w, h).data;
+      const dist = new Float32Array(w * h);
+      for (let i = 0; i < dist.length; i += 1) dist[i] = data[i * 4 + 3] > 40 ? 1e6 : 0;
+      const paso = (x, y, costo) => {
+        if (x < 0 || y < 0 || x >= w || y >= h) return 1e6;
+        return dist[y * w + x] + costo;
+      };
+      for (let y = 0; y < h; y += 1) {
+        for (let x = 0; x < w; x += 1) {
+          const i = y * w + x;
+          if (dist[i] === 0) continue;
+          dist[i] = Math.min(dist[i], paso(x - 1, y, 1), paso(x, y - 1, 1), paso(x - 1, y - 1, 1.4142));
+        }
+      }
+      for (let y = h - 1; y >= 0; y -= 1) {
+        for (let x = w - 1; x >= 0; x -= 1) {
+          const i = y * w + x;
+          if (dist[i] === 0) continue;
+          dist[i] = Math.min(dist[i], paso(x + 1, y, 1), paso(x, y + 1, 1), paso(x + 1, y + 1, 1.4142));
+        }
+      }
+      return { dist, w, h };
+    }
+
+    function muestraCampo(campo, u, v) {
+      const x = Math.max(0, Math.min(campo.w - 1, Math.round(u * (campo.w - 1))));
+      const y = Math.max(0, Math.min(campo.h - 1, Math.round(v * (campo.h - 1))));
+      const valor = campo.dist[y * campo.w + x];
+      return valor > 1e5 ? 0 : valor;
+    }
+
+    function grosorTope(width, height) {
+      const menor = Math.min(width, height);
+      if (/media|calcetin/.test(label)) return menor * 0.48;
+      if (/betun|lata|tarro/.test(label)) return menor * 0.2;
+      if (/correa|cinturon|reata|placa|panoleta|panuelo|corbata|sabana|parche|insignia|eslinga/.test(label)) return menor * 0.04;
+      if (/morral|bolso|canguro|camelback|detodito|mochila/.test(label)) return menor * 0.32;
+      if (/gorra|boina|casco/.test(label)) return menor * 0.36;
+      if (/bota|zapato/.test(label)) return height * 0.34;
+      if (/gafa|guante/.test(label)) return menor * 0.1;
+      if (/cuchill|karambit|navaja/.test(label)) return menor * 0.05;
+      if (/chapuza|funda|pistolera/.test(label)) return menor * 0.16;
+      return menor * 0.12;
+    }
+
+    function formMesh(canvas, width, height, depth, redondo) {
       const pieces = loopsOf(canvas);
       if (!pieces.length) {
         const rows = 160;
@@ -656,12 +709,19 @@
         });
         geometry.translate(0, 0, -depth / 2);
         const positions = geometry.attributes.position;
-        for (let vertex = 0; vertex < positions.count; vertex += 1) {
-          const nx = positions.getX(vertex) / (width * 0.5);
-          const ny = positions.getY(vertex) / (height * 0.5);
-          const inside = Math.max(0, 1 - nx * nx - ny * ny);
-          const sign = positions.getZ(vertex) >= 0 ? 1 : -1;
-          positions.setZ(vertex, positions.getZ(vertex) + sign * inside * depth * 0.42);
+        if (redondo) {
+          const campo = campoDistancia(canvas);
+          const tope = grosorTope(width, height);
+          const paso = Math.min(width / campo.w, height / campo.h);
+          for (let vertex = 0; vertex < positions.count; vertex += 1) {
+            const u = positions.getX(vertex) / width + 0.5;
+            const v = 0.5 - positions.getY(vertex) / height;
+            const lejos = muestraCampo(campo, u, v) * paso;
+            const factor = /media|calcetin/.test(label) ? 1.85 : 1;
+            const gordo = Math.max(depth * 0.35, Math.min(tope, lejos * factor));
+            const sign = positions.getZ(vertex) >= 0 ? 1 : -1;
+            positions.setZ(vertex, sign * gordo);
+          }
         }
         positions.needsUpdate = true;
         geometry.computeVertexNormals();
@@ -891,6 +951,50 @@
       return mesh;
     }
 
+    function lata(canvas, fitW, fitH) {
+      const grupo = new THREE.Group();
+      const radio = Math.min(fitW, fitH) * 0.42;
+      const alto = radio * 0.62;
+      const banda = slice(canvas, 0.06, 0.48, 0.94, 0.96);
+      const mapa = solidMap(banda);
+      mapa.wrapS = THREE.RepeatWrapping;
+      const metal = new THREE.MeshPhysicalMaterial({ color: 0xc8ccd0, metalness: 0.88, roughness: 0.26, clearcoat: 0.4 });
+      const cuerpo = new THREE.Mesh(
+        new THREE.CylinderGeometry(radio, radio * 0.98, alto, 72),
+        [new THREE.MeshBasicMaterial({ map: mapa }), metal, metal]
+      );
+      cuerpo.position.y = alto / 2 + 0.02;
+      grupo.add(cuerpo);
+      return grupo;
+    }
+
+    function crema(canvas, fitW, fitH) {
+      const grupo = new THREE.Group();
+      const cajaW = Math.max(fitW, fitH) * 0.92;
+      const cajaH = Math.min(fitW, fitH) * 0.34;
+      const cajaD = cajaH * 0.78;
+      const frente = solidMap(slice(canvas, 0.02, 0.5, 0.98, 0.98));
+      const costado = plastic(averageColor(slice(canvas, 0.02, 0.5, 0.98, 0.98)));
+      const caja = new THREE.Mesh(new THREE.BoxGeometry(cajaW, cajaH, cajaD), [costado, costado, costado, costado, new THREE.MeshBasicMaterial({ map: frente }), new THREE.MeshBasicMaterial({ map: frente })]);
+      caja.position.y = cajaH / 2;
+      grupo.add(caja);
+      const largo = cajaW * 0.94;
+      const radio = cajaH * 0.3;
+      const etiqueta = solidMap(slice(canvas, 0.14, 0.06, 0.9, 0.44));
+      const tubo = new THREE.Mesh(new THREE.CylinderGeometry(radio, radio * 0.7, largo, 40), new THREE.MeshBasicMaterial({ map: etiqueta }));
+      tubo.rotation.z = Math.PI / 2;
+      tubo.position.set(0.04, cajaH + radio * 0.9, 0);
+      grupo.add(tubo);
+      const tapa = new THREE.Mesh(
+        new THREE.CylinderGeometry(radio * 0.48, radio * 0.48, radio * 1.35, 24),
+        new THREE.MeshPhysicalMaterial({ color: 0xf4f5f6, roughness: 0.35, metalness: 0.05 })
+      );
+      tapa.rotation.z = Math.PI / 2;
+      tapa.position.set(-largo / 2 + 0.02, tubo.position.y, 0);
+      grupo.add(tapa);
+      return grupo;
+    }
+
     if (dressed) {
       let height = wearHead ? 0.9 : 1.25;
       let width = height * aspect;
@@ -916,17 +1020,17 @@
       }
       group.add(shadowDisc(0.62));
     } else {
-      const holster = /chapuza|funda|pistolera|holster/.test(label);
-      let height = item.stage === "pie" ? 1.2 : holster ? 1.35 : 1.15;
+      let height = item.stage === "pie" ? 1.2 : 1.15;
       let width = height * aspect;
       if (width > 1.35) {
         width = 1.35;
         height = width / aspect;
       }
-      const depth = item.stage === "pie" ? height * 0.42 : holster ? height * 0.24 : Math.max(0.2, Math.min(width, height) * 0.3);
+      const depth = 0.04;
       const hoops = /candonga|argolla|arete/.test(label);
       const donut = /\bdona\b/.test(label);
-      const cream = /brillametal/.test(label);
+      const cream = /brillametal|crema/.test(label);
+      const tin = /betun/.test(label);
       if (hoops || donut) {
         const gold = new THREE.MeshPhysicalMaterial({ color: 0xffd978, metalness: 0.92, roughness: 0.16, clearcoat: 0.7, clearcoatRoughness: 0.08 });
         const count = hoops ? 2 : 1;
@@ -944,11 +1048,12 @@
           hinge.position.set(side * 0.58, 0.58 + major + pipe, 0.02);
           group.add(hinge);
         }
+      } else if (tin) {
+        group.add(lata(photo, width, height));
       } else if (cream) {
-        const piece = goods(photo, width, height);
-        if (piece && piece.children.length) group.add(piece);
+        group.add(crema(photo, width, height));
       } else {
-        const piece = formMesh(photo, width, height, depth);
+        const piece = formMesh(photo, width, height, depth, true);
         if (piece) group.add(piece);
       }
       const reach = Math.min(0.42, Math.max(0.22, width * 0.22));
