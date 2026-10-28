@@ -3115,18 +3115,22 @@ select option {
 .giro-missing {
   display: grid;
   place-items: center;
-  min-height: 150px;
-  padding: 18px;
-  color: #9aa0a6;
+  min-height: 240px;
+  padding: 28px;
+  color: #3c342c;
   text-align: center;
+  background:
+    radial-gradient(ellipse at 50% 40%, #f7f4ee 0%, #e4ddd2 70%);
 }
 
 .plate-missing span,
 .giro-missing p {
   margin: 0;
+  max-width: 28em;
   font-family: var(--font-display);
-  font-size: 13px;
-  letter-spacing: 0.08em;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
   text-transform: uppercase;
 }
 

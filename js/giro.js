@@ -31,7 +31,7 @@
   if (note) note.textContent = copy[item.stage] || copy.objeto;
   if (ask) ask.dataset.waText = `Hola, quiero información de la referencia ${item.id}, ${item.name}.`;
   if (item.photo === false) {
-    host.innerHTML = `<div class="giro"><div class="giro-stage giro-missing"><p>Esta foto no se pudo leer. Vuelva a guardarla como PNG para verla en 360.</p></div></div>`;
+    host.innerHTML = `<div class="giro"><div class="giro-stage giro-missing"><p>El archivo de esta foto no es una imagen. Hay que volver a guardarlo como PNG para verla en 360.</p></div></div>`;
     return;
   }
   if (related) {
@@ -577,15 +577,33 @@
         }
       }
       if (!pieces.length) return null;
-      const texture = solidMap(canvas);
-      const face = new THREE.MeshBasicMaterial({ map: texture, color: 0xffffff });
-      face.onBeforeCompile = (shader) => {
-        shader.vertexShader = shader.vertexShader.replace(
-          "#include <uv_vertex>",
-          `vMapUv = vec2(position.x / ${width.toFixed(4)} + 0.5, position.y / ${height.toFixed(4)} + 0.5);`
-        );
+      const photoFace = (mirror) => {
+        const baked = document.createElement("canvas");
+        baked.width = canvas.width;
+        baked.height = canvas.height;
+        const paint = baked.getContext("2d");
+        paint.fillStyle = `#${tone.getHexString()}`;
+        paint.fillRect(0, 0, baked.width, baked.height);
+        if (mirror) {
+          paint.translate(baked.width, 0);
+          paint.scale(-1, 1);
+        }
+        paint.drawImage(canvas, 0, 0);
+        const texture = new THREE.CanvasTexture(baked);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        const material = new THREE.MeshBasicMaterial({ map: texture, color: 0xffffff });
+        material.onBeforeCompile = (shader) => {
+          shader.vertexShader = shader.vertexShader.replace(
+            "#include <uv_vertex>",
+            `vMapUv = vec2(position.x / ${width.toFixed(4)} + 0.5, position.y / ${height.toFixed(4)} + 0.5);`
+          );
+        };
+        material.customProgramCacheKey = () => `forma-${mirror ? "atras" : "frente"}-${width.toFixed(2)}-${height.toFixed(2)}`;
+        return material;
       };
-      face.customProgramCacheKey = () => `forma-${width.toFixed(2)}-${height.toFixed(2)}`;
+      const face = photoFace(false);
+      const backFace = photoFace(true);
       const bodyTone = new THREE.MeshPhysicalMaterial({
         color: tone,
         roughness: 0.46,
@@ -637,6 +655,15 @@
           curveSegments: 8,
         });
         geometry.translate(0, 0, -depth / 2);
+        const positions = geometry.attributes.position;
+        for (let vertex = 0; vertex < positions.count; vertex += 1) {
+          const nx = positions.getX(vertex) / (width * 0.5);
+          const ny = positions.getY(vertex) / (height * 0.5);
+          const inside = Math.max(0, 1 - nx * nx - ny * ny);
+          const sign = positions.getZ(vertex) >= 0 ? 1 : -1;
+          positions.setZ(vertex, positions.getZ(vertex) + sign * inside * depth * 0.42);
+        }
+        positions.needsUpdate = true;
         geometry.computeVertexNormals();
         const index = geometry.getIndex();
         const normal = geometry.getAttribute("normal");
@@ -658,7 +685,7 @@
           geometry.addGroup(front.length, back.length, 1);
           geometry.addGroup(front.length + back.length, side.length, 2);
         }
-        holder.add(new THREE.Mesh(geometry, [face, bodyTone, bodyTone]));
+        holder.add(new THREE.Mesh(geometry, [face, backFace, bodyTone]));
       });
       holder.position.y = height / 2 + 0.08;
       return holder;
@@ -996,7 +1023,7 @@
         terminar();
         return;
       }
-      const src = `img/vueltas/${clave}-${String(numero).padStart(2, "0")}.jpg?v=2`;
+      const src = `img/vueltas/${clave}-${String(numero).padStart(2, "0")}.jpg?v=3`;
       const image = new Image();
       image.onload = () => {
         urls.push(src);
