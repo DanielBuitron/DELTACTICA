@@ -76,6 +76,21 @@ function applyCatalogFilter() {
     if (show) visible += 1;
   });
   count.textContent = visible === 1 ? "1 referencia" : `${visible} referencias`;
+  const current = document.querySelector("[data-filter-current]");
+  const names = lineFilters().filter((button) => button.getAttribute("aria-pressed") === "true").map((button) => button.dataset.label || "");
+  const todasOn = allFilter()?.getAttribute("aria-pressed") === "true";
+  if (current) current.textContent = todasOn || !names.length ? "Todas las líneas" : names.join(" · ");
+  const jump = document.querySelector("[data-filter-jump]");
+  if (jump) {
+    const active = lineFilters().filter((button) => button.getAttribute("aria-pressed") === "true");
+    jump.value = active.length === 1 ? active[0].dataset.filter : active.length > 1 ? "varias" : "todos";
+  }
+}
+
+function revealFilter(button) {
+  const rail = button.closest("[data-filter-rail]");
+  if (!rail) return;
+  rail.scrollTo({ left: button.offsetLeft - (rail.clientWidth - button.offsetWidth) / 2, behavior: "auto" });
 }
 
 if (count) filters.forEach((button) => {
@@ -93,8 +108,43 @@ if (count) filters.forEach((button) => {
       setFilter(todas, !any);
     }
     applyCatalogFilter();
+    revealFilter(button);
   });
 });
+
+const jump = document.querySelector("[data-filter-jump]");
+if (jump && count) {
+  const several = document.createElement("option");
+  several.value = "varias";
+  several.textContent = "Varias líneas";
+  several.hidden = true;
+  jump.appendChild(several);
+  lineFilters().forEach((button) => {
+    const option = document.createElement("option");
+    option.value = button.dataset.filter;
+    option.textContent = button.dataset.label || button.textContent;
+    jump.appendChild(option);
+  });
+  jump.addEventListener("change", () => {
+    if (jump.value === "varias") return;
+    const todas = allFilter();
+    if (jump.value === "todos") {
+      lineFilters().forEach((item) => setFilter(item, false));
+      setFilter(todas, true);
+      applyCatalogFilter();
+      return;
+    }
+    lineFilters().forEach((item) => setFilter(item, item.dataset.filter === jump.value));
+    setFilter(todas, false);
+    applyCatalogFilter();
+    const button = filters.find((item) => item.dataset.filter === jump.value);
+    if (button) revealFilter(button);
+  });
+}
+
+const rail = document.querySelector("[data-filter-rail]");
+document.querySelector("[data-filter-prev]")?.addEventListener("click", () => rail?.scrollBy({ left: -240, behavior: "smooth" }));
+document.querySelector("[data-filter-next]")?.addEventListener("click", () => rail?.scrollBy({ left: 240, behavior: "smooth" }));
 
 if (menuQuery && count) menuQuery.addEventListener("input", applyCatalogFilter);
 

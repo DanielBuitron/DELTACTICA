@@ -1693,7 +1693,7 @@ function renderPublic() {
     filters.innerHTML = [`<button class="filter is-active" type="button" data-filter="todos" aria-pressed="true">Todas <b>${PRODUCTS.length}</b></button>`,
       ...LINES.map((line) => {
         const slug = PRODUCTS.find((item) => item.line === line)?.slug || "";
-        return `<button class="filter" type="button" data-filter="${slug}" aria-pressed="false">${escapeHtml(line)} <b>${counts[slug] || 0}</b></button>`;
+        return `<button class="filter" type="button" data-filter="${slug}" data-label="${escapeHtml(line)}" aria-pressed="false">${escapeHtml(line)} <b>${counts[slug] || 0}</b></button>`;
       })].join("");
     grid.innerHTML = PRODUCTS.map((item) => {
       const frame = item.photo === false
