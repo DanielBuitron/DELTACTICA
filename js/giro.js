@@ -23,10 +23,10 @@
   if (price) price.textContent = item.price ? new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(item.price) : "A consultar";
   if (add) add.dataset.add = item.id;
   const copy = {
-    ropa: "La prenda va sobre el maniquí, con volumen. Arrastre para ver el costado y la espalda.",
-    cabeza: "La pieza va sobre la horma, con volumen. Arrastre para girarla.",
-    pie: "El calzado tiene fondo y laterales. Arrastre para ver el volumen.",
-    objeto: "La pieza tiene fondo y laterales. Arrastre para ver el volumen.",
+    ropa: "El volumen sigue el contorno de la prenda. Arrastre para ver el grosor.",
+    cabeza: "El volumen sigue el contorno de la pieza. Arrastre para girarla.",
+    pie: "El volumen sigue la forma del calzado. Arrastre para ver el grosor.",
+    objeto: "El volumen sigue la forma de la pieza. Arrastre para ver el grosor.",
   };
   if (note) note.textContent = copy[item.stage] || copy.objeto;
   if (ask) ask.dataset.waText = `Hola, quiero información de la referencia ${item.id}, ${item.name}.`;
@@ -80,7 +80,27 @@
             keyed += 1;
           }
         }
-        if (keyed <= (pixels.length / 4) * 0.72) context.putImageData(frame, 0, 0);
+        const edge = 8;
+        let borderCount = 0;
+        let lightBorder = 0;
+        for (let y = 0; y < canvas.height; y += 4) {
+          for (let x = 0; x < canvas.width; x += 4) {
+            if (x > edge && y > edge && x < canvas.width - edge && y < canvas.height - edge) continue;
+            const index = (y * canvas.width + x) * 4;
+            borderCount += 1;
+            if (pixels[index] > 236 && pixels[index + 1] > 236 && pixels[index + 2] > 236) lightBorder += 1;
+          }
+        }
+        if (borderCount && lightBorder / borderCount > 0.8) {
+          for (let i = 0; i < pixels.length; i += 4) {
+            if (pixels[i + 3] < 20) continue;
+            if (pixels[i] > 236 && pixels[i + 1] > 236 && pixels[i + 2] > 236) {
+              pixels[i + 3] = 0;
+              keyed += 1;
+            }
+          }
+        }
+        if ((borderCount && lightBorder / borderCount > 0.8) || keyed <= (pixels.length / 4) * 0.72) context.putImageData(frame, 0, 0);
         let minX = canvas.width;
         let minY = canvas.height;
         let maxX = 0;
@@ -136,7 +156,7 @@
         paint.fillStyle = `rgb(${tone.r},${tone.g},${tone.b})`;
         paint.fillRect(0, 0, solid.width, solid.height);
         paint.drawImage(trimmed, 0, 0);
-        resolve({ front: solid, tone });
+        resolve({ front: solid, cut: trimmed, tone });
       };
       image.onerror = () => resolve(null);
       image.src = url;
@@ -159,73 +179,211 @@
     fill.position.set(-3, 1.2, -2);
     scene.add(fill);
 
-    const map = (canvas) => {
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-      return texture;
-    };
-    const frontMap = map(tex.front);
+    const frontMap = new THREE.CanvasTexture(tex.front);
+    frontMap.colorSpace = THREE.SRGBColorSpace;
+    frontMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
     const tone = new THREE.Color((tex.tone?.r || 90) / 255, (tex.tone?.g || 94) / 255, (tex.tone?.b || 98) / 255);
     const photo = new THREE.MeshBasicMaterial({ map: frontMap });
-    const edge = new THREE.MeshStandardMaterial({ color: tone.clone().multiplyScalar(0.72), roughness: 0.46, metalness: 0.18 });
-    const top = new THREE.MeshStandardMaterial({ color: tone.clone().multiplyScalar(0.58), roughness: 0.5, metalness: 0.2 });
-    const back = new THREE.MeshStandardMaterial({ color: tone.clone().multiplyScalar(0.42), roughness: 0.55, metalness: 0.22 });
-    const body = new THREE.MeshStandardMaterial({ color: 0xa7adb4, roughness: 0.38, metalness: 0.46 });
-    const boxMaterials = [edge, edge, top, edge, photo, back];
+    const rim = new THREE.MeshStandardMaterial({ color: tone.clone().multiplyScalar(0.62), roughness: 0.48, metalness: 0.16 });
 
-    const group = new THREE.Group();
-    const lower = /pantalon|falda|short|pantaloneta/i.test(plain(item.name));
-    const aspect = tex.front.width / tex.front.height;
-
-    if (item.stage === "ropa") {
-      const torsoH = lower ? 1.15 : 1.28;
-      const torsoW = Math.min(1.15, torsoH * aspect);
-      const torsoD = 0.62;
-      const torso = new THREE.Mesh(new THREE.BoxGeometry(torsoW, torsoH, torsoD), boxMaterials);
-      torso.position.y = lower ? 0.15 : 0.28;
-      group.add(torso);
-      if (!lower) {
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 32, 24), body);
-        head.scale.set(1, 1.15, 0.95);
-        head.position.y = torso.position.y + torsoH / 2 + 0.34;
-        group.add(head);
-        const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.16, 20), body);
-        neck.position.y = torso.position.y + torsoH / 2 + 0.1;
-        group.add(neck);
+    const source = tex.cut || tex.front;
+    const limit = 420;
+    const fitScale = Math.min(1, limit / Math.max(source.width, source.height));
+    const rawCols = Math.max(8, Math.round(source.width * fitScale));
+    const rawRows = Math.max(8, Math.round(source.height * fitScale));
+    const sample = document.createElement("canvas");
+    sample.width = rawCols;
+    sample.height = rawRows;
+    const sampleContext = sample.getContext("2d", { willReadFrequently: true });
+    const soft = document.createElement("canvas");
+    soft.width = Math.max(28, Math.round(rawCols / 5));
+    soft.height = Math.max(28, Math.round(rawRows / 5));
+    const softContext = soft.getContext("2d");
+    softContext.imageSmoothingEnabled = true;
+    softContext.imageSmoothingQuality = "high";
+    softContext.drawImage(source, 0, 0, soft.width, soft.height);
+    sampleContext.imageSmoothingEnabled = true;
+    sampleContext.imageSmoothingQuality = "high";
+    sampleContext.drawImage(soft, 0, 0, rawCols, rawRows);
+    const samplePixels = sampleContext.getImageData(0, 0, rawCols, rawRows).data;
+    const cols = rawCols + 2;
+    const rows = rawRows + 2;
+    const mask = new Uint8Array(cols * rows);
+    for (let y = 0; y < rawRows; y += 1) {
+      for (let x = 0; x < rawCols; x += 1) {
+        if (samplePixels[(y * rawCols + x) * 4 + 3] > 80) mask[(y + 1) * cols + x + 1] = 1;
       }
-      [-1, 1].forEach((sideSign) => {
-        const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.09, 0.62, 6, 16), body);
-        arm.position.set(sideSign * (torsoW / 2 + 0.16), torso.position.y + torsoH * 0.08, -0.02);
-        arm.rotation.z = sideSign * -0.12;
-        group.add(arm);
-        const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.72, 6, 16), body);
-        leg.position.set(sideSign * 0.18, torso.position.y - torsoH / 2 - 0.48, 0);
-        group.add(leg);
-      });
-    } else if (item.stage === "cabeza") {
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 40, 28), body);
-      head.scale.set(1, 1.12, 0.92);
-      group.add(head);
-      const capH = 0.72;
-      const capW = Math.min(1.05, capH * aspect);
-      const cap = new THREE.Mesh(new THREE.BoxGeometry(capW, capH, Math.max(0.46, capW * 0.55)), boxMaterials);
-      cap.position.y = 0.18;
-      group.add(cap);
-      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.28, 20), body);
-      neck.position.y = -0.48;
-      group.add(neck);
-    } else {
-      const height = item.stage === "pie" ? 1.45 : 1.25;
-      const width = Math.min(1.35, height * aspect);
-      const depth = Math.max(0.55, Math.min(width, height) * 0.55);
-      const piece = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), boxMaterials);
-      piece.position.y = 0.15;
-      group.add(piece);
-      const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.78, 0.08, 40), new THREE.MeshStandardMaterial({ color: 0x2a2e33, metalness: 0.5, roughness: 0.4 }));
-      stand.position.y = -height / 2 + 0.08;
-      group.add(stand);
     }
+    const worldH = 1.35;
+    const worldW = worldH * (rawCols / rawRows);
+    const depth = worldH * (item.stage === "pie" ? 0.28 : item.stage === "ropa" ? 0.16 : 0.2);
+    const toWorld = (px, py) => [(px - 1) / rawCols * worldW - worldW / 2, worldH / 2 - (py - 1) / rawRows * worldH];
+
+    const segments = [];
+    const pushSeg = (ax, ay, bx, by) => {
+      if (ax === bx && ay === by) return;
+      segments.push([ax, ay, bx, by]);
+    };
+    for (let y = 0; y < rows - 1; y += 1) {
+      for (let x = 0; x < cols - 1; x += 1) {
+        let bits = 0;
+        if (mask[y * cols + x]) bits |= 1;
+        if (mask[y * cols + x + 1]) bits |= 2;
+        if (mask[(y + 1) * cols + x + 1]) bits |= 4;
+        if (mask[(y + 1) * cols + x]) bits |= 8;
+        const north = [x + 0.5, y];
+        const east = [x + 1, y + 0.5];
+        const south = [x + 0.5, y + 1];
+        const west = [x, y + 0.5];
+        const join = (from, to) => pushSeg(from[0], from[1], to[0], to[1]);
+        if (bits === 1) join(west, north);
+        else if (bits === 2) join(north, east);
+        else if (bits === 3) join(west, east);
+        else if (bits === 4) join(east, south);
+        else if (bits === 5) { join(west, north); join(east, south); }
+        else if (bits === 6) join(north, south);
+        else if (bits === 7) join(west, south);
+        else if (bits === 8) join(south, west);
+        else if (bits === 9) join(south, north);
+        else if (bits === 10) { join(north, east); join(south, west); }
+        else if (bits === 11) join(south, east);
+        else if (bits === 12) join(east, west);
+        else if (bits === 13) join(east, north);
+        else if (bits === 14) join(north, west);
+      }
+    }
+    const pointKey = (x, y) => `${Math.round(x * 2)},${Math.round(y * 2)}`;
+    const outgoing = new Map();
+    segments.forEach((segment, index) => {
+      const key = pointKey(segment[0], segment[1]);
+      const list = outgoing.get(key);
+      if (list) list.push(index);
+      else outgoing.set(key, [index]);
+    });
+    const used = new Uint8Array(segments.length);
+    const loops = [];
+    segments.forEach((segment, index) => {
+      if (used[index]) return;
+      const loop = [];
+      let cursor = index;
+      let guard = 0;
+      while (cursor >= 0 && !used[cursor] && guard < segments.length + 2) {
+        guard += 1;
+        used[cursor] = 1;
+        const current = segments[cursor];
+        loop.push([current[0], current[1]]);
+        const options = outgoing.get(pointKey(current[2], current[3])) || [];
+        cursor = options.find((candidate) => !used[candidate]);
+        if (cursor === undefined) cursor = -1;
+      }
+      if (loop.length > 10) loops.push(loop);
+    });
+    const simplify = (points, epsilon) => {
+      if (points.length < 4) return points;
+      let far = 0;
+      let index = 0;
+      const start = points[0];
+      const end = points[points.length - 1];
+      for (let i = 1; i < points.length - 1; i += 1) {
+        const dx = end[0] - start[0];
+        const dy = end[1] - start[1];
+        const length = Math.hypot(dx, dy) || 1;
+        const distance = Math.abs(dy * points[i][0] - dx * points[i][1] + end[0] * start[1] - end[1] * start[0]) / length;
+        if (distance > far) {
+          far = distance;
+          index = i;
+        }
+      }
+      if (far <= epsilon) return [start, end];
+      return simplify(points.slice(0, index + 1), epsilon).slice(0, -1).concat(simplify(points.slice(index), epsilon));
+    };
+    const areaOf = (points) => {
+      let area = 0;
+      for (let i = 0; i < points.length; i += 1) {
+        const current = points[i];
+        const next = points[(i + 1) % points.length];
+        area += current[0] * next[1] - next[0] * current[1];
+      }
+      return area / 2;
+    };
+    const contains = (loop, point) => {
+      let inside = false;
+      for (let i = 0, j = loop.length - 1; i < loop.length; j = i, i += 1) {
+        const yi = loop[i][1];
+        const yj = loop[j][1];
+        const crosses = (yi > point[1]) !== (yj > point[1]);
+        if (crosses && point[0] < (loop[j][0] - loop[i][0]) * (point[1] - yi) / ((yj - yi) || 1e-6) + loop[i][0]) inside = !inside;
+      }
+      return inside;
+    };
+    const relax = (points) => points.map((point, index) => {
+      const previous = points[(index - 1 + points.length) % points.length];
+      const following = points[(index + 1) % points.length];
+      return [
+        point[0] * 0.5 + (previous[0] + following[0]) * 0.25,
+        point[1] * 0.5 + (previous[1] + following[1]) * 0.25,
+      ];
+    });
+    const shapes = loops.map((loop) => {
+      let points = simplify(loop, 1.15);
+      for (let pass = 0; pass < 6; pass += 1) points = relax(points);
+      return points;
+    }).filter((loop) => loop.length > 8);
+    const outers = [];
+    const holes = [];
+    if (!shapes.length) return;
+    shapes.forEach((loop) => {
+      const area = areaOf(loop);
+      if (Math.abs(area) < 18) return;
+      if (area > 0) holes.push(loop);
+      else outers.push(loop);
+    });
+    if (!outers.length) holes.splice(0).forEach((loop) => outers.push(loop.slice().reverse()));
+    const group = new THREE.Group();
+    const paintCap = (geometry) => {
+      const position = geometry.getAttribute("position");
+      const uv = geometry.getAttribute("uv");
+      const write = (index) => {
+        const x = position.getX(index);
+        const y = position.getY(index);
+        uv.setXY(index, x / worldW + 0.5, y / worldH + 0.5);
+      };
+      geometry.groups.forEach((part) => {
+        if (part.materialIndex !== 0) return;
+        if (geometry.index) {
+          const order = geometry.index.array;
+          for (let i = part.start; i < part.start + part.count; i += 1) write(order[i]);
+        } else {
+          for (let i = part.start; i < part.start + part.count; i += 1) write(i);
+        }
+      });
+      uv.needsUpdate = true;
+    };
+    outers.forEach((outer) => {
+      try {
+        const ordered = areaOf(outer) < 0 ? outer.slice().reverse() : outer.slice();
+        const shape = new THREE.Shape(ordered.map((point) => new THREE.Vector2(...toWorld(point[0], point[1]))));
+        holes.forEach((hole) => {
+          if (!contains(ordered, hole[0])) return;
+          const ring = areaOf(hole) < 0 ? hole : hole.slice().reverse();
+          const path = new THREE.Path(ring.map((point) => new THREE.Vector2(...toWorld(point[0], point[1]))));
+          shape.holes.push(path);
+        });
+        const geometry = new THREE.ExtrudeGeometry(shape, {
+          depth,
+          bevelEnabled: true,
+          bevelThickness: depth * 0.05,
+          bevelSize: Math.min(worldW, worldH) * 0.012,
+          bevelSegments: 1,
+          curveSegments: 1,
+        });
+        geometry.translate(0, 0, -depth / 2);
+        paintCap(geometry);
+        group.add(new THREE.Mesh(geometry, [photo, rim]));
+      } catch (error) {
+        return;
+      }
+    });
 
     scene.add(group);
     const bounds = new THREE.Box3().setFromObject(group);
