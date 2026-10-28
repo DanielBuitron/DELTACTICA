@@ -1004,22 +1004,30 @@ button.consult {
   transform: translateX(-50%);
 }
 
-.fit-capa[data-zona="arriba"] {
-  top: 12%;
+.fit-capa[data-prenda="camisas"],
+.fit-capa[data-prenda="chalecos"] {
+  top: 10%;
+  width: 98%;
   height: 52%;
 }
 
+.fit-capa[data-prenda="chaquetas"] {
+  top: 3%;
+  width: 94%;
+  height: 64%;
+}
+
 .fit-capa[data-zona="abajo"] {
-  top: 52%;
+  top: 48%;
   z-index: 2;
-  width: 52%;
-  height: 46%;
+  width: 48%;
+  height: 50%;
 }
 
 .fit-capa[data-zona="completo"] {
-  top: 8%;
-  width: 76%;
-  height: 88%;
+  top: 2%;
+  width: 72%;
+  height: 96%;
 }
 
 .fit-room [data-fit-name] {

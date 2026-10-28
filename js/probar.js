@@ -69,7 +69,7 @@
 
   function vista(item, numero) {
     const clave = item.id.toLowerCase().replace(/-/g, "");
-    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=1`;
+    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=2`;
   }
 
   function foto(item) {
@@ -97,7 +97,7 @@
     svg.setAttribute("class", "fit-blank");
     svg.setAttribute("viewBox", "0 0 300 640");
     svg.setAttribute("aria-hidden", "true");
-    svg.innerHTML = '<ellipse cx="150" cy="78" rx="34" ry="42" fill="#f7f7f7"/><path fill="#f3f3f3" d="M136 112h28l6 42h-40z"/><path fill="#f7f7f7" d="M92 168c18-16 98-16 116 0 10 18 18 46 14 78-6 42-18 70-28 92h-22l-8-70h-28l-8 70H86c-10-22-22-50-28-92-4-32 4-60 34-78z"/><path fill="#efefef" d="M96 176c-28 24-40 78-36 140 2 18 16 16 20 2 8-36 14-90 28-118z"/><path fill="#efefef" d="M204 176c28 24 40 78 36 140-2 18-16 16-20 2-8-36-14-90-28-118z"/><path fill="#f7f7f7" d="M118 330h22l-2 250h-24z"/><path fill="#f7f7f7" d="M160 330h22l4 250h-24z"/>';
+    svg.innerHTML = '<ellipse cx="150" cy="64" rx="32" ry="36" fill="#f7f7f7"/><path fill="#f4f4f4" d="M138 96h24l4 36h-32z"/><path fill="#f7f7f7" d="M96 150c16-14 92-14 108 0 8 16 16 40 12 70-4 36-14 64-24 84h-18l-6-62h-36l-6 62H108c-10-20-20-48-24-84-4-30 4-54 12-70z"/><path fill="#f7f7f7" d="M128 292h16l-1 270h-18z"/><path fill="#f7f7f7" d="M156 292h16l3 270h-18z"/>';
     return svg;
   }
 
@@ -110,6 +110,7 @@
     image.dataset.capa = "prenda";
     image.style.cssText = "opacity:0;visibility:hidden;";
     image.dataset.zona = clase === "fit-abajo" ? "abajo" : clase === "fit-arriba" ? "arriba" : "completo";
+    image.dataset.prenda = categoria(item);
     image.className = "fit-capa";
     return image;
   }
