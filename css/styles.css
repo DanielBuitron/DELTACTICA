@@ -1868,8 +1868,11 @@ section[id] {
 .tile img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
+  padding: 16px;
+  background:
+    radial-gradient(ellipse at 50% 42%, #f7f4ee, #d8d1c6 74%);
   transition: transform 0.6s ease;
 }
 
@@ -1981,9 +1984,9 @@ section[id] {
 }
 
 .grid .plate-photo img {
-  height: 240px;
+  height: 260px;
   object-fit: contain;
-  padding: 14px;
+  padding: 8px;
   background: transparent;
 }
 
@@ -2064,7 +2067,10 @@ section[id] {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 18px;
+  background:
+    radial-gradient(ellipse at 50% 42%, #f7f4ee, #d8d1c6 74%);
 }
 
 .line-board .line-card div {

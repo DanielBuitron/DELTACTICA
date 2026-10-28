@@ -254,11 +254,14 @@ window.DT_VISTAS = window.DT_VISTAS || {
 
 function productImage(item) {
   if (!item) return "";
+  const custom = photoUrls.get(item.id);
+  if (custom) return custom;
   if (window.DT_VISTAS && window.DT_VISTAS[item.id]) {
     const clave = String(item.id).toLowerCase().replace(/-/g, "");
     return `${root}img/vueltas/${clave}-01.jpg?v=4`;
   }
-  return photoUrls.get(item.id) || `${root}${item.image || ""}`;
+  if (item.photo !== false && item.id) return `${root}img/recorte/${String(item.id).toLowerCase()}.webp?v=1`;
+  return `${root}${item.image || ""}`;
 }
 
 function stockMap() {
@@ -1757,6 +1760,15 @@ function renderPublic() {
     interest.innerHTML = `<option value="" selected disabled>Seleccione una línea</option>${LINES.map((line) => `<option>${escapeHtml(line)}</option>`).join("")}<option>Dotación completa</option><option>Otra consulta</option>`;
   }
 }
+
+document.addEventListener("error", (event) => {
+  const img = event.target;
+  if (!img || img.tagName !== "IMG" || !img.dataset.product || img.dataset.full) return;
+  const item = product(img.dataset.product);
+  if (!item || !item.image) return;
+  img.dataset.full = "1";
+  img.src = photoUrls.get(item.id) || `${root}${item.image}`;
+}, true);
 
 renderPublic();
 mountMenuSearch();
