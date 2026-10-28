@@ -45,6 +45,42 @@ def recortar(origen, carpeta, nombre, piezas=4):
                     maxy = y
         if maxx <= minx or maxy <= miny:
             continue
+        ancho_local = x1 - x0
+        visto = bytearray(len(abierto))
+        mejor = None
+        for inicio in range(len(abierto)):
+            if abierto[inicio] or visto[inicio]:
+                continue
+            pila_c = [inicio]
+            visto[inicio] = 1
+            puntos = []
+            while pila_c:
+                i = pila_c.pop()
+                puntos.append(i)
+                cx = i % ancho_local
+                cy = i // ancho_local
+                for nx, ny in ((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)):
+                    if nx < 0 or ny < 0 or nx >= ancho_local or ny >= alto:
+                        continue
+                    j = ny * ancho_local + nx
+                    if abierto[j] or visto[j]:
+                        continue
+                    visto[j] = 1
+                    pila_c.append(j)
+            if mejor is None or len(puntos) > len(mejor):
+                mejor = puntos
+        minx, miny, maxx, maxy = x1, alto, x0, 0
+        for i in mejor:
+            x = x0 + (i % ancho_local)
+            y = i // ancho_local
+            if x < minx:
+                minx = x
+            if y < miny:
+                miny = y
+            if x > maxx:
+                maxx = x
+            if y > maxy:
+                maxy = y
         minx = max(x0, minx - 18)
         miny = max(0, miny - 18)
         maxx = min(x1 - 1, maxx + 18)

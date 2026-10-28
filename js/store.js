@@ -256,7 +256,7 @@ function productImage(item) {
   if (!item) return "";
   if (window.DT_VISTAS && window.DT_VISTAS[item.id]) {
     const clave = String(item.id).toLowerCase().replace(/-/g, "");
-    return `${root}img/vueltas/${clave}-01.jpg?v=1`;
+    return `${root}img/vueltas/${clave}-01.jpg?v=2`;
   }
   return photoUrls.get(item.id) || `${root}${item.image || ""}`;
 }

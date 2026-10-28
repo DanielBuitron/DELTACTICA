@@ -970,21 +970,18 @@
       image.src = src;
       image.alt = index ? "" : item.name;
       image.draggable = false;
-      image.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;";
+      image.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;visibility:hidden;transition:none;";
       stage.append(image);
       return image;
     });
     spin = () => {
       let turn = angle % 360;
       if (turn < 0) turn += 360;
-      const pos = turn / 360 * frames.length;
-      const index = Math.floor(pos) % frames.length;
-      const frac = pos - Math.floor(pos);
+      const index = Math.floor(turn / 360 * frames.length) % frames.length;
       frames.forEach((image, key) => {
-        let opacity = 0;
-        if (key === index) opacity = 1 - frac;
-        else if (key === (index + 1) % frames.length) opacity = frac;
-        image.style.opacity = String(opacity);
+        const on = key === index;
+        image.style.opacity = on ? "1" : "0";
+        image.style.visibility = on ? "visible" : "hidden";
       });
     };
     spin();
@@ -999,7 +996,7 @@
         terminar();
         return;
       }
-      const src = `img/vueltas/${clave}-${String(numero).padStart(2, "0")}.jpg?v=1`;
+      const src = `img/vueltas/${clave}-${String(numero).padStart(2, "0")}.jpg?v=2`;
       const image = new Image();
       image.onload = () => {
         urls.push(src);
