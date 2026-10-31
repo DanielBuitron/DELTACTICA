@@ -69,7 +69,7 @@
 
   function vista(item, numero) {
     const clave = item.id.toLowerCase().replace(/-/g, "");
-    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=2`;
+    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=3`;
   }
 
   function foto(item) {
@@ -95,9 +95,13 @@
   function maniqui() {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("class", "fit-blank");
-    svg.setAttribute("viewBox", "0 0 300 640");
+    svg.setAttribute("viewBox", "0 0 440 1120");
     svg.setAttribute("aria-hidden", "true");
-    svg.innerHTML = '<ellipse cx="150" cy="64" rx="32" ry="36" fill="#f7f7f7"/><path fill="#f4f4f4" d="M138 96h24l4 36h-32z"/><path fill="#f7f7f7" d="M96 150c16-14 92-14 108 0 8 16 16 40 12 70-4 36-14 64-24 84h-18l-6-62h-36l-6 62H108c-10-20-20-48-24-84-4-30 4-54 12-70z"/><path fill="#f7f7f7" d="M128 292h16l-1 270h-18z"/><path fill="#f7f7f7" d="M156 292h16l3 270h-18z"/>';
+    const hayArriba = !!(puesto.arriba || puesto.completo);
+    const hayAbajo = !!(puesto.abajo || puesto.completo);
+    const tronco = hayArriba ? "" : '<path fill="#f4f4f4" d="M150 188h140v340H150z"/><path fill="#f7f7f7" d="M150 210c-30 20-70 70-78 180-6 70 8 120 28 130 16-40 22-110 34-160 8-30 12-20 16-150z"/><path fill="#f7f7f7" d="M290 210c30 20 70 70 78 180 6 70-8 120-28 130-16-40-22-110-34-160-8-30-12-20-16-150z"/>';
+    const piernas = hayAbajo ? "" : '<path fill="#f7f7f7" d="M168 500h42l-8 520h-46z"/><path fill="#f7f7f7" d="M230 500h42l12 520h-46z"/><ellipse cx="176" cy="1048" rx="28" ry="16" fill="#f7f7f7"/><ellipse cx="264" cy="1048" rx="28" ry="16" fill="#f7f7f7"/>';
+    svg.innerHTML = '<ellipse cx="220" cy="108" rx="50" ry="64" fill="#f7f7f7"/><rect x="198" y="156" width="44" height="42" rx="8" fill="#efefef"/>' + tronco + piernas;
     return svg;
   }
 
@@ -159,7 +163,10 @@
       ? "Arrastre para girar. Toque la pieza puesta para quitarla y probar otra."
       : "El maniquí está en blanco. Elija una categoría y ponga la primera pieza.";
     add.hidden = !puestos.length;
-    stage.replaceChildren(maniqui());
+    const cuerpoCaja = document.createElement("div");
+    cuerpoCaja.className = "fit-body";
+    stage.replaceChildren(cuerpoCaja);
+    cuerpoCaja.append(maniqui());
     frames = [];
     extras = [];
     const cuerpo = puesto.completo ? [puesto.completo] : prendas;
@@ -168,7 +175,7 @@
       for (let numero = 1; numero <= 4; numero += 1) {
         const image = frame(item, numero, clase);
         image.dataset.grupo = item.id;
-        stage.append(image);
+        cuerpoCaja.append(image);
         frames.push(image);
       }
     });
@@ -185,7 +192,7 @@
         image.style.top = `${6 + extraIndex * 23}%`;
         extraIndex += 1;
       }
-      stage.append(image);
+      cuerpoCaja.append(image);
       extras.push(image);
     });
     angle = frames.length ? angle : 0;

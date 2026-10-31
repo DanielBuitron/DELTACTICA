@@ -982,15 +982,21 @@ button.consult {
   cursor: grab;
 }
 
+.fit-body {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  height: 100%;
+  aspect-ratio: 440 / 1120;
+  transform: translateX(-50%);
+}
+
 .fit-blank {
   position: absolute;
   z-index: 0;
-  top: 1%;
-  bottom: 1%;
-  left: 50%;
-  height: 98%;
-  width: auto;
-  transform: translateX(-50%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
 
@@ -999,35 +1005,37 @@ button.consult {
   left: 50%;
   z-index: 1;
   width: 88%;
-  object-fit: contain;
+  object-fit: fill;
   pointer-events: none;
   transform: translateX(-50%);
 }
 
 .fit-capa[data-prenda="camisas"],
 .fit-capa[data-prenda="chalecos"] {
-  top: 10%;
-  width: 98%;
-  height: 52%;
+  top: 8%;
+  z-index: 2;
+  width: 94%;
+  height: 54%;
 }
 
 .fit-capa[data-prenda="chaquetas"] {
-  top: 3%;
-  width: 94%;
-  height: 64%;
+  top: 1%;
+  z-index: 3;
+  width: 96%;
+  height: 62%;
 }
 
 .fit-capa[data-zona="abajo"] {
-  top: 48%;
-  z-index: 2;
-  width: 48%;
-  height: 50%;
+  top: 44%;
+  z-index: 1;
+  width: 62%;
+  height: 54%;
 }
 
 .fit-capa[data-zona="completo"] {
   top: 2%;
-  width: 72%;
-  height: 96%;
+  width: 64%;
+  height: 94%;
 }
 
 .fit-room [data-fit-name] {
@@ -1110,7 +1118,7 @@ button.consult {
 
 .fit-piece {
   position: absolute;
-  z-index: 2;
+  z-index: 4;
   object-fit: contain;
   pointer-events: none;
   filter: drop-shadow(0 10px 14px rgba(40, 32, 20, 0.32));
