@@ -69,7 +69,7 @@
 
   function vista(item, numero) {
     const clave = item.id.toLowerCase().replace(/-/g, "");
-    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=3`;
+    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=4`;
   }
 
   function foto(item) {
@@ -98,10 +98,11 @@
     svg.setAttribute("viewBox", "0 0 440 1120");
     svg.setAttribute("aria-hidden", "true");
     const hayArriba = !!(puesto.arriba || puesto.completo);
-    const hayAbajo = !!(puesto.abajo || puesto.completo);
+    const corto = puesto.abajo && /\blicra\b|pantaloneta|\bfalda\b/.test(plain(puesto.abajo.name));
+    const hayAbajo = !!((puesto.abajo && !corto) || puesto.completo);
     const tronco = hayArriba ? "" : '<path fill="#f4f4f4" d="M150 188h140v340H150z"/><path fill="#f7f7f7" d="M150 210c-30 20-70 70-78 180-6 70 8 120 28 130 16-40 22-110 34-160 8-30 12-20 16-150z"/><path fill="#f7f7f7" d="M290 210c30 20 70 70 78 180 6 70-8 120-28 130-16-40-22-110-34-160-8-30-12-20-16-150z"/>';
     const piernas = hayAbajo ? "" : '<path fill="#f7f7f7" d="M168 500h42l-8 520h-46z"/><path fill="#f7f7f7" d="M230 500h42l12 520h-46z"/><ellipse cx="176" cy="1048" rx="28" ry="16" fill="#f7f7f7"/><ellipse cx="264" cy="1048" rx="28" ry="16" fill="#f7f7f7"/>';
-    svg.innerHTML = '<ellipse cx="220" cy="108" rx="50" ry="64" fill="#f7f7f7"/><rect x="198" y="156" width="44" height="42" rx="8" fill="#efefef"/>' + tronco + piernas;
+    svg.innerHTML = '<ellipse cx="220" cy="136" rx="48" ry="58" fill="#f7f7f7"/><rect x="200" y="176" width="40" height="36" rx="8" fill="#efefef"/>' + tronco + piernas;
     return svg;
   }
 
@@ -115,6 +116,7 @@
     image.style.cssText = "opacity:0;visibility:hidden;";
     image.dataset.zona = clase === "fit-abajo" ? "abajo" : clase === "fit-arriba" ? "arriba" : "completo";
     image.dataset.prenda = categoria(item);
+    if (/\blicra\b|pantaloneta|\bfalda\b/.test(plain(item.name))) image.dataset.largo = "corto";
     image.className = "fit-capa";
     return image;
   }

@@ -169,7 +169,9 @@ function matchProducts(query) {
   const words = plainText(query).split(/\s+/).filter((word) => word.length > 1);
   if (!words.length) return [];
   return PRODUCTS.filter((item) => {
-    const hay = plainText(`${item.id} ${item.name} ${item.line} ${NOTES[item.id] || ""} ${Object.entries(SEARCH_WORDS).filter(([key]) => plainText(item.name).includes(plainText(key)) || plainText(item.line).includes(plainText(key))).map(([, words]) => words).join(" ")}`);
+    const grupo = grupoDe(item.id);
+    const familia = grupo ? idsDelGrupo(grupo).map((id) => `${id} ${etiquetaDe(grupo, id)} ${product(id)?.name || ""}`).join(" ") : "";
+    const hay = plainText(`${item.id} ${item.name} ${item.line} ${familia} ${grupo ? grupo.nombre : ""} ${NOTES[item.id] || ""} ${Object.entries(SEARCH_WORDS).filter(([key]) => plainText(item.name).includes(plainText(key)) || plainText(item.line).includes(plainText(key))).map(([, words]) => words).join(" ")}`);
     return words.every((word) => hay.includes(word));
   });
 }
@@ -196,7 +198,18 @@ function mountMenuSearch() {
       input.setAttribute("aria-expanded", "false");
       return;
     }
-    const rows = found.slice(0, 6).map((item) => `<a href="${root}producto.html?id=${item.id}"><img src="${productImage(item)}" alt="" data-product="${item.id}"><span><b>${item.id} · ${escapeHtml(item.name)}</b><small>${escapeHtml(item.line)} · ${priceLabel(item)}</small></span></a>`).join("");
+    const vistos = new Set();
+    const rows = found.filter((item) => {
+      const clave = principalDe(item.id);
+      if (vistos.has(clave)) return false;
+      vistos.add(clave);
+      return true;
+    }).slice(0, 6).map((item) => {
+      const mostrar = product(principalDe(item.id)) || item;
+      const grupo = grupoDe(mostrar.id);
+      const titulo = grupo ? grupo.nombre : mostrar.name;
+      return `<a href="${root}producto.html?id=${mostrar.id}"><img src="${productImage(mostrar)}" alt="" data-product="${mostrar.id}"><span><b>${mostrar.id} · ${escapeHtml(titulo)}</b><small>${escapeHtml(mostrar.line)} · ${priceLabel(mostrar)}</small></span></a>`;
+    }).join("");
     const more = found.length > 6 ? `<a class="menu-more" href="${root}catalogo.html?q=${encodeURIComponent(query)}"><span><b>Ver las ${found.length} referencias</b><small>Abrir el catálogo con esta búsqueda</small></span></a>` : "";
     list.innerHTML = rows || `<p>Ninguna referencia coincide con “${escapeHtml(query)}”.</p>`;
     if (more) list.innerHTML += more;
@@ -1383,6 +1396,7 @@ document.addEventListener("click", (event) => {
     const qty = scope.querySelector("[data-qty]");
     const addedQty = qty ? qty.value : 1;
     const message = addToCart(add.dataset.add, addedQty);
+    String(add.dataset.addJunto || "").split(/\s+/).filter(Boolean).forEach((id) => addToCart(id, addedQty));
     if (!message) rememberTrace({ a: "carrito", d: add.dataset.add, n: Number(addedQty) || 1 });
     const previous = add.textContent;
     add.textContent = message || "Añadido al carrito";
@@ -1704,38 +1718,136 @@ document.addEventListener("drop", (event) => {
   });
 });
 
+const DT_GRUPOS = [
+  { nombre: "Dona", piezas: ["DT-1004", "DT-1005"], etiquetas: { "DT-1004": "Grande", "DT-1005": "Mediana" }, nota: "Grande y mediana tienen el mismo costo." },
+  { nombre: "Medias veladas", piezas: ["DT-1028", "DT-1027"], etiquetas: { "DT-1028": "Pistacho", "DT-1027": "Brown" }, nota: "La misma referencia. Cambia el color." },
+  { nombre: "Bolso M-1", piezas: ["DT-1031", "DT-1030"], etiquetas: { "DT-1031": "Verde", "DT-1030": "Negro" } },
+  { nombre: "Chapuza externa lona", piezas: ["DT-1032", "DT-1033"], etiquetas: { "DT-1032": "Pistola", "DT-1033": "Revólver" }, nota: "La misma chapuza. Sirve para pistola o revólver." },
+  { nombre: "Chapuza interna lona", piezas: ["DT-1037", "DT-1034"], etiquetas: { "DT-1037": "Pistola larga", "DT-1034": "Pistola corta" } },
+  { nombre: "Chapuza interna revólver", piezas: ["DT-1036", "DT-1035"], etiquetas: { "DT-1036": "Larga", "DT-1035": "Corta" } },
+  { nombre: "Detodito amplio", piezas: ["DT-1039", "DT-1038"], etiquetas: { "DT-1039": "Verde", "DT-1038": "Gris" } },
+  { nombre: "Detodito compacto", piezas: ["DT-1041", "DT-1040"], etiquetas: { "DT-1041": "Verde", "DT-1040": "Gris" } },
+  { nombre: "Porta proveedor de fusil táctico doble", piezas: ["DT-1050", "DT-1049"], etiquetas: { "DT-1050": "Verde", "DT-1049": "Negro" }, apoyo: ["DT-1048", "DT-1047"], etiquetasApoyo: { "DT-1048": "De lado verde", "DT-1047": "De lado negro" }, nota: "La foto de lado muestra cómo se ve con los dos proveedores." },
+  { nombre: "Porta torniquete táctico", piezas: ["DT-1057", "DT-1056"], etiquetas: { "DT-1057": "Verde", "DT-1056": "Negro" } },
+  { nombre: "Porta celular vertical", piezas: ["DT-1062", "DT-1063", "DT-1061"], etiquetas: { "DT-1062": "Verde", "DT-1063": "Gris", "DT-1061": "Velcro" } },
+  { nombre: "Porta celular horizontal", piezas: ["DT-1060", "DT-1058", "DT-1059"], etiquetas: { "DT-1060": "Verde", "DT-1058": "Gris", "DT-1059": "Velcro" } },
+  { nombre: "Cartucho de seguridad", piezas: ["DT-1065", "DT-1066"], etiquetas: { "DT-1065": "Fusil", "DT-1066": "Pistola" } },
+  { nombre: "Grip de pistola", piezas: ["DT-1069", "DT-1068", "DT-1067"], etiquetas: { "DT-1069": "Verde", "DT-1068": "Negro", "DT-1067": "Kaki" } },
+  { nombre: "Kit de limpieza armas cortas", piezas: ["DT-1073", "DT-1074"], etiquetas: { "DT-1073": "Letal", "DT-1074": "Traumáticas" }, apoyo: ["DT-1071", "DT-1072"], etiquetasApoyo: { "DT-1071": "Letal abierto", "DT-1072": "Traumáticas abierto" }, nota: "Las fotos abiertas muestran cómo viene y qué trae." },
+  { nombre: "Ligas delgadas", piezas: ["DT-1083", "DT-1082"], etiquetas: { "DT-1083": "Verdes", "DT-1082": "Negras" } },
+  { nombre: "Pañoleta bordada", piezas: ["DT-1085", "DT-1086", "DT-1084"], etiquetas: { "DT-1085": "#4 verde", "DT-1086": "#5 verde", "DT-1084": "#4 azul" } },
+  { nombre: "Sábana cama sencilla", piezas: ["DT-1091", "DT-1090", "DT-1089"], etiquetas: { "DT-1091": "Verde", "DT-1090": "Negra", "DT-1089": "Blanca" } },
+  { nombre: "Shemag táctico", piezas: ["DT-1094", "DT-1093"], etiquetas: { "DT-1094": "Verde", "DT-1093": "Negro" } },
+  { nombre: "Toalla", piezas: ["DT-1099", "DT-1098", "DT-1095"], etiquetas: { "DT-1099": "Verde", "DT-1098": "Negra", "DT-1095": "Blanca" } },
+  { nombre: "Toalla microfibra", piezas: ["DT-1097", "DT-1096"], etiquetas: { "DT-1097": "Verde", "DT-1096": "Negra" } },
+  { nombre: "Chapuza Sig Sauer nivel 2", piezas: ["DT-1100", "DT-1101"], etiquetas: { "DT-1100": "Ajuste bajo", "DT-1101": "Tipo paleta" } },
+  { nombre: "Chapuza universal", piezas: ["DT-1103", "DT-1104"], etiquetas: { "DT-1103": "Ajuste bajo", "DT-1104": "Tipo paleta" } },
+  { nombre: "Cinturón táctico Molle Milfort", piezas: ["DT-1106", "DT-1105"], etiquetas: { "DT-1106": "Molle", "DT-1105": "Interno" }, junto: true, nota: "Se vende con el cinturón interno. No se manejan por separado." },
+  { nombre: "Complemento piernera", piezas: ["DT-1107", "DT-1108", "DT-1109"], etiquetas: { "DT-1107": "G-1", "DT-1108": "G-2 táctico", "DT-1109": "G-2 V2" } },
+  { nombre: "Llavero Milfort", piezas: ["DT-1111", "DT-1112"], etiquetas: { "DT-1111": "Pistola", "DT-1112": "Tonfa" } },
+  { nombre: "Piernera Milfort", piezas: ["DT-1113", "DT-1114"], etiquetas: { "DT-1113": "G-1", "DT-1114": "G-2" } },
+  { nombre: "Porta gorra V2", piezas: ["DT-1119", "DT-1118"], etiquetas: { "DT-1119": "Tapa verde", "DT-1118": "Tapa negra" } },
+  { nombre: "Peluches", piezas: ["DT-1132", "DT-1131", "DT-1133"], etiquetas: { "DT-1132": "#4 verde", "DT-1131": "#4 azul", "DT-1133": "#5 verde" } },
+  { nombre: "Placa fotograbada", piezas: ["DT-1137", "DT-1138"], etiquetas: { "DT-1137": "Dorada", "DT-1138": "Plateada" } },
+  { nombre: "Placa conmemorativa", piezas: ["DT-1134", "DT-1135", "DT-1136"], etiquetas: { "DT-1134": "Grado", "DT-1135": "Escudo PONAL", "DT-1136": "Texto" } },
+  { nombre: "Camelback Codra", piezas: ["DT-1144", "DT-1143"], etiquetas: { "DT-1144": "Verde", "DT-1143": "Negro" } },
+  { nombre: "Canguro porta arma", piezas: ["DT-1146"], etiquetas: { "DT-1146": "Cerrado" }, apoyo: ["DT-1145"], etiquetasApoyo: { "DT-1145": "Abierto" }, nota: "La foto abierta enseña cómo es el canguro abierto." },
+  { nombre: "Morral de campaña", piezas: ["DT-1149", "DT-1148"], etiquetas: { "DT-1149": "Verde", "DT-1148": "Negro" } },
+  { nombre: "Morral táctico L-50", piezas: ["DT-1152", "DT-1151", "DT-1150"], etiquetas: { "DT-1152": "Verde", "DT-1151": "Negro", "DT-1150": "Kaki" } },
+  { nombre: "Morral táctico M-40", piezas: ["DT-1154", "DT-1153"], etiquetas: { "DT-1154": "Verde", "DT-1153": "Negro" } },
+  { nombre: "Morral táctico S-30", piezas: ["DT-1156", "DT-1155"], etiquetas: { "DT-1156": "Verde", "DT-1155": "Negro" } },
+  { nombre: "Morral táctico XL-65", piezas: ["DT-1158", "DT-1157"], etiquetas: { "DT-1158": "Verde", "DT-1157": "Negro" } },
+  { nombre: "Navaja Pro", piezas: ["DT-1214", "DT-1218", "DT-1216", "DT-1220"], etiquetas: { "DT-1214": "Fire", "DT-1218": "Negra", "DT-1216": "Gris", "DT-1220": "Verde" }, apoyo: ["DT-1213", "DT-1217", "DT-1215", "DT-1219"], etiquetasApoyo: { "DT-1213": "Fire abierta", "DT-1217": "Negra abierta", "DT-1215": "Gris abierta", "DT-1219": "Verde abierta" }, nota: "Cada color tiene la foto de cómo se ve abierta." },
+  { nombre: "Esposas nacionales", piezas: ["DT-1265", "DT-1266"], etiquetas: { "DT-1265": "Cadena", "DT-1266": "Grillete" } },
+  { nombre: "Portacarnet de cuero", piezas: ["DT-1272", "DT-1271"], etiquetas: { "DT-1272": "Tira verde", "DT-1271": "Tira azul" } },
+  { nombre: "Portacarnet de pasta", piezas: ["DT-1273"], etiquetas: { "DT-1273": "Tira azul" }, referencia: [{ id: "DT-1272", etiqueta: "Tira verde" }], nota: "La foto de la tira verde en pasta se perdió. Se muestra la tira verde del portacarnet de cuero." },
+  { nombre: "Buzo táctico licrado", piezas: ["DT-1302", "DT-1301", "DT-1300"], etiquetas: { "DT-1302": "Verde", "DT-1301": "Negro", "DT-1300": "Kaki" } },
+  { nombre: "Camiseta de algodón importado", piezas: ["DT-1311", "DT-1309", "DT-1310"], etiquetas: { "DT-1311": "Verde", "DT-1309": "Azul", "DT-1310": "Blanca" } },
+  { nombre: "Camiseta licrada manga corta", piezas: ["DT-1316", "DT-1315", "DT-1313", "DT-1314"], etiquetas: { "DT-1316": "Verde", "DT-1315": "Negra", "DT-1313": "Azul", "DT-1314": "Blanca" } },
+  { nombre: "Camiseta licrada manga larga", piezas: ["DT-1318", "DT-1317"], etiquetas: { "DT-1318": "Verde", "DT-1317": "Negra" } },
+  { nombre: "Chaqueta táctica ref. piel de tiburón", piezas: ["DT-1322", "DT-1321"], etiquetas: { "DT-1322": "Verde", "DT-1321": "Negra" } },
+  { nombre: "Gafas Oakley fotocromática", piezas: ["DT-1276", "DT-1277"], etiquetas: { "DT-1276": "Chata", "DT-1277": "Murciélago" } },
+  { nombre: "Gafas Oakley lente intercambiable", piezas: ["DT-1278", "DT-1279"], etiquetas: { "DT-1278": "Chata", "DT-1279": "Murciélago" } },
+  { nombre: "Gafas Oakley polarizado", piezas: ["DT-1281", "DT-1280"], etiquetas: { "DT-1281": "Chata", "DT-1280": "Murciélago" } },
+  { nombre: "Guante Ranger abierto", piezas: ["DT-1287", "DT-1286"], etiquetas: { "DT-1287": "Verde", "DT-1286": "Negro" } },
+  { nombre: "Guante Ranger cerrado", piezas: ["DT-1289", "DT-1288"], etiquetas: { "DT-1289": "Verde", "DT-1288": "Negro" } },
+  { nombre: "Correa 5.11", piezas: ["DT-1341", "DT-1340", "DT-1339"], etiquetas: { "DT-1341": "Verde", "DT-1340": "Negra", "DT-1339": "Kaki" } },
+  { nombre: "Correa extracción rápida", piezas: ["DT-1345", "DT-1344", "DT-1343"], etiquetas: { "DT-1345": "Verde", "DT-1344": "Negra", "DT-1343": "Kaki" } },
+  { nombre: "Correa interna fina", piezas: ["DT-1346", "DT-1347"], etiquetas: { "DT-1346": "Velcro hembra", "DT-1347": "Velcro macho" }, apoyo: ["DT-1354", "DT-1355"], etiquetasApoyo: { "DT-1354": "Velcro hembra suelto", "DT-1355": "Velcro macho suelto" }, nota: "Las fotos sueltas del velcro sirven para identificar cuál se necesita." },
+  { nombre: "Correa piloto B.H", piezas: ["DT-1350", "DT-1349", "DT-1348"], etiquetas: { "DT-1350": "Verde", "DT-1349": "Negra", "DT-1348": "Kaki" } },
+  { nombre: "Guindo", piezas: ["DT-1364", "DT-1363"], etiquetas: { "DT-1364": "Verde", "DT-1363": "Negro" } },
+  { nombre: "Llavero guaya", piezas: ["DT-1370", "DT-1369", "DT-1368"], etiquetas: { "DT-1370": "Verde", "DT-1369": "Negro", "DT-1368": "Kaki" } },
+  { nombre: "Llavero supervivencia", piezas: ["DT-1372", "DT-1371"], etiquetas: { "DT-1372": "Verde", "DT-1371": "Negro" } },
+  { nombre: "Mosquetón", piezas: ["DT-1380", "DT-1379", "DT-1378"], etiquetas: { "DT-1380": "Verde", "DT-1379": "Negro", "DT-1378": "Kaki" } },
+  { nombre: "Silla táctica", piezas: ["DT-1384", "DT-1383"], etiquetas: { "DT-1384": "Verde", "DT-1383": "Negra" } }
+];
+
+function grupoDe(id) {
+  return DT_GRUPOS.find((grupo) => grupo.piezas.includes(id) || (grupo.apoyo || []).includes(id) || (grupo.referencia || []).some((foto) => foto.id === id)) || null;
+}
+
+function principalDe(id) {
+  const grupo = grupoDe(id);
+  return grupo ? grupo.piezas[0] : id;
+}
+
+function etiquetaDe(grupo, id) {
+  return (grupo.etiquetas && grupo.etiquetas[id]) || (grupo.etiquetasApoyo && grupo.etiquetasApoyo[id]) || (product(id) ? product(id).name : id);
+}
+
+function idsDelGrupo(grupo) {
+  return [...grupo.piezas, ...(grupo.apoyo || []), ...(grupo.referencia || []).map((foto) => foto.id)];
+}
+
+window.dtGrupo = grupoDe;
+window.dtPrincipal = principalDe;
+
 function renderPublic() {
+  const ocultos = new Set();
+  DT_GRUPOS.forEach((grupo) => {
+    grupo.piezas.slice(1).forEach((id) => ocultos.add(id));
+    (grupo.apoyo || []).forEach((id) => ocultos.add(id));
+  });
+  const visibles = PRODUCTS.filter((item) => !ocultos.has(item.id));
   const filters = document.querySelector("[data-catalog-filters]");
   const grid = document.querySelector("[data-catalog-grid]");
   if (filters && grid) {
     const counts = {};
-    PRODUCTS.forEach((item) => {
+    visibles.forEach((item) => {
       counts[item.slug] = (counts[item.slug] || 0) + 1;
     });
-    filters.innerHTML = [`<button class="filter is-active" type="button" data-filter="todos" aria-pressed="true">Todas <b>${PRODUCTS.length}</b></button>`,
+    filters.innerHTML = [`<button class="filter is-active" type="button" data-filter="todos" aria-pressed="true">Todas <b>${visibles.length}</b></button>`,
       ...LINES.map((line) => {
         const slug = PRODUCTS.find((item) => item.line === line)?.slug || "";
         return `<button class="filter" type="button" data-filter="${slug}" data-label="${escapeHtml(line)}" aria-pressed="false">${escapeHtml(line)} <b>${counts[slug] || 0}</b></button>`;
       })].join("");
-    grid.innerHTML = PRODUCTS.map((item) => {
+    grid.innerHTML = visibles.map((item) => {
+      const grupo = grupoDe(item.id);
+      const titulo = grupo ? grupo.nombre : item.name;
+      const piezas = grupo ? grupo.piezas.map((id) => product(id)).filter(Boolean) : [item];
+      const apoyo = grupo ? (grupo.apoyo || []).map((id) => product(id)).filter(Boolean) : [];
+      const ids = [...piezas, ...apoyo].map((entry) => entry.id).join(" ");
+      const colores = grupo ? `<div class="variant-row">${piezas.map((entry) => `<a href="${root}producto.html?id=${entry.id}"><img src="${productImage(entry)}" alt="" data-product="${entry.id}"><span>${escapeHtml(etiquetaDe(grupo, entry.id))}</span></a>`).join("")}</div>` : "";
       const frame = item.photo === false
         ? `<div class="plate plate-photo plate-missing"><span>Foto por reemplazar</span></div>`
-        : `<a class="plate plate-photo" href="${root}producto.html?id=${item.id}"><img src="${productImage(item)}" alt="${escapeHtml(item.name)}" loading="lazy" data-product="${item.id}"></a>`;
-      return `<article class="card" data-cat="${item.slug}">
+        : `<a class="plate plate-photo" href="${root}producto.html?id=${item.id}"><img src="${productImage(item)}" alt="${escapeHtml(titulo)}" loading="lazy" data-product="${item.id}"></a>`;
+      const junto = grupo && grupo.junto ? ` data-add-junto="${grupo.piezas.slice(1).join(" ")}"` : "";
+      return `<article class="card" data-cat="${item.slug}" data-ids="${ids}">
       ${frame}
       <div class="card-body">
         <p class="card-kicker"><span>${item.id}</span><span>${escapeHtml(item.line)}</span></p>
-        <h3>${escapeHtml(item.name)}</h3>
+        <h3>${escapeHtml(titulo)}</h3>
+        ${colores}
         <p class="price">${priceLabel(item)}</p>
         <a class="consult" href="${root}producto.html?id=${item.id}">${window.DT_VISTAS && window.DT_VISTAS[item.id] ? "Ver en 360" : "Ver foto"}</a>
         ${window.DT_VISTAS && window.DT_VISTAS[item.id] ? `<a class="consult" href="${root}probar.html?id=${item.id}">Probar</a>` : ""}
-        <button class="cart-add" type="button" data-add="${item.id}">Añadir al carrito</button>
-        <a class="consult" data-wa-text="Hola, quiero información de la referencia ${item.id}, ${item.name}.">Consultar referencia</a>
+        <button class="cart-add" type="button" data-add="${item.id}"${junto}>Añadir al carrito</button>
+        <a class="consult" data-wa-text="Hola, quiero información de la referencia ${item.id}, ${titulo}.">Consultar referencia</a>
       </div>
     </article>`;
     }).join("");
     const count = document.querySelector("[data-count]");
-    if (count) count.textContent = PRODUCTS.length === 1 ? "1 referencia" : `${PRODUCTS.length} referencias`;
+    if (count) count.textContent = visibles.length === 1 ? "1 referencia" : `${visibles.length} referencias`;
   }
   const bar = document.querySelector("[data-stage-bar]");
   if (bar) {
@@ -1747,7 +1859,7 @@ function renderPublic() {
   const board = document.querySelector("[data-line-board]");
   if (board) {
     board.innerHTML = LINES.map((line) => {
-      const group = PRODUCTS.filter((item) => item.line === line);
+      const group = visibles.filter((item) => item.line === line);
       const item = group.find((entry) => entry.photo !== false) || group[0];
       if (!item) return "";
       return `<article class="line-card" id="${item.slug}"><img src="${productImage(item)}" alt="${escapeHtml(line)}" data-product="${item.id}"><div><h2>${escapeHtml(line)}</h2><p>${group.length} referencias.</p><a class="btn btn-metal line-open" href="${root}catalogo.html?linea=${item.slug}">Abrir línea</a></div></article>`;

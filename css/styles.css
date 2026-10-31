@@ -1018,10 +1018,10 @@ button.consult {
 
 .fit-capa[data-prenda="camisas"],
 .fit-capa[data-prenda="chalecos"] {
-  top: 8%;
+  top: 4%;
   z-index: 2;
-  width: 94%;
-  height: 54%;
+  width: 96%;
+  height: 56%;
 }
 
 .fit-capa[data-prenda="chaquetas"] {
@@ -1032,10 +1032,61 @@ button.consult {
 }
 
 .fit-capa[data-zona="abajo"] {
-  top: 44%;
+  top: 46%;
   z-index: 1;
-  width: 62%;
-  height: 54%;
+  width: 58%;
+  height: 50%;
+}
+
+.fit-capa[data-largo="corto"] {
+  top: 48%;
+  z-index: 2;
+  width: 72%;
+  height: 30%;
+  object-fit: contain;
+  object-position: center top;
+}
+
+.variant-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin: 8px 0 4px;
+}
+
+.variant-row a,
+.variant-row button {
+  flex: 0 0 72px;
+  display: grid;
+  gap: 4px;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: #101114;
+  color: inherit;
+  text-align: center;
+  text-decoration: none;
+  font-size: 11px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.variant-row img {
+  width: 100%;
+  height: 64px;
+  object-fit: contain;
+  background: radial-gradient(ellipse at 50% 42%, #f7f4ee, #d8d1c6 74%);
+}
+
+.variant-row span {
+  display: block;
+  padding: 0 4px 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.variant-row .is-on {
+  border-color: #f4f5f6;
 }
 
 .fit-capa[data-zona="completo"] {

@@ -30,16 +30,37 @@
   };
   if (note) note.textContent = copy[item.stage] || copy.objeto;
   if (ask) ask.dataset.waText = `Hola, quiero información de la referencia ${item.id}, ${item.name}.`;
+  const grupo = window.dtGrupo ? window.dtGrupo(item.id) : null;
+  if (grupo) {
+    if (title) title.textContent = grupo.nombre;
+    if (grupo.nota && note) note.textContent = grupo.nota;
+    document.title = `${grupo.nombre} | Deltactica`;
+    const familia = document.createElement("div");
+    familia.className = "variant-row";
+    const piezas = grupo.piezas.map((clave) => list.find((entry) => entry.id === clave)).filter(Boolean);
+    const apoyo = (grupo.apoyo || []).map((clave) => list.find((entry) => entry.id === clave)).filter(Boolean);
+    const referencia = grupo.referencia || [];
+    const etiqueta = (clave) => (grupo.etiquetas && grupo.etiquetas[clave]) || (grupo.etiquetasApoyo && grupo.etiquetasApoyo[clave]) || clave;
+    const thumb = (entry, texto) => `<a class="${entry.id === item.id ? "is-on" : ""}" href="producto.html?id=${entry.id}"><img src="${typeof productImage === "function" ? productImage(entry) : entry.image}" alt=""><span>${texto}</span></a>`;
+    familia.innerHTML = piezas.map((entry) => thumb(entry, etiqueta(entry.id))).join("") + apoyo.map((entry) => thumb(entry, etiqueta(entry.id))).join("") + referencia.map((foto) => {
+      const base = list.find((entry) => entry.id === foto.id);
+      return base ? thumb(base, foto.etiqueta) : "";
+    }).join("");
+    if (title) title.after(familia);
+    if (grupo.junto && add) add.dataset.addJunto = grupo.piezas.filter((clave) => clave !== item.id).join(" ");
+    if (kicker) kicker.textContent = `${item.id} · ${item.line}`;
+  }
   if (item.photo === false) {
     host.innerHTML = `<div class="giro"><div class="giro-stage giro-missing"><p>El archivo de esta foto no es una imagen. Hay que volver a guardarlo como PNG.</p></div></div>`;
     return;
   }
   const esPrenda = !!(window.DT_VISTAS && window.DT_VISTAS[item.id]);
   if (related) {
-    related.innerHTML = list.filter((entry) => entry.line === item.line && entry.id !== item.id && entry.photo !== false).slice(0, 4).map((entry) => `<a href="producto.html?id=${entry.id}"><img src="${typeof productImage === "function" ? productImage(entry) : entry.image}" alt=""><span>${entry.name}</span></a>`).join("");
+    const mismo = grupo ? new Set([...grupo.piezas, ...(grupo.apoyo || [])]) : new Set();
+    related.innerHTML = list.filter((entry) => entry.line === item.line && entry.id !== item.id && entry.photo !== false && !mismo.has(entry.id) && (!window.dtPrincipal || window.dtPrincipal(entry.id) === entry.id)).slice(0, 4).map((entry) => `<a href="producto.html?id=${entry.id}"><img src="${typeof productImage === "function" ? productImage(entry) : entry.image}" alt=""><span>${window.dtGrupo && window.dtGrupo(entry.id) ? window.dtGrupo(entry.id).nombre : entry.name}</span></a>`).join("");
   }
   if (!esPrenda) {
-    if (note) note.textContent = "Foto del producto.";
+    if (note) note.textContent = grupo && grupo.nota ? grupo.nota : "Foto del producto.";
     host.innerHTML = `<div class="giro"><div class="giro-stage foto-sola" data-giro-stage></div><div class="giro-controls"><button class="btn btn-ghost" type="button" data-giro-zoom>Ver grande</button></div></div>`;
     const foto = document.createElement("img");
     foto.alt = item.name;

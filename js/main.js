@@ -70,8 +70,9 @@ function applyCatalogFilter() {
   let visible = 0;
   cards.forEach((card) => {
     const id = card.querySelector("[data-add]")?.dataset.add || "";
+    const ids = (card.dataset.ids || id).split(/\s+/).filter(Boolean);
     const inLine = todas || lines.includes(card.dataset.cat);
-    const show = query ? Boolean(hits && hits.includes(id)) : inLine;
+    const show = query ? Boolean(hits && ids.some((one) => hits.includes(one))) : inLine;
     card.hidden = !show;
     if (show) visible += 1;
   });
