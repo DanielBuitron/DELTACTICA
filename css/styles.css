@@ -960,9 +960,14 @@ button.consult {
 
 .fit-layout {
   display: grid;
-  grid-template-columns: minmax(260px, 380px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
   gap: 18px;
   align-items: start;
+}
+
+.fit-layout > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .fit-room {
@@ -983,12 +988,13 @@ button.consult {
 }
 
 .fit-body {
-  position: absolute;
-  left: 50%;
-  top: 0;
+  position: relative;
   height: 100%;
+  width: auto;
+  max-width: 100%;
+  max-height: 100%;
   aspect-ratio: 440 / 1120;
-  transform: translateX(-50%);
+  flex: 0 0 auto;
 }
 
 .fit-blank {
@@ -3462,7 +3468,7 @@ select option {
 
 @media (max-width: 900px) {
   .fit-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .fit-room {
@@ -3593,6 +3599,10 @@ select option {
 }
 
 .giro-stage.fit-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
   height: min(68vh, 640px);
 }
 
@@ -3626,6 +3636,8 @@ select option {
   }
 
   .fit-tabs {
+    width: 100%;
+    max-width: 100%;
     flex-wrap: nowrap;
     overflow-x: auto;
     padding-bottom: 4px;
