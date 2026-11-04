@@ -1166,45 +1166,52 @@ button.consult {
 }
 
 .fit-piece[data-zona="cabeza"] {
-  top: 2%;
+  top: 6.2%;
   left: 50%;
-  width: 28%;
-  height: 14%;
+  z-index: 8;
+  width: 25%;
+  height: 9.4%;
   object-position: center bottom;
   transform: translateX(-50%);
 }
 
 .fit-piece[data-zona="cara"] {
-  top: 9%;
+  top: 8.6%;
   left: 50%;
-  width: 18%;
-  height: 6%;
+  z-index: 8;
+  width: 16%;
+  height: 4.4%;
+  object-position: center center;
   transform: translateX(-50%);
 }
 
 .fit-piece[data-zona="pies"] {
-  bottom: 1%;
+  bottom: 7.5%;
   left: 50%;
-  width: 36%;
-  height: 9%;
-  object-position: center bottom;
+  z-index: 7;
+  width: 46%;
+  height: 17%;
+  object-position: center top;
   transform: translateX(-50%);
 }
 
 .fit-piece[data-zona="cintura"] {
-  top: 39.6%;
+  top: 46%;
   left: 50%;
-  width: 50%;
-  height: 6%;
+  z-index: 7;
+  width: 44%;
+  height: 14%;
+  object-fit: contain;
   object-position: center center;
   transform: translateX(-50%);
 }
 
 .fit-piece[data-zona="manos"] {
-  top: 37%;
-  right: 0;
-  width: 13%;
-  height: 8%;
+  top: 44%;
+  right: 3%;
+  z-index: 7;
+  width: 16%;
+  height: 9%;
   object-position: center center;
 }
 

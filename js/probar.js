@@ -36,9 +36,14 @@
     return !!(window.DT_VISTAS && window.DT_VISTAS[item.id]);
   }
 
+  function seViste(nombre) {
+    if (/porta|linterna|cordon|\bmedias?\b|velcro/.test(nombre)) return false;
+    if (/\bchapa\b/.test(nombre) && !/correa|corra|cinturon/.test(nombre)) return false;
+    return true;
+  }
+
   function categoria(item) {
     const nombre = plain(item.name);
-    const texto = plain(`${item.name} ${item.line}`);
     if (esPrenda(item)) {
       if (/uniforme|overol/.test(nombre)) return "uniformes";
       if (/chaqueta/.test(nombre)) return "chaquetas";
@@ -46,10 +51,11 @@
       if (/\bpantalon|\bfalda|\blicra\b/.test(nombre)) return "pantalones";
       return "camisas";
     }
-    if (item.stage === "cabeza" || /gorra|boina|pasamontan|cachucha|casco/.test(texto)) return "gorras";
-    if (item.stage === "pie" || /bota|zapato/.test(texto)) return "botas";
-    if (/reata|correa|cinturon/.test(texto)) return "reatas";
-    if (/guante|gafa/.test(texto)) return "guantes";
+    if (!seViste(nombre)) return "";
+    if (/\b(gorra|boina|pasamontan|cachucha|casco|kepis|pava)\b/.test(nombre)) return "gorras";
+    if (/\b(botas?|zapatos?|zapatoz)\b/.test(nombre)) return "botas";
+    if (/\b(reata|correas?|corras?|cinturon)\b/.test(nombre)) return "reatas";
+    if (/\b(guantes?|gafas?|gasfas?)\b/.test(nombre)) return "guantes";
     return "";
   }
 
@@ -60,17 +66,18 @@
       return "arriba";
     }
     const grupo = categoria(item);
+    if (!grupo) return "";
     if (grupo === "gorras") return "cabeza";
     if (grupo === "botas") return "pies";
     if (grupo === "reatas") return "cintura";
-    if (/gafa/.test(plain(item.name))) return "cara";
+    if (/gafa|gasfa/.test(plain(item.name))) return "cara";
     if (grupo === "guantes") return "manos";
-    return "extra";
+    return "";
   }
 
   function vista(item, numero) {
     const clave = item.id.toLowerCase().replace(/-/g, "");
-    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=9`;
+    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=11`;
   }
 
   function foto(item) {
@@ -93,8 +100,8 @@
     return todosPuestos().some((item) => item.id === id);
   }
 
-  const pielCabeza = '<ellipse cx="178" cy="118" rx="8" ry="12" fill="#f1f1f1"/><ellipse cx="262" cy="118" rx="8" ry="12" fill="#f1f1f1"/><ellipse cx="220" cy="114" rx="44" ry="54" fill="#f7f7f7"/><path d="M203 104h12M225 104h12" stroke="#8d8d8d" stroke-width="2.4" stroke-linecap="round"/><path d="M214 126c3 5 9 5 12 0" stroke="#9a9a9a" stroke-width="1.8" fill="none"/><path d="M204 148c10 7 22 7 32 0" stroke="#8a8a8a" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M196 158h48c6 18 4 40-2 52h-44c-6-12-8-34-2-52z" fill="#f4f4f4"/>';
-  const pielManos = '<g fill="#f7f7f7"><rect x="50" y="424" width="5" height="14" rx="2"/><rect x="57" y="420" width="5" height="16" rx="2"/><rect x="64" y="420" width="5" height="16" rx="2"/><rect x="71" y="424" width="5" height="13" rx="2"/><ellipse cx="60" cy="448" rx="16" ry="14"/><ellipse cx="42" cy="440" rx="7" ry="9"/><rect x="364" y="424" width="5" height="14" rx="2"/><rect x="371" y="420" width="5" height="16" rx="2"/><rect x="378" y="420" width="5" height="16" rx="2"/><rect x="385" y="424" width="5" height="13" rx="2"/><ellipse cx="380" cy="448" rx="16" ry="14"/><ellipse cx="398" cy="440" rx="7" ry="9"/></g>';
+  const pielCabeza = '<ellipse cx="176" cy="124" rx="7" ry="11" fill="#c4beb4"/><ellipse cx="264" cy="124" rx="7" ry="11" fill="#c4beb4"/><ellipse cx="220" cy="118" rx="43" ry="50" fill="#d2ccc2"/><path d="M201 106h11M228 106h11" stroke="#3f3f3f" stroke-width="2.4" stroke-linecap="round"/><path d="M214 130c3 4 9 4 12 0" stroke="#4a4a4a" stroke-width="1.7" fill="none"/><path d="M205 150c9 6 21 6 30 0" stroke="#454545" stroke-width="1.7" fill="none" stroke-linecap="round"/><path d="M198 162h44c2 16 1 30-2 40h-40c-3-10-4-24-2-40z" fill="#d2ccc2"/>';
+  const pielManos = '<g fill="#e4dfd8"><rect x="78" y="498" width="3.4" height="9" rx="1.6"/><rect x="82.2" y="495" width="3.4" height="11" rx="1.6"/><rect x="86.4" y="495" width="3.4" height="11" rx="1.6"/><rect x="90.6" y="498" width="3.4" height="8" rx="1.6"/><ellipse cx="86" cy="514" rx="10" ry="11"/><rect x="346" y="498" width="3.4" height="9" rx="1.6"/><rect x="350.2" y="495" width="3.4" height="11" rx="1.6"/><rect x="354.4" y="495" width="3.4" height="11" rx="1.6"/><rect x="358.6" y="498" width="3.4" height="8" rx="1.6"/><ellipse cx="354" cy="514" rx="10" ry="11"/></g>';
   const pielCuerpo = '<path fill="#f7f7f7" d="M156 206c-8 28-22 78-34 150-8 48-4 92 8 118l22-16c-6-28-2-62 6-108 8-42 14-86 18-144z"/><path fill="#f7f7f7" d="M284 206c8 28 22 78 34 150 8 48 4 92-8 118l-22-16c6-28 2-62-6-108-8-42-14-86-18-144z"/><path fill="#f6f6f6" d="M164 198h112c22 16 34 78 28 168-4 62-10 120-22 176H158c-12-56-18-114-22-176-6-90 6-152 28-168z"/><path fill="#f7f7f7" d="M150 470h140v110H150z"/><path fill="#f7f7f7" d="M156 548c-2 100 0 270 8 460h52c0-190 2-350 4-460z"/><path fill="#f7f7f7" d="M228 548c2 110 4 270 4 460h52c8-190 6-360 0-460z"/><ellipse cx="184" cy="1024" rx="24" ry="14" fill="#f7f7f7"/><ellipse cx="256" cy="1024" rx="24" ry="14" fill="#f7f7f7"/>';
 
   function figura(clase, arriba) {
@@ -102,7 +109,7 @@
     svg.setAttribute("class", clase);
     svg.setAttribute("viewBox", "0 0 440 1120");
     svg.setAttribute("aria-hidden", "true");
-    svg.innerHTML = (arriba ? "" : pielCuerpo) + pielCabeza + pielManos;
+    svg.innerHTML = (arriba ? pielCabeza : pielCuerpo + pielCabeza + pielManos);
     return svg;
   }
 
@@ -221,6 +228,7 @@
       return;
     }
     const zone = zona(item);
+    if (!zone) return;
     if (zone === "arriba") {
       puesto.arriba = item;
       puesto.completo = null;
