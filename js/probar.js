@@ -77,7 +77,7 @@
 
   function vista(item, numero) {
     const clave = item.id.toLowerCase().replace(/-/g, "");
-    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=11`;
+    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=12`;
   }
 
   function foto(item) {
@@ -100,9 +100,9 @@
     return todosPuestos().some((item) => item.id === id);
   }
 
-  const pielCabeza = '<ellipse cx="176" cy="124" rx="7" ry="11" fill="#c4beb4"/><ellipse cx="264" cy="124" rx="7" ry="11" fill="#c4beb4"/><ellipse cx="220" cy="118" rx="43" ry="50" fill="#d2ccc2"/><path d="M201 106h11M228 106h11" stroke="#3f3f3f" stroke-width="2.4" stroke-linecap="round"/><path d="M214 130c3 4 9 4 12 0" stroke="#4a4a4a" stroke-width="1.7" fill="none"/><path d="M205 150c9 6 21 6 30 0" stroke="#454545" stroke-width="1.7" fill="none" stroke-linecap="round"/><path d="M198 162h44c2 16 1 30-2 40h-40c-3-10-4-24-2-40z" fill="#d2ccc2"/>';
+  const pielCabeza = '<ellipse cx="178" cy="146" rx="6" ry="10" fill="#c4beb4"/><ellipse cx="262" cy="146" rx="6" ry="10" fill="#c4beb4"/><ellipse cx="220" cy="140" rx="40" ry="44" fill="#d2ccc2"/><path d="M203 128h10M227 128h10" stroke="#3f3f3f" stroke-width="2.2" stroke-linecap="round"/><path d="M214 150c3 4 9 4 12 0" stroke="#4a4a4a" stroke-width="1.6" fill="none"/><path d="M206 168c8 5 20 5 28 0" stroke="#454545" stroke-width="1.6" fill="none" stroke-linecap="round"/>';
   const pielManos = '<g fill="#e4dfd8"><rect x="78" y="498" width="3.4" height="9" rx="1.6"/><rect x="82.2" y="495" width="3.4" height="11" rx="1.6"/><rect x="86.4" y="495" width="3.4" height="11" rx="1.6"/><rect x="90.6" y="498" width="3.4" height="8" rx="1.6"/><ellipse cx="86" cy="514" rx="10" ry="11"/><rect x="346" y="498" width="3.4" height="9" rx="1.6"/><rect x="350.2" y="495" width="3.4" height="11" rx="1.6"/><rect x="354.4" y="495" width="3.4" height="11" rx="1.6"/><rect x="358.6" y="498" width="3.4" height="8" rx="1.6"/><ellipse cx="354" cy="514" rx="10" ry="11"/></g>';
-  const pielCuerpo = '<path fill="#f7f7f7" d="M156 206c-8 28-22 78-34 150-8 48-4 92 8 118l22-16c-6-28-2-62 6-108 8-42 14-86 18-144z"/><path fill="#f7f7f7" d="M284 206c8 28 22 78 34 150 8 48 4 92-8 118l-22-16c6-28 2-62-6-108-8-42-14-86-18-144z"/><path fill="#f6f6f6" d="M164 198h112c22 16 34 78 28 168-4 62-10 120-22 176H158c-12-56-18-114-22-176-6-90 6-152 28-168z"/><path fill="#f7f7f7" d="M150 470h140v110H150z"/><path fill="#f7f7f7" d="M156 548c-2 100 0 270 8 460h52c0-190 2-350 4-460z"/><path fill="#f7f7f7" d="M228 548c2 110 4 270 4 460h52c8-190 6-360 0-460z"/><ellipse cx="184" cy="1024" rx="24" ry="14" fill="#f7f7f7"/><ellipse cx="256" cy="1024" rx="24" ry="14" fill="#f7f7f7"/>';
+  const pielCuerpo = '<path fill="#f7f7f7" d="M156 206c-8 28-22 78-34 150-8 48-4 92 8 118l22-16c-6-28-2-62 6-108 8-42 14-86 18-144z"/><path fill="#f7f7f7" d="M284 206c8 28 22 78 34 150 8 48 4 92-8 118l-22-16c6-28 2-62-6-108-8-42-14-86-18-144z"/><path fill="#f6f6f6" d="M164 198h112c22 16 34 78 28 168-4 62-10 120-22 176H158c-12-56-18-114-22-176-6-90 6-152 28-168z"/><path fill="#f7f7f7" d="M150 470h140v110H150z"/><path fill="#f7f7f7" d="M162 548c-1 40 0 100 2 170h36c1-70 2-130 2-170z"/><path fill="#f7f7f7" d="M234 548c1 40 2 100 2 170h36c2-70 1-130 1-170z"/><ellipse cx="184" cy="728" rx="18" ry="10" fill="#f3f3f3"/><ellipse cx="254" cy="728" rx="18" ry="10" fill="#f3f3f3"/>';
 
   function figura(clase, arriba) {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");

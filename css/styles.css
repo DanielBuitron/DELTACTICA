@@ -1166,11 +1166,11 @@ button.consult {
 }
 
 .fit-piece[data-zona="cabeza"] {
-  top: 6.2%;
+  top: 6.4%;
   left: 50%;
   z-index: 8;
-  width: 25%;
-  height: 9.4%;
+  width: 28%;
+  height: 8.8%;
   object-position: center bottom;
   transform: translateX(-50%);
 }
@@ -1186,11 +1186,11 @@ button.consult {
 }
 
 .fit-piece[data-zona="pies"] {
-  bottom: 7.5%;
+  bottom: 12%;
   left: 50%;
   z-index: 7;
-  width: 46%;
-  height: 17%;
+  width: 42%;
+  height: 15%;
   object-position: center top;
   transform: translateX(-50%);
 }
