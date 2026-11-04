@@ -1854,7 +1854,7 @@ function renderPublic() {
   if (bar) {
     bar.innerHTML = LINES.map((line, index) => {
       const slug = PRODUCTS.find((item) => item.line === line)?.slug || "";
-      return `<a href="${root}lineas.html#${slug}"><span>${String(index + 1).padStart(2, "0")}</span>${escapeHtml(line)}</a>`;
+      return `<a href="${root}catalogo.html?linea=${slug}"><span>${String(index + 1).padStart(2, "0")}</span>${escapeHtml(line)}</a>`;
     }).join("");
   }
   const board = document.querySelector("[data-line-board]");
