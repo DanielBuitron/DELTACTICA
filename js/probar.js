@@ -63,13 +63,14 @@
     if (grupo === "gorras") return "cabeza";
     if (grupo === "botas") return "pies";
     if (grupo === "reatas") return "cintura";
+    if (/gafa/.test(plain(item.name))) return "cara";
     if (grupo === "guantes") return "manos";
     return "extra";
   }
 
   function vista(item, numero) {
     const clave = item.id.toLowerCase().replace(/-/g, "");
-    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=4`;
+    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=8`;
   }
 
   function foto(item) {
@@ -99,10 +100,12 @@
     svg.setAttribute("aria-hidden", "true");
     const hayArriba = !!(puesto.arriba || puesto.completo);
     const corto = puesto.abajo && /\blicra\b|pantaloneta|\bfalda\b/.test(plain(puesto.abajo.name));
-    const hayAbajo = !!((puesto.abajo && !corto) || puesto.completo);
-    const tronco = hayArriba ? "" : '<path fill="#f4f4f4" d="M150 188h140v340H150z"/><path fill="#f7f7f7" d="M150 210c-30 20-70 70-78 180-6 70 8 120 28 130 16-40 22-110 34-160 8-30 12-20 16-150z"/><path fill="#f7f7f7" d="M290 210c30 20 70 70 78 180 6 70-8 120-28 130-16-40-22-110-34-160-8-30-12-20-16-150z"/>';
-    const piernas = hayAbajo ? "" : '<path fill="#f7f7f7" d="M168 500h42l-8 520h-46z"/><path fill="#f7f7f7" d="M230 500h42l12 520h-46z"/><ellipse cx="176" cy="1048" rx="28" ry="16" fill="#f7f7f7"/><ellipse cx="264" cy="1048" rx="28" ry="16" fill="#f7f7f7"/>';
-    svg.innerHTML = '<ellipse cx="220" cy="136" rx="48" ry="58" fill="#f7f7f7"/><rect x="200" y="176" width="40" height="36" rx="8" fill="#efefef"/>' + tronco + piernas;
+    const falda = puesto.completo && /falda|femenino/.test(plain(puesto.completo.name));
+    const hayAbajo = !!((puesto.abajo && !corto) || (puesto.completo && !falda));
+    const tronco = hayArriba ? "" : '<path fill="#f4f4f4" d="M158 214h124v300H158z"/>';
+    const brazos = '<path fill="#f7f7f7" d="M158 230c-18 18-46 70-52 150-4 48 6 92 16 104 8-28 10-70 16-120 6-40 10-70 20-134z"/><path fill="#f7f7f7" d="M282 230c18 18 46 70 52 150 4 48-6 92-16 104-8-28-10-70-16-120-6-40-10-70-20-134z"/>';
+    const piernas = hayAbajo ? "" : '<path fill="#f7f7f7" d="M172 500h40l-6 520h-42z"/><path fill="#f7f7f7" d="M228 500h40l8 520h-42z"/><ellipse cx="180" cy="1046" rx="26" ry="14" fill="#f7f7f7"/><ellipse cx="260" cy="1046" rx="26" ry="14" fill="#f7f7f7"/>';
+    svg.innerHTML = '<ellipse cx="220" cy="136" rx="46" ry="56" fill="#f7f7f7"/><rect x="202" y="178" width="36" height="40" rx="8" fill="#efefef"/>' + brazos + tronco + piernas;
     return svg;
   }
 
@@ -140,7 +143,7 @@
         const on = key === local;
         image.style.opacity = on ? "1" : "0";
         image.style.visibility = on ? "visible" : "hidden";
-        image.style.transform = on ? `translateX(-50%) perspective(1600px) rotateY(${yaw.toFixed(2)}deg)` : "translateX(-50%)";
+        image.style.transform = on ? `perspective(1600px) rotateY(${yaw.toFixed(2)}deg)` : "none";
       });
     });
     const frente = Math.cos(turn * Math.PI / 180);
