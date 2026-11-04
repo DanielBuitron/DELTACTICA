@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#070708" />
+    <title>Probador virtual | Deltactica</title>
+    <meta name="description" content="Pruébese las prendas de Deltactica con la cámara. El modo realista usa Decart Anywear." />
+    <link rel="icon" href="img/logo.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/styles.css?v=real98" />
+    <link rel="stylesheet" href="css/virtual.css?v=1" />
+    <script>document.documentElement.classList.add("js");</script>
+  </head>
+  <body data-wa="573227043082">
+    <a class="skip" href="#contenido">Saltar al contenido</a>
+    <header class="header" data-header>
+      <a class="brand" href="index.html">
+        <img src="img/wordmark.png" alt="Deltactica" width="1013" height="100" />
+      </a>
+      <nav class="nav-links" id="menu" data-nav aria-label="Secciones"><a class="nav-item" href="catalogo.html"><span>Catálogo</span></a><a class="nav-item" href="probar.html"><span>Prueba tu uniforme</span></a><a class="nav-item" href="virtual.html"><span>Probador virtual</span></a><a class="nav-item" href="lineas.html"><span>Líneas</span></a><a class="nav-item" href="contacto.html"><span>Contacto</span></a><a class="nav-item" href="carrito.html"><span>Carrito <b data-cart-count></b></span></a></nav>
+      <div class="header-tools">
+        <div class="account" data-account>
+          <a class="account-toggle" data-account-link href="admin.html"><span>Iniciar sesión</span></a>
+          <button class="account-toggle" type="button" data-account-toggle hidden aria-expanded="false" aria-haspopup="true">
+            <span data-account-label>Admin</span>
+          </button>
+          <div class="account-menu" data-account-menu hidden></div>
+        </div>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu" data-nav-toggle>
+          <span></span><span></span><span></span>
+          <span class="sr-only">Abrir menú</span>
+        </button>
+      </div>
+    </header>
+    <main id="contenido">
+      <section class="page">
+        <div class="wrap">
+          <p class="eyebrow">Cámara</p>
+          <h1>Probador virtual.</h1>
+          <p class="lead">Active la cámara, elija la prenda y mírela sobre usted. El modo 2D funciona en esta página. La IA realista es Decart Anywear: el video sale un momento hacia ese servicio y la clave no se guarda en la página.</p>
+        </div>
+      </section>
+      <div class="vroom">
+        <p class="status" id="status">Cargando…</p>
+        <div class="layout">
+          <aside class="catalog">
+            <div class="cat-head">
+              <h2>Prendas</h2>
+              <input id="search" type="search" placeholder="Buscar prenda" />
+            </div>
+            <div class="chips" id="chips"></div>
+            <div class="grid" id="grid"></div>
+          </aside>
+          <section class="vroom-stage">
+            <div class="stage-box" id="stageBox">
+              <video id="video" playsinline muted></video>
+              <video id="aiVideo" playsinline autoplay muted></video>
+              <canvas id="canvas" width="1280" height="720"></canvas>
+              <div class="overlay" id="overlay">
+                <div class="box">
+                  <h2>Pruébesela puesta</h2>
+                  <p>Elija una prenda, active la cámara y queda sobre sus hombros. También puede arrastrarla hasta el video.</p>
+                  <button class="big" id="btnStart" type="button">Activar cámara</button>
+                </div>
+              </div>
+              <div class="scan" id="scanPanel">
+                <b>Paso 1 · Escaneo del cuerpo</b>
+                <div class="scanbar"><i id="scanBar"></i></div>
+                <p id="scanMsg"></p>
+                <ul id="scanList"></ul>
+              </div>
+              <div class="dropHint" id="dropHint">Suelte la prenda aquí</div>
+              <div class="badge" id="badge"></div>
+            </div>
+            <div class="toolbar">
+              <button class="btn red" id="btnCam" type="button">Activar cámara</button>
+              <button class="btn" id="btnScan" type="button">Escanear cuerpo</button>
+              <button class="btn" id="btnSwitch" type="button">Cambiar cámara</button>
+              <div class="seg">
+                <button class="btn" id="btnAI" type="button">IA realista</button>
+                <button class="btn on" id="btnAuto" type="button">2D básico</button>
+                <button class="btn" id="btnManual" type="button">Manual</button>
+              </div>
+              <button class="btn on" id="btnHide" type="button">Ocultar mi ropa</button>
+              <button class="btn" id="btnPhoto" type="button">Tomar foto</button>
+              <label class="sel">Perfil<select id="selSex"><option value="hombre">Hombre</option><option value="mujer">Mujer</option></select></label>
+              <label class="sel">Talla<select id="selSize"><option>S</option><option selected>M</option><option>L</option><option>XL</option><option>XXL</option></select></label>
+              <label class="sel">Hombros (cm)<input id="inShoulder" type="number" min="30" max="55" step="0.5" value="41.5" /></label>
+              <div class="sliders">
+                <label>Holgura<input id="rScale" type="range" min="0.6" max="1.6" step="0.01" value="1" /></label>
+                <label>Altura<input id="rDy" type="range" min="-0.4" max="0.4" step="0.01" value="0" /></label>
+                <label>Rotación<input id="rRot" type="range" min="-60" max="60" step="1" value="0" /></label>
+              </div>
+            </div>
+            <div class="fitinfo"><span id="fitInfo"></span> <span id="aiStat" class="aistat"></span></div>
+            <p class="disclaimer">La prenda en pantalla es una referencia. La talla, la caída y el color pueden variar respecto a la pieza real.</p>
+          </section>
+        </div>
+      </div>
+    </main>
+    <footer class="footer">
+      <div class="wrap footer-grid">
+        <a class="brand" href="index.html"><img src="img/wordmark.png" alt="Deltactica" width="1013" height="100" /></a>
+        <p>Artículos tácticos y militares.</p>
+        <nav aria-label="Pie de página"><a href="catalogo.html">Catálogo</a><a href="probar.html">Prueba tu uniforme</a><a href="virtual.html">Probador virtual</a><a href="lineas.html">Líneas</a><a href="contacto.html">Contacto</a><a href="carrito.html">Carrito</a><a href="admin.html">Administración</a></nav>
+      </div>
+    </footer>
+    <a class="wa-fab" data-wa-text="Hola, quiero hablar con el asesor comercial de Deltactica sobre artículos tácticos y militares." aria-label="Escribir al asesor comercial por WhatsApp">
+      <span class="wa-fab-label">Asesor comercial</span>
+      <span class="wa-fab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.52 3.48A11.86 11.86 0 0 0 12.06 0C5.5 0 .16 5.33.16 11.89c0 2.1.55 4.14 1.59 5.95L0 24l6.3-1.65a11.9 11.9 0 0 0 5.76 1.47h.01c6.56 0 11.9-5.34 11.9-11.9 0-3.18-1.24-6.16-3.45-8.44zM12.07 21.3h-.01a9.4 9.4 0 0 1-4.79-1.31l-.34-.2-3.74.98 1-3.64-.22-.37a9.36 9.36 0 0 1-1.44-5.01c0-5.18 4.22-9.4 9.41-9.4 2.51 0 4.87.98 6.65 2.76a9.35 9.35 0 0 1 2.75 6.64c0 5.18-4.22 9.4-9.4 9.4zm5.16-7.03c-.28-.14-1.67-.82-1.93-.92-.26-.1-.45-.14-.64.14-.19.28-.73.92-.9 1.11-.16.19-.33.21-.61.07-.28-.14-1.18-.43-2.25-1.39-.83-.74-1.39-1.65-1.55-1.93-.16-.28-.02-.43.12-.57.13-.13.28-.33.42-.5.14-.16.19-.28.28-.47.09-.19.05-.35-.02-.5-.07-.14-.64-1.54-.88-2.11-.23-.55-.47-.48-.64-.49h-.55c-.19 0-.5.07-.76.35-.26.28-1 1-1 2.43s1.02 2.82 1.17 3.01c.14.19 2.01 3.07 4.87 4.3.68.29 1.21.47 1.62.6.68.22 1.3.19 1.79.11.55-.08 1.67-.68 1.9-1.34.24-.66.24-1.22.17-1.34-.07-.11-.26-.18-.54-.32z"/></svg></span>
+    </a>
+    <script>window.DELTACTICA_CONFIG = { tokenUrl: "", decartModel: "lucy-vton-latest", maxAiSeconds: 120 };</script>
+    <script src="js/productos.js?v=real44" defer></script>
+    <script src="js/store.js?v=real89" defer></script>
+    <script src="js/main.js?v=real45" defer></script>
+    <script src="js/virtual-prendas.js?v=1" defer></script>
+    <script src="js/virtual.js?v=1" defer></script>
+  </body>
+</html>

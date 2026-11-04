@@ -88,6 +88,7 @@ function currentPage() {
     ["catalogo-impreso.html", "Catálogo impreso"],
     ["catalogo.html", "Catálogo"],
     ["probar.html", "Prueba tu uniforme"],
+    ["virtual.html", "Probador virtual"],
     ["lineas.html", "Líneas"],
     ["institucional.html", "Institucional"],
     ["dotacion.html", "Dotación"],

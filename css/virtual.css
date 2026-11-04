@@ -1,0 +1,434 @@
+.vroom {
+  --vr: #e8e9eb;
+  --vr-dim: #9b9ba5;
+  --vr-panel: #101114;
+  --vr-panel2: #18191d;
+  --vr-line: rgba(232, 233, 235, 0.16);
+  height: calc(100svh - var(--header) - 148px);
+  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+  color: #f4f5f6;
+  background: #070708;
+  border-top: 1px solid var(--vr-line);
+}
+
+.vroom .layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+}
+
+.vroom .catalog {
+  background: var(--vr-panel);
+  border-right: 1px solid var(--vr-line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.vroom .cat-head {
+  padding: 16px 16px 8px;
+}
+
+.vroom .cat-head h2 {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.vroom .cat-head input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 0;
+  border: 1px solid var(--vr-line);
+  background: var(--vr-panel2);
+  color: #f4f5f6;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.vroom .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 16px 12px;
+}
+
+.vroom .chip {
+  border: 1px solid var(--vr-line);
+  background: transparent;
+  color: var(--vr-dim);
+  padding: 6px 12px;
+  border-radius: 0;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.vroom .chip.on {
+  background: #f4f5f6;
+  border-color: #f4f5f6;
+  color: #070708;
+}
+
+.vroom .grid {
+  flex: 1;
+  overflow: auto;
+  padding: 4px 16px 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-content: start;
+}
+
+.vroom .card {
+  background: var(--vr-panel2);
+  border: 1px solid var(--vr-line);
+  overflow: hidden;
+  cursor: grab;
+}
+
+.vroom .card.on {
+  border-color: #f4f5f6;
+}
+
+.vroom .thumb {
+  height: 140px;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 40%, #2b2b32, #16161a);
+}
+
+.vroom .thumb img {
+  width: 86%;
+  height: 86%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.vroom .meta {
+  padding: 8px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vroom .meta b {
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+.vroom .tag {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vr);
+}
+
+.vroom .empty {
+  grid-column: 1 / -1;
+  color: var(--vr-dim);
+  font-size: 13px;
+}
+
+.vroom .vroom-stage {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.vroom .stage-box {
+  flex: 1;
+  min-height: 280px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: #050506;
+  overflow: hidden;
+}
+
+.vroom #video {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vroom #canvas {
+  background: #000;
+  max-width: 100%;
+  max-height: 100%;
+  touch-action: none;
+}
+
+.vroom .stage-box.manual #canvas {
+  cursor: grab;
+}
+
+.vroom .overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 40%, #1c1c22, #050506);
+  text-align: center;
+  padding: 24px;
+}
+
+.vroom .overlay.hide {
+  display: none;
+}
+
+.vroom .overlay .box {
+  max-width: 440px;
+}
+
+.vroom .overlay h2 {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: 32px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.vroom .overlay p {
+  color: var(--vr-dim);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.vroom .big,
+.vroom .btn {
+  background: var(--vr-panel2);
+  border: 1px solid var(--vr-line);
+  color: #f4f5f6;
+  padding: 9px 14px;
+  border-radius: 0;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.vroom .big {
+  padding: 14px 28px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: #f4f5f6;
+  color: #070708;
+}
+
+.vroom .btn.on,
+.vroom .btn.red {
+  background: #f4f5f6;
+  border-color: #f4f5f6;
+  color: #070708;
+  font-weight: 600;
+}
+
+.vroom .dropHint {
+  position: absolute;
+  inset: 12px;
+  border: 2px dashed #f4f5f6;
+  display: none;
+  place-items: center;
+  font-weight: 700;
+  background: rgba(244, 245, 246, 0.08);
+  pointer-events: none;
+}
+
+.vroom .dropHint.show {
+  display: grid;
+}
+
+.vroom .badge {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid var(--vr-line);
+  padding: 6px 12px;
+  font-size: 12px;
+  display: none;
+}
+
+.vroom .badge.show {
+  display: block;
+}
+
+.vroom .toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--vr-panel);
+  border-top: 1px solid var(--vr-line);
+}
+
+.vroom .seg {
+  display: flex;
+  border: 1px solid var(--vr-line);
+}
+
+.vroom .seg .btn {
+  border: 0;
+}
+
+.vroom .sliders {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-left: auto;
+}
+
+.vroom .sliders label,
+.vroom .sel {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--vr-dim);
+}
+
+.vroom .sliders input {
+  width: 120px;
+  accent-color: #f4f5f6;
+}
+
+.vroom .sel select,
+.vroom .sel input {
+  background: var(--vr-panel2);
+  color: #f4f5f6;
+  border: 1px solid var(--vr-line);
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.vroom .sel input {
+  width: 84px;
+}
+
+.vroom .fitinfo,
+.vroom .disclaimer,
+.vroom .status {
+  background: #070708;
+  color: var(--vr-dim);
+  font-size: 12px;
+  padding: 6px 16px;
+}
+
+.vroom .aistat {
+  color: #f4f5f6;
+  font-weight: 600;
+}
+
+.vroom #aiVideo {
+  display: none;
+  max-width: 100%;
+  max-height: 100%;
+  background: #000;
+}
+
+.vroom .stage-box.ai #canvas {
+  display: none;
+}
+
+.vroom .stage-box.ai #aiVideo {
+  display: block;
+}
+
+.vroom .scan {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  width: min(290px, calc(100% - 28px));
+  background: rgba(0, 0, 0, 0.72);
+  border: 1px solid var(--vr-line);
+  padding: 12px 14px;
+  display: none;
+  z-index: 3;
+}
+
+.vroom .scan.show {
+  display: block;
+}
+
+.vroom .scan p {
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.vroom .scanbar {
+  height: 6px;
+  background: #2a2a31;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.vroom .scanbar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: #f4f5f6;
+}
+
+.vroom .scan ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 12px;
+  display: grid;
+  gap: 3px;
+}
+
+.vroom .scan li::before {
+  content: "○ ";
+  color: #777;
+}
+
+.vroom .scan li.ok::before {
+  content: "● ";
+  color: #f4f5f6;
+}
+
+@media (max-width: 900px) {
+  .vroom {
+    height: auto;
+    min-height: 0;
+  }
+
+  .vroom .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .vroom .catalog {
+    border-right: 0;
+    border-bottom: 1px solid var(--vr-line);
+    max-height: 280px;
+  }
+
+  .vroom .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .vroom .stage-box {
+    min-height: 62svh;
+  }
+
+  .vroom .sliders {
+    margin-left: 0;
+  }
+}
