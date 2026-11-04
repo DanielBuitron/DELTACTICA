@@ -4,7 +4,7 @@ window.DELTACTICA_PRENDAS = [
     "nombre": "Buzo táctico licrado kaki",
     "categoria": "buzo",
     "categoria_label": "Buzos tácticos",
-    "img": "img/virtual/BUZO_TACTICO_LICRADO_KAKI.png",
+    "img": "img/prendas/BUZO_TACTICO_LICRADO_KAKI.png",
     "fit": {
       "sh": [
         0.15,
@@ -33,7 +33,7 @@ window.DELTACTICA_PRENDAS = [
     "nombre": "Buzo táctico PONAL Lafayette azul",
     "categoria": "buzo",
     "categoria_label": "Buzos tácticos",
-    "img": "img/virtual/BUZO_TACTICO_PONAL_LAFAYETTE__4_AZUL.png",
+    "img": "img/prendas/BUZO_TACTICO_PONAL_LAFAYETTE__4_AZUL.png",
     "fit": {
       "sh": [
         0.15,
@@ -62,7 +62,7 @@ window.DELTACTICA_PRENDAS = [
     "nombre": "Buzo táctico PONAL Ripstop verde",
     "categoria": "buzo",
     "categoria_label": "Buzos tácticos",
-    "img": "img/virtual/BUZO_TACTICO_PONAL_RISTOP.png",
+    "img": "img/prendas/BUZO_TACTICO_PONAL_RISTOP.png",
     "fit": {
       "sh": [
         0.17,
@@ -91,7 +91,7 @@ window.DELTACTICA_PRENDAS = [
     "nombre": "Camiseta deportes Ejército",
     "categoria": "camiseta",
     "categoria_label": "Camisetas",
-    "img": "img/virtual/CAMISETA_DEPORTES_EJERCITO.png",
+    "img": "img/prendas/CAMISETA_DEPORTES_EJERCITO.png",
     "fit": {
       "sh": [
         0.2,
@@ -119,7 +119,7 @@ window.DELTACTICA_PRENDAS = [
     "nombre": "Camiseta licrada manga corta blanca",
     "categoria": "camiseta",
     "categoria_label": "Camisetas",
-    "img": "img/virtual/CAMISETA_LICRADA_MANGA_CORTA_BLANCA.png",
+    "img": "img/prendas/CAMISETA_LICRADA_MANGA_CORTA_BLANCA.png",
     "fit": {
       "sh": [
         0.2,
@@ -147,7 +147,7 @@ window.DELTACTICA_PRENDAS = [
     "nombre": "Camiseta licrada manga larga negra",
     "categoria": "camiseta",
     "categoria_label": "Camisetas",
-    "img": "img/virtual/CAMISETA_LICRADA_MANGA_LARGA_NEGRA.png",
+    "img": "img/prendas/CAMISETA_LICRADA_MANGA_LARGA_NEGRA.png",
     "fit": {
       "sh": [
         0.17,
@@ -175,7 +175,7 @@ window.DELTACTICA_PRENDAS = [
     "nombre": "Chaqueta PONAL reflectiva",
     "categoria": "chaqueta",
     "categoria_label": "Chaquetas",
-    "img": "img/virtual/CHAQUETA_PONAL.png",
+    "img": "img/prendas/CHAQUETA_PONAL.png",
     "fit": {
       "sh": [
         0.15,
@@ -204,7 +204,7 @@ window.DELTACTICA_PRENDAS = [
     "nombre": "Chaqueta táctica negra softshell",
     "categoria": "chaqueta",
     "categoria_label": "Chaquetas",
-    "img": "img/virtual/CHAQUETA_TACTICA_NEGRA.png",
+    "img": "img/prendas/CHAQUETA_TACTICA_NEGRA.png",
     "fit": {
       "sh": [
         0.15,

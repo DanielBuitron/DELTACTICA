@@ -707,7 +707,7 @@
     if (ai.starting || ai.rt) return;
     if (!S.scan.done) { setStatus('Primero escanea tu cuerpo (botón "Escanear cuerpo").'); if (!S.scan.active && S.stream) startScan(); return; }
     if (!S.prenda) { setStatus('Elige una prenda primero.'); return; }
-    if (!CFG.tokenUrl) { setStatus('La IA realista es Decart Anywear. La clave queda en el servidor, así que aquí use el modo 2D.'); return; }
+    if (!CFG.tokenUrl) { setStatus('La IA no está configurada: falta la clave de Decart en el servidor (ver LEEME).'); return; }
     try {
       if (!localStorage.getItem('deltactica_ia_ok')) {
         if (!window.confirm('Versión de prueba: en modo "IA realista" el video de tu cámara se envía en vivo a un servicio de IA (Decart) mientras lo uses. ¿Aceptas continuar?')) return;
