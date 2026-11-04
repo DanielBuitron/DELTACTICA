@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/styles.css?v=real100" />
-    <link rel="stylesheet" href="css/probador.css?v=2" />
+    <link rel="stylesheet" href="css/styles.css?v=real104" />
+    <link rel="stylesheet" href="css/probador.css?v=4" />
     <script>document.documentElement.classList.add("js");</script>
   </head>
   <body data-wa="573227043082">
@@ -36,14 +36,17 @@
       </div>
     </header>
     <main id="contenido">
-      <div class="probador">
-        <header class="topbar">
-          <div class="brand"><div class="logo">D</div><div><b>DELTACTICA</b><small>Probador virtual</small></div><span class="pill">VERSIÓN DE PRUEBA</span></div>
-          <div class="status" id="status">Cargando…</div>
-        </header>
+      <section class="page probador-page">
+        <div class="wrap">
+          <header class="page-hero">
+            <p class="eyebrow">Cámara</p>
+            <h1>Probador virtual</h1>
+            <p class="lead" id="status">Elige una prenda y activa la cámara.</p>
+          </header>
+          <div class="probador">
         <div class="layout">
           <aside class="catalog">
-            <div class="cat-head"><h2>Catálogo de prendas</h2><input id="search" type="search" placeholder="Buscar prenda…"></div>
+            <div class="cat-head"><h2>Prendas</h2><input id="search" type="search" placeholder="Buscar prenda"></div>
             <div class="chips" id="chips"></div>
             <div class="grid" id="grid"></div>
           </aside>
@@ -53,15 +56,13 @@
               <video id="aiVideo" playsinline autoplay muted></video>
               <canvas id="canvas" width="1280" height="720"></canvas>
               <div class="overlay" id="overlay"><div class="box">
-                <h1>Arrastra una prenda sobre ti</h1>
-                <p>Elige una prenda del catálogo, activa la cámara y la prenda se ajusta a tus hombros en vivo. También puedes arrastrar la prenda del catálogo hasta el video.</p>
-                <p class="note">Esto es una <b>prueba</b>: la prenda se superpone en 2D sobre la cámara y puede diferir de la real en talla, caída y color.</p>
+                <h2>Pruébatela</h2>
+                <p>Elige una prenda, activa la cámara y se acomoda a tus hombros. También puedes arrastrarla hasta la imagen.</p>
                 <button class="big" id="btnStart">Activar cámara</button>
               </div></div>
               <div class="scan" id="scanPanel"><b>Paso 1 · Escaneo del cuerpo</b><div class="scanbar"><i id="scanBar"></i></div><p id="scanMsg"></p><ul id="scanList"></ul></div>
               <div class="dropHint" id="dropHint">Suelta la prenda aquí</div>
               <div class="badge" id="badge"></div>
-              <div class="ribbon">VERSIÓN DE PRUEBA</div>
             </div>
             <div class="toolbar">
               <button class="btn red" id="btnCam">Activar cámara</button>
@@ -80,10 +81,11 @@
               </div>
             </div>
             <div class="fitinfo"><span id="fitInfo"></span> <span id="aiStat" class="aistat"></span></div>
-            <div class="disclaimer">Versión de prueba · Simulación referencial. La prenda real puede variar en talla, caída y color.</div>
           </section>
         </div>
-      </div>
+          </div>
+        </div>
+      </section>
     </main>
     <footer class="footer">
       <div class="wrap footer-grid">
@@ -101,6 +103,6 @@
     <script src="js/store.js?v=real90" defer></script>
     <script src="js/main.js?v=real45" defer></script>
     <script src="js/prendas.js?v=1" defer></script>
-    <script src="js/probador.js?v=1" defer></script>
+    <script src="js/probador.js?v=2" defer></script>
   </body>
 </html>

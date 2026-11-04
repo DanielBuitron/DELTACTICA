@@ -1,4 +1,4 @@
-/* Deltactica · Probador virtual (VERSIÓN DE PRUEBA)
+/* Deltactica · Probador virtual
    Modelo de prenda con medidas en cm + talla, esqueleto (MediaPipe Pose) y silueta para tapar la ropa propia. */
 (() => {
   const $ = (s) => document.querySelector(s);
@@ -710,7 +710,7 @@
     if (!CFG.tokenUrl) { setStatus('La IA no está configurada: falta la clave de Decart en el servidor (ver LEEME).'); return; }
     try {
       if (!localStorage.getItem('deltactica_ia_ok')) {
-        if (!window.confirm('Versión de prueba: en modo "IA realista" el video de tu cámara se envía en vivo a un servicio de IA (Decart) mientras lo uses. ¿Aceptas continuar?')) return;
+        if (!window.confirm('En el modo realista el video de tu cámara se envía a la IA mientras lo uses. ¿Continúas?')) return;
         localStorage.setItem('deltactica_ia_ok', '1');
       }
     } catch (e) {}
@@ -739,7 +739,7 @@
       ai.rt.on('connectionChange', (st) => { if (st === 'generating') setStatus('IA activa: muévete, gira, levanta los brazos.'); if (st === 'reconnecting') setStatus('Reconectando…'); if (st === 'disconnected' && ai.rt) stopAI(true); });
       ai.rt.on('error', (e) => { setStatus('Error de la IA: ' + (e && e.message ? e.message : e)); });
       ai.secs = 0; const rate = CFG.decartFast ? 0.04 : 0.02;
-      ai.rt.on('generationTick', ({ seconds }) => { ai.secs = seconds; renderAiStat(rate); if (seconds >= CFG.maxAiSeconds) { setStatus('Sesión de prueba terminada (límite de ' + CFG.maxAiSeconds + ' s).'); stopAI(); } });
+      ai.rt.on('generationTick', ({ seconds }) => { ai.secs = seconds; renderAiStat(rate); if (seconds >= CFG.maxAiSeconds) { setStatus('Se acabó el tiempo de la cámara (' + CFG.maxAiSeconds + ' s).'); stopAI(); } });
       S.mode = 'ai'; stageBox.classList.add('ai'); btnAuto.classList.remove('on'); btnManual.classList.remove('on');
       scanPanel.classList.remove('show'); renderAiStat(rate);
     } catch (e) {
@@ -813,7 +813,7 @@
     else { out.width = canvas.width; out.height = canvas.height; o.drawImage(canvas, 0, 0); }
     const fs = Math.round(out.height * 0.028);
     o.font = `700 ${fs}px sans-serif`; o.fillStyle = 'rgba(255,255,255,.85)'; o.shadowColor = 'rgba(0,0,0,.6)'; o.shadowBlur = 6;
-    o.fillText('DELTACTICA · VERSIÓN DE PRUEBA' + (S.prenda ? ' · ' + S.prenda.nombre + ' · talla ' + S.size : ''), fs, out.height - fs);
+    o.fillText('DELTACTICA' + (S.prenda ? ' · ' + S.prenda.nombre + ' · talla ' + S.size : ''), fs, out.height - fs);
     out.toBlob((b) => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'deltactica-probador-' + Date.now() + '.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }, 'image/png');
   };
 
