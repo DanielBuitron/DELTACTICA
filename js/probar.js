@@ -70,7 +70,7 @@
 
   function vista(item, numero) {
     const clave = item.id.toLowerCase().replace(/-/g, "");
-    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=8`;
+    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=9`;
   }
 
   function foto(item) {
@@ -93,19 +93,16 @@
     return todosPuestos().some((item) => item.id === id);
   }
 
-  function maniqui() {
+  const pielCabeza = '<ellipse cx="178" cy="118" rx="8" ry="12" fill="#f1f1f1"/><ellipse cx="262" cy="118" rx="8" ry="12" fill="#f1f1f1"/><ellipse cx="220" cy="114" rx="44" ry="54" fill="#f7f7f7"/><path d="M203 104h12M225 104h12" stroke="#8d8d8d" stroke-width="2.4" stroke-linecap="round"/><path d="M214 126c3 5 9 5 12 0" stroke="#9a9a9a" stroke-width="1.8" fill="none"/><path d="M204 148c10 7 22 7 32 0" stroke="#8a8a8a" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M196 158h48c6 18 4 40-2 52h-44c-6-12-8-34-2-52z" fill="#f4f4f4"/>';
+  const pielManos = '<g fill="#f7f7f7"><rect x="50" y="424" width="5" height="14" rx="2"/><rect x="57" y="420" width="5" height="16" rx="2"/><rect x="64" y="420" width="5" height="16" rx="2"/><rect x="71" y="424" width="5" height="13" rx="2"/><ellipse cx="60" cy="448" rx="16" ry="14"/><ellipse cx="42" cy="440" rx="7" ry="9"/><rect x="364" y="424" width="5" height="14" rx="2"/><rect x="371" y="420" width="5" height="16" rx="2"/><rect x="378" y="420" width="5" height="16" rx="2"/><rect x="385" y="424" width="5" height="13" rx="2"/><ellipse cx="380" cy="448" rx="16" ry="14"/><ellipse cx="398" cy="440" rx="7" ry="9"/></g>';
+  const pielCuerpo = '<path fill="#f7f7f7" d="M156 206c-8 28-22 78-34 150-8 48-4 92 8 118l22-16c-6-28-2-62 6-108 8-42 14-86 18-144z"/><path fill="#f7f7f7" d="M284 206c8 28 22 78 34 150 8 48 4 92-8 118l-22-16c6-28 2-62-6-108-8-42-14-86-18-144z"/><path fill="#f6f6f6" d="M164 198h112c22 16 34 78 28 168-4 62-10 120-22 176H158c-12-56-18-114-22-176-6-90 6-152 28-168z"/><path fill="#f7f7f7" d="M150 470h140v110H150z"/><path fill="#f7f7f7" d="M156 548c-2 100 0 270 8 460h52c0-190 2-350 4-460z"/><path fill="#f7f7f7" d="M228 548c2 110 4 270 4 460h52c8-190 6-360 0-460z"/><ellipse cx="184" cy="1024" rx="24" ry="14" fill="#f7f7f7"/><ellipse cx="256" cy="1024" rx="24" ry="14" fill="#f7f7f7"/>';
+
+  function figura(clase, arriba) {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("class", "fit-blank");
+    svg.setAttribute("class", clase);
     svg.setAttribute("viewBox", "0 0 440 1120");
     svg.setAttribute("aria-hidden", "true");
-    const hayArriba = !!(puesto.arriba || puesto.completo);
-    const corto = puesto.abajo && /\blicra\b|pantaloneta|\bfalda\b/.test(plain(puesto.abajo.name));
-    const falda = puesto.completo && /falda|femenino/.test(plain(puesto.completo.name));
-    const hayAbajo = !!((puesto.abajo && !corto) || (puesto.completo && !falda));
-    const tronco = hayArriba ? "" : '<path fill="#f4f4f4" d="M158 214h124v300H158z"/>';
-    const brazos = '<path fill="#f7f7f7" d="M158 230c-18 18-46 70-52 150-4 48 6 92 16 104 8-28 10-70 16-120 6-40 10-70 20-134z"/><path fill="#f7f7f7" d="M282 230c18 18 46 70 52 150 4 48-6 92-16 104-8-28-10-70-16-120-6-40-10-70-20-134z"/>';
-    const piernas = hayAbajo ? "" : '<path fill="#f7f7f7" d="M172 500h40l-6 520h-42z"/><path fill="#f7f7f7" d="M228 500h40l8 520h-42z"/><ellipse cx="180" cy="1046" rx="26" ry="14" fill="#f7f7f7"/><ellipse cx="260" cy="1046" rx="26" ry="14" fill="#f7f7f7"/>';
-    svg.innerHTML = '<ellipse cx="220" cy="136" rx="46" ry="56" fill="#f7f7f7"/><rect x="202" y="178" width="36" height="40" rx="8" fill="#efefef"/>' + brazos + tronco + piernas;
+    svg.innerHTML = (arriba ? "" : pielCuerpo) + pielCabeza + pielManos;
     return svg;
   }
 
@@ -146,6 +143,10 @@
         image.style.transform = on ? `perspective(1600px) rotateY(${yaw.toFixed(2)}deg)` : "none";
       });
     });
+    const giro = `perspective(1600px) rotateY(${yaw.toFixed(2)}deg)`;
+    stage.querySelectorAll(".fit-blank, .fit-piel").forEach((pieza) => {
+      pieza.style.transform = giro;
+    });
     const frente = Math.cos(turn * Math.PI / 180);
     const visible = frente > 0.2 ? Math.min(1, (frente - 0.2) / 0.45) : 0;
     extras.forEach((image) => {
@@ -171,7 +172,7 @@
     const cuerpoCaja = document.createElement("div");
     cuerpoCaja.className = "fit-body";
     stage.replaceChildren(cuerpoCaja);
-    cuerpoCaja.append(maniqui());
+    cuerpoCaja.append(figura("fit-blank", false));
     frames = [];
     extras = [];
     const cuerpo = puesto.completo ? [puesto.completo] : prendas;
@@ -184,6 +185,7 @@
         frames.push(image);
       }
     });
+    if (puesto.arriba || puesto.completo) cuerpoCaja.append(figura("fit-piel", true));
     let extraIndex = 0;
     accesoriosPuestos().forEach((item) => {
       const image = document.createElement("img");

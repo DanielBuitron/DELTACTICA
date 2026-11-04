@@ -1000,13 +1000,18 @@ button.consult {
   flex: 0 0 auto;
 }
 
-.fit-blank {
+.fit-blank,
+.fit-piel {
   position: absolute;
   z-index: 0;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+
+.fit-piel {
+  z-index: 5;
 }
 
 .fit-capa {
@@ -1155,10 +1160,9 @@ button.consult {
 
 .fit-piece {
   position: absolute;
-  z-index: 4;
+  z-index: 6;
   object-fit: contain;
   pointer-events: none;
-  filter: drop-shadow(0 10px 14px rgba(40, 32, 20, 0.32));
 }
 
 .fit-piece[data-zona="cabeza"] {
@@ -1179,27 +1183,29 @@ button.consult {
 }
 
 .fit-piece[data-zona="pies"] {
-  bottom: 0;
+  bottom: 1%;
   left: 50%;
-  width: 34%;
-  height: 14%;
+  width: 36%;
+  height: 9%;
   object-position: center bottom;
   transform: translateX(-50%);
 }
 
 .fit-piece[data-zona="cintura"] {
-  top: 42%;
+  top: 39.6%;
   left: 50%;
-  width: 34%;
-  height: 8%;
+  width: 50%;
+  height: 6%;
+  object-position: center center;
   transform: translateX(-50%);
 }
 
 .fit-piece[data-zona="manos"] {
-  top: 34%;
-  right: 2%;
-  width: 16%;
-  height: 14%;
+  top: 37%;
+  right: 0;
+  width: 13%;
+  height: 8%;
+  object-position: center center;
 }
 
 .fit-piece[data-zona="extra"] {
