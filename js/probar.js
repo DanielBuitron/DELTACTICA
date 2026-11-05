@@ -25,7 +25,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     ["gorras", "Gorras"],
     ["botas", "Botas"],
     ["reatas", "Reatas"],
-    ["guantes", "Guantes"]
+    ["guantes", "Accesorios"]
   ];
   const catalogo = window.DT_CATALOG.filter((item) => item.photo !== false);
   const puesto = { camisa: null, chaqueta: null, chaleco: null, inferior: null, completo: null, cinturon: null, calzado: null, guantes: null, gafas: null, gorra: null };
@@ -122,26 +122,28 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     const mujer = modo === "f";
     return {
       mujer,
-      alto: mujer ? 0.94 : 1,
-      torsoX: mujer ? 0.72 : 0.78,
-      torsoZ: mujer ? 0.56 : 0.58,
-      hombro: mujer ? 0.2 : 0.232,
-      cadera: mujer ? 0.112 : 0.104,
-      pechoY: 1.28,
-      cinturaY: 1.02,
-      caderaY: 0.86,
-      cuelloY: 1.48,
-      cabezaY: mujer ? 1.58 : 1.62,
-      cabezaR: mujer ? 0.1 : 0.108,
-      brazo: mujer ? 0.04 : 0.046,
-      pierna: mujer ? 0.07 : 0.078
+      alto: 1,
+      torsoX: mujer ? 0.74 : 0.8,
+      torsoZ: mujer ? 0.58 : 0.6,
+      hombro: mujer ? 0.26 : 0.28,
+      cadera: mujer ? 0.1 : 0.105,
+      pechoY: mujer ? 1.2 : 1.3,
+      cinturaY: mujer ? 0.995 : 1.09,
+      caderaY: mujer ? 0.85 : 0.95,
+      cuelloY: mujer ? 1.42 : 1.52,
+      cabezaY: mujer ? 1.555 : 1.655,
+      cabezaR: 0.132,
+      brazo: mujer ? 0.04 : 0.045,
+      pierna: mujer ? 0.078 : 0.082,
+      manoY: mujer ? 0.69 : 0.78,
+      pieZ: 0.085
     };
   }
 
   function perfil(med) {
     return med.mujer
-      ? [[0.7, 0.15, 0.112], [0.78, 0.176, 0.126], [0.88, 0.2, 0.142], [0.98, 0.126, 0.098], [1.08, 0.144, 0.112], [1.18, 0.164, 0.124], [1.26, 0.17, 0.118], [1.32, 0.15, 0.106], [1.38, 0.108, 0.086], [1.44, 0.066, 0.058], [1.49, 0.052, 0.046]]
-      : [[0.7, 0.144, 0.108], [0.78, 0.166, 0.12], [0.88, 0.188, 0.134], [0.98, 0.14, 0.106], [1.08, 0.158, 0.12], [1.18, 0.178, 0.134], [1.26, 0.184, 0.128], [1.32, 0.168, 0.112], [1.38, 0.118, 0.09], [1.44, 0.072, 0.062], [1.5, 0.056, 0.048]];
+      ? [[0.72, 0.205, 0.115], [0.85, 0.175, 0.108], [0.995, 0.145, 0.095], [1.14, 0.17, 0.105], [1.3, 0.185, 0.112], [1.38, 0.1, 0.072], [1.44, 0.06, 0.06], [1.48, 0.055, 0.055]]
+      : [[0.82, 0.19, 0.115], [0.95, 0.175, 0.108], [1.09, 0.155, 0.095], [1.24, 0.19, 0.108], [1.4, 0.205, 0.112], [1.48, 0.11, 0.078], [1.54, 0.06, 0.06], [1.58, 0.055, 0.055]];
   }
 
   function seccionEn(med, y) {
@@ -164,7 +166,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   const escena = new THREE.Scene();
   escena.background = new THREE.Color("#f4efe6");
   const camara = new THREE.PerspectiveCamera(32, 1, 0.08, 24);
-  camara.position.set(0, 0.98, 3.85);
+  camara.position.set(0, 1.02, 4.15);
   const renderizador = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderizador.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderizador.outputColorSpace = THREE.SRGBColorSpace;
@@ -175,7 +177,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   stage.replaceChildren(renderizador.domElement);
 
   const controles = new OrbitControls(camara, renderizador.domElement);
-  controles.target.set(0, 0.9, 0);
+  controles.target.set(0, 0.98, 0);
   controles.enablePan = false;
   controles.enableDamping = true;
   controles.dampingFactor = 0.08;
@@ -218,8 +220,9 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   const ropa = new THREE.Group();
   figura.add(cuerpo, ropa);
   escena.add(figura);
-  const piel = new THREE.MeshStandardMaterial({ color: "#efe8de", roughness: 0.58, metalness: 0.03 });
+  const piel = new THREE.MeshStandardMaterial({ color: "#cfc8be", roughness: 0.62, metalness: 0.02 });
   let medidas = medidasDe("m");
+  let cuerpoPromesa = Promise.resolve();
 
   function tubo(desde, hasta, radioDesde, radioHasta, material) {
     const dir = new THREE.Vector3().subVectors(hasta, desde);
@@ -253,68 +256,46 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     return malla;
   }
 
+  function nombreParte(nombre) {
+    const lado = /Left/.test(nombre) ? "I" : "D";
+    if (/Hand/.test(nombre)) return `mano${lado}`;
+    if (/Foot/.test(nombre)) return `pie${lado}`;
+    if (/Shoulder/.test(nombre)) return `hombroCarne${lado}`;
+    if (/UpperArm|Elbow|Forearm/.test(nombre)) return `brazo${lado}`;
+    if (/Hip|Thigh|Knee|LowerLeg|Ankle/.test(nombre)) return `pierna${lado}`;
+    if (/Pelvis/.test(nombre)) return "caderaCuerpo";
+    return nombre;
+  }
+
   function construirCuerpo() {
+    const modo = sexo;
+    cuerpoPromesa = cargarManiqui(modo);
+  }
+
+  async function cargarManiqui(modo) {
+    const archivo = modo === "f" ? "modelos/deltactica-mujer.glb" : "modelos/deltactica-hombre.glb";
+    let gltf = null;
+    try {
+      gltf = await cargador.loadAsync(`${root}${archivo}`);
+    } catch (error) {
+      if (note) note.textContent = "No se pudo abrir el maniquí.";
+      return;
+    }
+    if (sexo !== modo) return;
     desechar(cuerpo);
     cuerpo.clear();
-    medidas = medidasDe(sexo);
-    figura.scale.set(1, medidas.alto, 1);
-    const med = medidas;
-    const pielTorso = piel.clone();
-    pielTorso.side = THREE.DoubleSide;
-    const torso = concha(med, 0.78, perfil(med)[perfil(med).length - 1][0], 0, pielTorso, 1);
-    torso.name = "torso";
-    cuerpo.add(torso);
-    const cuello = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.066, 0.08, 24), piel);
-    cuello.position.y = med.cuelloY - 0.02;
-    cuello.castShadow = true;
-    const cabeza = new THREE.Mesh(new THREE.SphereGeometry(med.cabezaR, 32, 24), piel);
-    cabeza.scale.set(0.84, 1.22, 0.9);
-    cabeza.position.y = med.cabezaY - 0.045;
-    cabeza.castShadow = true;
-    const altoCabeza = med.cabezaY - 0.045;
-    const menton = carne(med.cabezaR * 0.34, 0, altoCabeza - med.cabezaR * 0.78, med.cabezaR * 0.28, 1.05, 0.55, 0.7);
-    const nariz = carne(med.cabezaR * 0.1, 0, altoCabeza - 0.01, med.cabezaR * 0.86, 0.7, 0.62, 1.15);
-    [-1, 1].forEach((lado) => {
-      cuerpo.add(carne(med.cabezaR * 0.16, lado * med.cabezaR * 0.86, altoCabeza - 0.01, 0, 0.5, 1.05, 0.7));
+    medidas = medidasDe(modo);
+    figura.scale.set(1, 1, 1);
+    const pielManiqui = piel.clone();
+    pielManiqui.side = THREE.DoubleSide;
+    gltf.scene.traverse((nodo) => {
+      if (!nodo.isMesh) return;
+      nodo.geometry.computeVertexNormals();
+      nodo.material = pielManiqui;
+      nodo.castShadow = true;
+      nodo.name = nombreParte(nodo.name || "");
     });
-    if (med.mujer) {
-      [-1, 1].forEach((lado) => {
-        cuerpo.add(carne(0.05, lado * 0.045, 1.26, 0.11, 1.05, 0.85, 0.75));
-      });
-    }
-    [-1, 1].forEach((lado) => {
-      const puntos = puntosBrazo(med, lado, 0.76);
-      const hombro = puntos[0];
-      const muneca = puntos[puntos.length - 1];
-      const brazo = cadena(puntos, [med.brazo * 1.35, med.brazo * 1.05, med.brazo * 0.88, med.brazo * 0.62], piel);
-      brazo.name = lado < 0 ? "brazoI" : "brazoD";
-      cuerpo.add(brazo);
-      cuerpo.add(carne(med.brazo * 0.95, hombro.x, 1.32, 0.02, 1.35, 0.55, 0.8, lado < 0 ? "hombroCarneI" : "hombroCarneD"));
-      const mano = new THREE.Mesh(new THREE.CapsuleGeometry(med.brazo * 0.5, 0.08, 4, 8), piel);
-      mano.position.set(muneca.x, muneca.y - 0.07, muneca.z + 0.01);
-      mano.name = lado < 0 ? "manoI" : "manoD";
-      mano.castShadow = true;
-      cuerpo.add(mano);
-      const cadera = new THREE.Vector3(lado * 0.09, 0.94, 0.02);
-      const rodilla = new THREE.Vector3(lado * med.cadera * 0.94, 0.44, 0.028);
-      const tobillo = new THREE.Vector3(lado * med.cadera * 0.86, 0.07, 0.01);
-      const pierna = cadena([
-        cadera,
-        new THREE.Vector3(lado * med.cadera * 0.98, 0.66, 0.025),
-        rodilla,
-        new THREE.Vector3(lado * med.cadera * 0.9, 0.26, 0.014),
-        tobillo
-      ], [med.pierna * 1.35, med.pierna * 1.15, med.pierna * 0.66, med.pierna * 0.9, med.pierna * 0.44], piel);
-      pierna.name = lado < 0 ? "piernaI" : "piernaD";
-      cuerpo.add(pierna);
-      cuerpo.add(carne(0.062, lado * 0.055, 0.82, -0.055, 1.05, 0.85, 0.9, lado < 0 ? "nalgaI" : "nalgaD"));
-      const pie = new THREE.Mesh(new THREE.BoxGeometry(0.078, 0.045, 0.22), piel);
-      pie.position.set(tobillo.x, 0.028, 0.055);
-      pie.name = lado < 0 ? "pieI" : "pieD";
-      pie.castShadow = true;
-      cuerpo.add(pie);
-    });
-    cuerpo.add(cuello, cabeza, menton, nariz);
+    cuerpo.add(gltf.scene);
   }
 
   function desechar(objeto) {
@@ -768,12 +749,13 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   }
 
   function puntosBrazo(med, lado, munecaY) {
-    const alcance = med.hombro;
+    const mano = Math.min(munecaY, med.manoY);
     return [
-      new THREE.Vector3(lado * 0.17, 1.4, 0.02),
-      new THREE.Vector3(lado * 0.24, 1.22, 0.04),
-      new THREE.Vector3(lado * 0.29, 1.0, 0.048),
-      new THREE.Vector3(lado * 0.25, munecaY, 0.05)
+      new THREE.Vector3(lado * 0.055, med.cuelloY - 0.02, 0.02),
+      new THREE.Vector3(lado * med.hombro * 0.72, med.pechoY + 0.12, 0.015),
+      new THREE.Vector3(lado * (med.hombro + 0.04), med.pechoY - 0.1, 0.01),
+      new THREE.Vector3(lado * (med.hombro + 0.07), med.cinturaY - 0.04, 0.015),
+      new THREE.Vector3(lado * (med.hombro + 0.085), mano, 0.02)
     ];
   }
 
@@ -781,17 +763,11 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     const factor = Number.isFinite(alcance) ? alcance : 1;
     const munecaY = corta ? 1.05 : 0.76 + (1 - factor) * 0.2;
     [-1, 1].forEach((lado) => {
-      const puntos = [
-        new THREE.Vector3(lado * 0.075, 1.43, 0.02),
-        new THREE.Vector3(lado * 0.175, 1.36, 0.03),
-        new THREE.Vector3(lado * 0.25, 1.16, 0.04),
-        new THREE.Vector3(lado * 0.28, 0.98, 0.048),
-        new THREE.Vector3(lado * 0.24, munecaY, 0.05)
-      ];
+      const puntos = puntosBrazo(med, lado, munecaY);
       const usados = corta ? puntos.slice(0, 3) : puntos;
       const radios = corta
-        ? [radio * 1.35, radio * 1.45, radio * 0.95]
-        : [radio * 1.2, radio * 1.55, radio * 1.1, radio * 0.88, radio * 0.64];
+        ? [radio * 1.2, radio * 1.4, radio * 1.05]
+        : [radio * 1.15, radio * 1.45, radio * 1.15, radio * 1.05, radio * 0.9];
       const u0 = lado < 0 ? 0.008 : 0.418;
       const u1 = lado < 0 ? 0.08 : 0.492;
       grupo.add(tuboTela(usados, radios, material, u0, u1));
@@ -822,6 +798,49 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     });
   }
 
+  function fotoSuelta(frente) {
+    if (!frente || !frente.tex) return null;
+    const tex = frente.tex;
+    return new THREE.MeshStandardMaterial({
+      map: tex,
+      emissive: new THREE.Color("#ffffff"),
+      emissiveMap: tex,
+      emissiveIntensity: 0.2,
+      roughness: 0.55,
+      metalness: 0.04,
+      side: THREE.DoubleSide
+    });
+  }
+
+  function mallaCurva(ancho, alto, curva, material) {
+    const seg = 18;
+    const posiciones = [];
+    const uvs = [];
+    const indices = [];
+    for (let j = 0; j <= 1; j += 1) {
+      for (let i = 0; i <= seg; i += 1) {
+        const t = i / seg;
+        const angulo = (t - 0.5) * curva;
+        posiciones.push(Math.sin(angulo) * ancho, (j - 0.5) * alto, Math.cos(angulo) * ancho * 0.28);
+        uvs.push(t, j);
+      }
+    }
+    const columnas = seg + 1;
+    for (let i = 0; i < seg; i += 1) {
+      const a = i;
+      const b = i + columnas;
+      indices.push(a, a + 1, b, a + 1, b + 1, b);
+    }
+    const geometria = new THREE.BufferGeometry();
+    geometria.setAttribute("position", new THREE.Float32BufferAttribute(posiciones, 3));
+    geometria.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geometria.setIndex(indices);
+    geometria.computeVertexNormals();
+    const malla = new THREE.Mesh(geometria, material);
+    malla.castShadow = true;
+    return malla;
+  }
+
   function agregarPrenda(item, color, telas) {
     const med = medidas;
     const solido = tela(color);
@@ -835,17 +854,17 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     if (slot === "camisa" || slot === "chaqueta" || slot === "chaleco") {
       const porDentro = slot === "camisa" && tipo !== "fuera" && (conPantalon || puesto.completo);
       const cuello = med.cuelloY - 0.012;
-      let bajoBase = 0.74;
-      let vuelo = 0.03;
+      let bajoBase = med.caderaY - 0.1;
+      let vuelo = 0.012;
       let caida = tipo === "fuera" ? 0.72 : 0.2;
       if (slot === "chaqueta") {
-        bajoBase = 0.76;
+        bajoBase = med.caderaY - 0.02;
         vuelo = 0.016;
         caida = 0.82;
       } else if (slot === "chaleco") {
-        bajoBase = med.cinturaY - 0.04;
-        vuelo = 0.008;
-        caida = 0.55;
+        bajoBase = med.caderaY - 0.08;
+        vuelo = 0.012;
+        caida = 0.28;
       } else if (porDentro) {
         bajoBase = 0.98;
         vuelo = 0;
@@ -854,7 +873,8 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       const bajo = cuello - (cuello - bajoBase) * (slot === "camisa" ? ajuste.largo : 1);
       const holgura = (slot === "chaqueta" ? 0.036 : slot === "chaleco" ? 0.022 : (tipo === "fuera" ? 0.022 : (porDentro ? 0.006 : 0.012))) * ajuste.ancho;
       grupo.add(concha(med, Math.min(bajo, cuello - 0.18), cuello, holgura, telaPrenda, 1, vuelo, caida));
-      if (slot !== "chaleco") {
+        if (slot === "chaleco") ocultarCuerpo(/^hombroCarne/);
+        if (slot !== "chaleco") {
         const corta = slot === "camisa" && tipo === "manga-corta";
         const radio = med.brazo + (slot === "chaqueta" ? 0.018 : 0.008);
         sumarMangas(grupo, med, telaPrenda, corta, ajuste.manga, radio);
@@ -871,81 +891,103 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       const falda = concha(med, 0.48, med.cinturaY + 0.04, 0.02 * ajuste.cintura, telaPrenda, ajuste.ancho, 0.06);
       grupo.add(falda);
     } else if (slot === "inferior") {
-      const yFin = tipo === "corto" ? 0.48 : 0.07;
-      const cadera = tipo === "corto" ? 0.62 : 0.76;
+      const yFin = tipo === "corto" ? med.caderaY - 0.42 : 0.06;
+      const cadera = tipo === "corto" ? med.caderaY - 0.28 : med.caderaY - 0.16;
       const tobillo = cadera - (cadera - yFin) * ajuste.pierna;
       const buzoEncima = puesto.camisa && corte(puesto.camisa) === "fuera";
       const camisaDentro = puesto.camisa && corte(puesto.camisa) !== "fuera";
-      const encima = buzoEncima || !!puesto.chaqueta;
-      const cima = camisaDentro ? med.cinturaY + 0.05 : (encima ? med.caderaY + 0.08 : med.cinturaY + 0.015);
+      const encima = buzoEncima || !!puesto.chaqueta || !!puesto.chaleco;
+      const cima = camisaDentro ? med.cinturaY + 0.04 : (encima ? med.cinturaY + 0.02 : med.cinturaY + 0.015);
       const caderaMalla = concha(med, cadera, Math.max(cima, cadera + 0.12), 0.016 * ajuste.cintura, telaPrenda, ajuste.ancho, 0, 0.2);
       grupo.add(caderaMalla);
-      sumarPiernas(grupo, med, telaPrenda, 0.7, tobillo, (med.pierna + 0.008) * ajuste.ancho);
-      if (tipo !== "corto") ocultarCuerpo(/^pierna|^pie|^nalga/);
+      sumarPiernas(grupo, med, telaPrenda, med.caderaY - 0.1, tobillo, (med.pierna + 0.01) * ajuste.ancho);
+      if (tipo !== "corto") ocultarCuerpo(/^pierna|^pie|^nalga|^caderaCuerpo/);
     } else if (slot === "cinturon") {
       const base = puesto.inferior || puesto.completo;
       if (base && admiteCinturon(base)) {
         const cintura = seccionEn(med, med.cinturaY);
-        const aro = new THREE.Mesh(new THREE.TorusGeometry(1, 0.012, 10, 40), solido);
+        const aro = new THREE.Mesh(new THREE.TorusGeometry(1, 0.011, 8, 36), solido);
         aro.rotation.x = Math.PI / 2;
-        aro.position.y = med.cinturaY + 0.015;
-        aro.scale.set(cintura.x + 0.02, cintura.z + 0.02, 1);
+        aro.position.y = med.cinturaY + 0.02;
+        aro.scale.set(cintura.x + 0.028, cintura.z + 0.028, 1);
         aro.castShadow = true;
-        const hebilla = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, 0.018), solido);
-        hebilla.position.set(0, med.cinturaY + 0.015, cintura.z + 0.03);
-        hebilla.castShadow = true;
-        grupo.add(aro, hebilla);
+        grupo.add(aro);
+        const foto = fotoSuelta(telas && telas.frente);
+        if (foto) {
+          const aspecto = telas.frente.aspect || 2.4;
+          const ancho = Math.min(0.28, cintura.x * 1.3);
+          const alto = Math.min(0.11, Math.max(0.045, ancho / aspecto));
+          const hebilla = mallaCurva(ancho * 0.55, alto, 1.1, foto);
+          hebilla.position.set(0, med.cinturaY + 0.02, cintura.z + 0.01);
+          grupo.add(hebilla);
+        }
       }
     } else if (slot === "calzado") {
       const alta = tipo === "bota";
+      const foto = fotoSuelta(telas && telas.frente);
       [-1, 1].forEach((lado) => {
-        const suela = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.045, 0.25), solido);
-        suela.position.set(lado * med.cadera * 0.92, 0.028, 0.06);
+        const x = lado * med.cadera;
+        const suela = new THREE.Mesh(new THREE.BoxGeometry(0.12, alta ? 0.05 : 0.04, 0.27), solido);
+        suela.position.set(x, 0.03, med.pieZ);
         suela.castShadow = true;
-        const cana = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.058, alta ? 0.3 : 0.09, 16), solido);
-        cana.position.set(lado * med.cadera * 0.92, alta ? 0.17 : 0.08, 0.03);
+        const cana = new THREE.Mesh(new THREE.BoxGeometry(0.1, alta ? 0.26 : 0.08, 0.16), solido);
+        cana.position.set(x, alta ? 0.16 : 0.08, med.pieZ - 0.02);
         cana.castShadow = true;
         grupo.add(suela, cana);
+        if (foto) {
+          const aspecto = telas.frente.aspect || 1.4;
+          const ancho = 0.16;
+          const alto = Math.min(alta ? 0.22 : 0.12, Math.max(0.08, ancho / aspecto));
+          const cara = mallaCurva(ancho * 0.45, alto, 0.8, foto);
+          cara.position.set(x, alta ? 0.12 : 0.07, med.pieZ + 0.08);
+          grupo.add(cara);
+        }
       });
-      cuerpo.traverse((nodo) => {
-        if (nodo.name === "pieI" || nodo.name === "pieD") nodo.visible = false;
-      });
+      ocultarCuerpo(/^pie/);
     } else if (slot === "guantes") {
+      const foto = fotoSuelta(telas && telas.frente);
       [-1, 1].forEach((lado) => {
-        const muneca = puntosBrazo(med, lado, 0.76);
-        const guante = new THREE.Mesh(new THREE.SphereGeometry(med.brazo * 1.35, 14, 10), solido);
-        guante.scale.set(0.85, 1.25, 0.6);
-        guante.position.set(muneca.x, muneca.y - 0.06, muneca.z);
-        guante.castShadow = true;
-        grupo.add(guante);
+        const mano = new THREE.Vector3(lado * (med.hombro + 0.085), med.manoY, 0.02);
+        const volumen = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.11, 0.04), solido);
+        volumen.position.copy(mano);
+        volumen.castShadow = true;
+        grupo.add(volumen);
+        if (foto) {
+          const aspecto = telas.frente.aspect || 1.2;
+          const ancho = 0.11;
+          const alto = Math.min(0.14, Math.max(0.08, ancho / aspecto));
+          const cara = mallaCurva(ancho * 0.45, alto, 0.6, foto);
+          cara.position.set(mano.x, mano.y, mano.z + 0.03);
+          grupo.add(cara);
+        }
       });
-      cuerpo.traverse((nodo) => {
-        if (nodo.name === "manoI" || nodo.name === "manoD") nodo.visible = false;
-      });
+      ocultarCuerpo(/^mano/);
     } else if (slot === "gafas") {
-      [-0.046, 0.046].forEach((x) => {
-        const lente = new THREE.Mesh(new THREE.TorusGeometry(0.032, 0.004, 8, 20), solido);
-        lente.position.set(x, med.cabezaY + 0.01, med.cabezaR * 0.92);
-        grupo.add(lente);
-      });
-      const puente = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.004, 0.004), solido);
-      puente.position.set(0, med.cabezaY + 0.01, med.cabezaR * 0.92);
-      grupo.add(puente);
+      const foto = fotoSuelta(telas && telas.frente);
+      const material = foto || solido;
+      const aspecto = telas && telas.frente ? telas.frente.aspect : 2.2;
+      const ancho = med.cabezaR * 1.7;
+      const alto = Math.min(0.07, Math.max(0.035, (ancho * 1.2) / aspecto));
+      const lentes = mallaCurva(ancho * 0.55, alto, 1.15, material);
+      lentes.position.set(0, med.cabezaY - 0.01, med.cabezaR * 0.72);
+      grupo.add(lentes);
     } else if (slot === "gorra") {
-      const copa = new THREE.Mesh(new THREE.SphereGeometry(med.cabezaR * 1.08, 28, 18, 0, Math.PI * 2, 0, Math.PI * 0.5), solido);
-      copa.position.y = med.cabezaY + med.cabezaR * 0.46;
+      const copa = new THREE.Mesh(new THREE.SphereGeometry(med.cabezaR * 1.05, 28, 16, 0, Math.PI * 2, 0, Math.PI * 0.52), solido);
+      copa.position.y = med.cabezaY + med.cabezaR * 0.42;
       copa.castShadow = true;
-      const frenteGorra = new THREE.Mesh(
-        new THREE.CylinderGeometry(med.cabezaR * 1.02, med.cabezaR * 1.12, med.cabezaR * 1.05, 28, 1, true, Math.PI / 2 - 1.05, 2.1),
-        telaPrenda
-      );
-      frenteGorra.position.y = med.cabezaY + med.cabezaR * 0.42;
-      frenteGorra.rotation.y = -Math.PI / 2;
-      frenteGorra.castShadow = true;
-      const visera = new THREE.Mesh(new THREE.BoxGeometry(med.cabezaR * 1.45, 0.014, med.cabezaR * 0.78), solido);
-      visera.position.set(0, med.cabezaY + med.cabezaR * 0.05, med.cabezaR * 0.95);
+      const visera = new THREE.Mesh(new THREE.BoxGeometry(med.cabezaR * 1.35, 0.012, med.cabezaR * 0.72), solido);
+      visera.position.set(0, med.cabezaY - med.cabezaR * 0.15, med.cabezaR * 1.05);
       visera.castShadow = true;
-      grupo.add(copa, frenteGorra, visera);
+      grupo.add(copa, visera);
+      const foto = fotoSuelta(telas && telas.frente);
+      if (foto) {
+        const aspecto = telas.frente.aspect || 1;
+        const ancho = med.cabezaR * 2.1;
+        const alto = Math.min(med.cabezaR * 1.45, Math.max(med.cabezaR * 0.85, (ancho * 0.9) / aspecto));
+        const frenteGorra = mallaCurva(ancho * 0.48, alto, 1.25, foto);
+        frenteGorra.position.set(0, med.cabezaY + med.cabezaR * 0.18, med.cabezaR * 0.35);
+        grupo.add(frenteGorra);
+      }
     }
     uvFoto(grupo);
     ropa.add(grupo);
@@ -986,6 +1028,8 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   async function vestir() {
     const gen = generacion + 1;
     generacion = gen;
+    await cuerpoPromesa;
+    if (gen !== generacion) return;
     desechar(ropa);
     ropa.clear();
     cuerpo.traverse((nodo) => {
@@ -1194,9 +1238,9 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   });
 
   const vistas = {
-    frente: new THREE.Vector3(0, 0.98, 3.85),
-    lado: new THREE.Vector3(3.85, 0.98, 0.2),
-    espalda: new THREE.Vector3(0, 0.98, -3.85)
+    frente: new THREE.Vector3(0, 1.02, 4.15),
+    lado: new THREE.Vector3(4.15, 1.02, 0.2),
+    espalda: new THREE.Vector3(0, 1.02, -4.15)
   };
   let destino = null;
   document.querySelectorAll("[data-fit-view]").forEach((boton) => {
