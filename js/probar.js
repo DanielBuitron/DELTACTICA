@@ -104,11 +104,11 @@
   const trenInferior = { y: 400, alto: 630, ancho: 400 };
   const trenCompleto = { y: 164, alto: 830, ancho: 336 };
   const trenExtra = {
-    cabeza: { y: 96, alto: 92, ancho: 132, base: 188 },
-    cara: { y: 104, alto: 40, ancho: 96 },
-    cintura: { y: 478, alto: 78, ancho: 240 },
-    pies: { y: 972, alto: 86, ancho: 196 },
-    manos: { y: 424, alto: 92, ancho: 96, x: 312 },
+    cabeza: { y: 18, alto: 156, ancho: 200, base: 176 },
+    cara: { y: 118, alto: 36, ancho: 110 },
+    cintura: { y: 438, alto: 52, ancho: 300 },
+    pies: { y: 700, alto: 160, ancho: 250, base: 860 },
+    manos: { y: 400, alto: 110, ancho: 120, x: 300 },
   };
 
   function figura(clase, soloCabeza) {
@@ -125,7 +125,7 @@
       <path fill="#efeae2" d="M198 156c4 24 8 42 10 58h24c2-16 6-34 10-58-8 8-28 8-44 0z"/>
       <ellipse cx="220" cy="118" rx="42" ry="48" fill="url(#dt-volumen)"/>
       <ellipse cx="206" cy="114" rx="22" ry="32" fill="#fffdfb" opacity="0.55"/>`;
-    const cabeza = `<ellipse cx="220" cy="112" rx="46" ry="52" fill="#f4f0e8" stroke="#c8c1b4" stroke-width="2"/><ellipse cx="204" cy="106" rx="22" ry="34" fill="#fffdfb" opacity="0.72"/><ellipse cx="236" cy="118" rx="14" ry="26" fill="#cfc8bc" opacity="0.45"/>`;
+    const cabeza = `<ellipse cx="220" cy="148" rx="48" ry="54" fill="#f4f0e8" stroke="#c8c1b4" stroke-width="2"/><ellipse cx="204" cy="140" rx="24" ry="36" fill="#fffdfb" opacity="0.72"/><ellipse cx="238" cy="154" rx="14" ry="28" fill="#cfc8bc" opacity="0.45"/>`;
     const corte = cuerpo.indexOf('<path fill="#efeae2"');
     const sinCabeza = corte > 0 ? cuerpo.slice(0, corte) : cuerpo;
     if (soloCabeza === "sin-cabeza") svg.innerHTML = sinCabeza;
@@ -133,7 +133,14 @@
     return svg;
   }
 
-  function cajaDe(img) {
+  function esSoporte(r, g, b, a) {
+    if (a < 28) return false;
+    const mx = Math.max(r, g, b);
+    const mn = Math.min(r, g, b);
+    return mx > 175 && mx - mn < 48 && r > 165 && b > 135;
+  }
+
+  function cajaDe(img, ignorarSoporte) {
     const w = img.naturalWidth;
     const h = img.naturalHeight;
     if (!w || !h) return null;
@@ -156,7 +163,9 @@
     let n = 0;
     for (let y = 0; y < h; y += step) {
       for (let x = 0; x < w; x += step) {
-        if (data[(y * w + x) * 4 + 3] < 28) continue;
+        const i = (y * w + x) * 4;
+        if (data[i + 3] < 28) continue;
+        if (ignorarSoporte && esSoporte(data[i], data[i + 1], data[i + 2], data[i + 3])) continue;
         n += 1;
         if (x < minX) minX = x;
         if (y < minY) minY = y;
@@ -184,6 +193,16 @@
     const dx = tren.x != null ? tren.x : (440 - dw) / 2;
     const dy = tren.base != null ? tren.base - dh : tren.y;
     ctx.drawImage(img, box.x, box.y, box.w, box.h, dx, dy, dw, dh);
+    if (!tren.soporte) return;
+    const frame = ctx.getImageData(0, 0, 440, 1120);
+    const data = frame.data;
+    let cambio = false;
+    for (let i = 0; i < data.length; i += 4) {
+      if (!esSoporte(data[i], data[i + 1], data[i + 2], data[i + 3])) continue;
+      data[i + 3] = 0;
+      cambio = true;
+    }
+    if (cambio) ctx.putImageData(frame, 0, 0);
   }
 
   function cuandoCargue(img, listo) {
@@ -198,7 +217,7 @@
     const corto = /\blicra\b|pantaloneta|\bfalda\b|bermuda/.test(plain(item.name));
     const largo = /chaqueta|chaleco/.test(plain(item.name));
     const tren = clase === "fit-abajo"
-      ? (corto ? { y: 440, alto: 280, ancho: 300 } : trenInferior)
+      ? (corto ? { y: 390, alto: 280, ancho: 260, soporte: true } : { ...trenInferior, soporte: true })
       : clase === "fit-full"
         ? trenCompleto
         : (largo ? { y: 168, alto: 470, ancho: 348 } : trenSuperior);
@@ -222,12 +241,12 @@
     }
     let listos = 0;
     const aplicar = () => {
-      const frente = cajaDe(imgs[0]);
+      const frente = cajaDe(imgs[0], tren.soporte);
       if (!frente) return;
       const scale = medidaFrente(imgs[0], frente, tren);
       imgs.forEach((img, index) => {
         if (!img.naturalWidth) return;
-        pintarRecorte(lienzos[index], img, cajaDe(img) || frente, scale, tren);
+        pintarRecorte(lienzos[index], img, cajaDe(img, tren.soporte) || frente, scale, tren);
       });
       paint();
     };
@@ -238,7 +257,7 @@
   }
 
   function vestirAccesorio(item, zone) {
-    const tren = trenExtra[zone] || trenExtra.cintura;
+    const tren = { ...(trenExtra[zone] || trenExtra.cintura) };
     const canvas = document.createElement("canvas");
     canvas.width = 440;
     canvas.height = 1120;
@@ -248,7 +267,26 @@
     image.src = foto(item);
     cuandoCargue(image, () => {
       const box = cajaDe(image) || { x: 0, y: 0, w: image.naturalWidth, h: image.naturalHeight };
-      if (!box.w) return;
+      if (!box.w || !image.naturalWidth) return;
+      const aspecto = box.w / box.h;
+      if (zone === "pies") {
+        const cortoPuesto = puesto.abajo && /\blicra\b|pantaloneta|\bfalda\b|bermuda/.test(plain(puesto.abajo.name));
+        tren.base = cortoPuesto || !puesto.abajo ? 860 : 1040;
+      }
+      if (zone === "cintura" && aspecto < 1.15) {
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#1a1a1a";
+        ctx.fillRect(96, 448, 248, 18);
+        ctx.fillStyle = "#3a3a3a";
+        ctx.fillRect(96, 448, 248, 4);
+        const hebilla = { x: box.x, y: box.y, w: box.w, h: Math.max(1, Math.round(box.h * 0.42)) };
+        const sitio = { y: 412, alto: 78, ancho: 78, x: 181 };
+        const scale = medidaFrente(image, hebilla, sitio);
+        const dw = hebilla.w * (440 / image.naturalWidth) * scale;
+        const dh = hebilla.h * (1120 / image.naturalHeight) * scale;
+        ctx.drawImage(image, hebilla.x, hebilla.y, hebilla.w, hebilla.h, sitio.x, sitio.y, dw, dh);
+        return;
+      }
       pintarRecorte(canvas, image, box, medidaFrente(image, box, tren), tren);
     });
     return canvas;
@@ -307,7 +345,9 @@
     cuerpoCaja.className = "fit-body";
     stage.replaceChildren(cuerpoCaja);
     const base = figura("fit-blank", (puesto.arriba || puesto.completo) ? "sin-cabeza" : false);
-    if (puesto.abajo || puesto.completo) base.style.clipPath = "inset(0 0 9% 0)";
+    const licraPuesta = puesto.abajo && /\blicra\b|pantaloneta|\bfalda\b|bermuda/.test(plain(puesto.abajo.name));
+    if (puesto.pies && (licraPuesta || !puesto.abajo)) base.style.clipPath = "inset(0 0 30% 0)";
+    else if (puesto.abajo || puesto.completo) base.style.clipPath = "inset(0 0 9% 0)";
     cuerpoCaja.append(base);
     frames = [];
     extras = [];
