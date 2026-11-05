@@ -1563,7 +1563,7 @@
       image.alt = index ? "" : item.name;
       image.draggable = false;
       image.decoding = "sync";
-      image.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;visibility:hidden;transition:none;transform-origin:50% 46%;pointer-events:none;";
+      image.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;visibility:hidden;transition:none;transform-origin:50% 42%;pointer-events:none;";
       stage.append(image);
       return image;
     });
@@ -1573,12 +1573,14 @@
       const pos = turn / 360 * frames.length;
       const index = Math.floor(pos) % frames.length;
       const frac = pos - Math.floor(pos);
-      const yaw = (frac - 0.5) * 34;
+      const yaw = (frac - 0.5) * 28;
+      const volumen = (0.9 + 0.1 * Math.abs(Math.cos((turn * Math.PI) / 180))).toFixed(3);
       frames.forEach((image, key) => {
         const on = key === index;
         image.style.opacity = on ? "1" : "0";
         image.style.visibility = on ? "visible" : "hidden";
-        image.style.transform = on ? `perspective(1600px) rotateY(${yaw.toFixed(2)}deg)` : "none";
+        image.style.transform = on ? `perspective(1100px) rotateY(${yaw.toFixed(2)}deg) scaleX(${volumen})` : "none";
+        image.style.filter = on ? "drop-shadow(0 18px 16px rgba(40,32,20,0.16))" : "none";
       });
     };
     spin();

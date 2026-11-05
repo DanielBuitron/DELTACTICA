@@ -998,6 +998,7 @@ button.consult {
   max-height: 100%;
   aspect-ratio: 440 / 1120;
   flex: 0 0 auto;
+  transform-origin: 50% 40%;
 }
 
 .fit-blank,
@@ -1027,6 +1028,10 @@ button.consult {
 .fit-capa[data-zona="arriba"],
 .fit-capa[data-zona="completo"] {
   z-index: 2;
+}
+
+.fit-accesorio {
+  z-index: 8;
 }
 
 .fit-capa[data-prenda="chaquetas"],
@@ -3289,6 +3294,32 @@ select option {
   display: grid;
   gap: 10px;
   align-items: stretch;
+  width: 100%;
+}
+
+.catalog-browse .filter-rail-wrap {
+  display: none;
+}
+
+.catalog-browse .catalog-filter-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px 14px;
+  align-items: center;
+  width: 100%;
+}
+
+.catalog-browse .catalog-jump {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 0;
+}
+
+.catalog-browse .catalog-jump select {
+  width: 100%;
+  max-width: none;
+  height: 48px;
+  font-size: 16px;
 }
 
 .catalog-filter-head {
@@ -3759,16 +3790,24 @@ select option {
   }
 
   .fit-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     width: 100%;
     max-width: 100%;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 4px;
+    gap: 6px;
   }
 
   .fit-tabs .filter {
-    flex: 0 0 auto;
-    white-space: nowrap;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 6px;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    white-space: normal;
+  }
+
+  .wrap {
+    width: min(1180px, calc(100% - 20px));
   }
 
   .fit-grid {
@@ -3785,6 +3824,10 @@ select option {
 }
 
 @media (max-width: 700px) {
+  .fit-room {
+    position: static;
+  }
+
   .fit-page .page-hero h1 {
     font-size: 32px;
   }

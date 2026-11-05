@@ -123,7 +123,8 @@ if (jump && count) {
   lineFilters().forEach((button) => {
     const option = document.createElement("option");
     option.value = button.dataset.filter;
-    option.textContent = button.dataset.label || button.textContent;
+    const cantidad = button.querySelector("b")?.textContent || "";
+    option.textContent = cantidad ? `${button.dataset.label} · ${cantidad}` : (button.dataset.label || button.textContent);
     jump.appendChild(option);
   });
   jump.addEventListener("change", () => {

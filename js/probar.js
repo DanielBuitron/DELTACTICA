@@ -100,62 +100,189 @@
     return todosPuestos().some((item) => item.id === id);
   }
 
-  const pielCabeza = '<ellipse cx="178" cy="146" rx="6" ry="10" fill="#c4beb4"/><ellipse cx="262" cy="146" rx="6" ry="10" fill="#c4beb4"/><ellipse cx="220" cy="140" rx="40" ry="44" fill="#d2ccc2"/><path d="M203 128h10M227 128h10" stroke="#3f3f3f" stroke-width="2.2" stroke-linecap="round"/><path d="M214 150c3 4 9 4 12 0" stroke="#4a4a4a" stroke-width="1.6" fill="none"/><path d="M206 168c8 5 20 5 28 0" stroke="#454545" stroke-width="1.6" fill="none" stroke-linecap="round"/>';
-  const pielManos = '<g fill="#e4dfd8"><rect x="78" y="498" width="3.4" height="9" rx="1.6"/><rect x="82.2" y="495" width="3.4" height="11" rx="1.6"/><rect x="86.4" y="495" width="3.4" height="11" rx="1.6"/><rect x="90.6" y="498" width="3.4" height="8" rx="1.6"/><ellipse cx="86" cy="514" rx="10" ry="11"/><rect x="346" y="498" width="3.4" height="9" rx="1.6"/><rect x="350.2" y="495" width="3.4" height="11" rx="1.6"/><rect x="354.4" y="495" width="3.4" height="11" rx="1.6"/><rect x="358.6" y="498" width="3.4" height="8" rx="1.6"/><ellipse cx="354" cy="514" rx="10" ry="11"/></g>';
-  const pielCuerpo = '<path fill="#f7f7f7" d="M156 206c-8 28-22 78-34 150-8 48-4 92 8 118l22-16c-6-28-2-62 6-108 8-42 14-86 18-144z"/><path fill="#f7f7f7" d="M284 206c8 28 22 78 34 150 8 48 4 92-8 118l-22-16c6-28 2-62-6-108-8-42-14-86-18-144z"/><path fill="#f6f6f6" d="M164 198h112c22 16 34 78 28 168-4 62-10 120-22 176H158c-12-56-18-114-22-176-6-90 6-152 28-168z"/><path fill="#f7f7f7" d="M150 470h140v110H150z"/><path fill="#f7f7f7" d="M162 548c-1 40 0 100 2 170h36c1-70 2-130 2-170z"/><path fill="#f7f7f7" d="M234 548c1 40 2 100 2 170h36c2-70 1-130 1-170z"/><ellipse cx="184" cy="728" rx="18" ry="10" fill="#f3f3f3"/><ellipse cx="254" cy="728" rx="18" ry="10" fill="#f3f3f3"/>';
+  const trenSuperior = { y: 148, alto: 340, ancho: 336 };
+  const trenInferior = { y: 400, alto: 630, ancho: 400 };
+  const trenCompleto = { y: 164, alto: 830, ancho: 336 };
+  const trenExtra = {
+    cabeza: { y: 96, alto: 92, ancho: 132, base: 188 },
+    cara: { y: 104, alto: 40, ancho: 96 },
+    cintura: { y: 478, alto: 78, ancho: 240 },
+    pies: { y: 972, alto: 86, ancho: 196 },
+    manos: { y: 424, alto: 92, ancho: 96, x: 312 },
+  };
 
-  function figura(clase, arriba) {
+  function figura(clase, soloCabeza) {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("class", clase);
     svg.setAttribute("viewBox", "0 0 440 1120");
     svg.setAttribute("aria-hidden", "true");
-    svg.innerHTML = (arriba ? pielCabeza : pielCuerpo + pielCabeza + pielManos);
+    const cuerpo = `<defs><linearGradient id="dt-volumen" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b7b1a6"/><stop offset="0.18" stop-color="#f7f4ee"/><stop offset="0.48" stop-color="#fffdfb"/><stop offset="0.78" stop-color="#efeae2"/><stop offset="1" stop-color="#aea79c"/></linearGradient></defs>
+      <ellipse cx="220" cy="1048" rx="72" ry="10" fill="rgba(40,32,20,0.16)"/>
+      <path fill="url(#dt-volumen)" d="M158 214c-8 40-12 110-2 190 6 48 4 90 12 136h104c8-46 6-88 12-136 10-80 6-150-2-190-18 16-48 24-68 24s-50-8-68-24z"/>
+      <path fill="url(#dt-volumen)" d="M170 530c-4 50-8 140-4 250 2 40 8 70 22 78 12 6 22-8 22-28 0-80 2-180 4-250 0-16-12-36-22-42-10-4-18-4-22-8z"/>
+      <path fill="url(#dt-volumen)" d="M270 530c4 50 8 140 4 250-2 40-8 70-22 78-12 6-22-8-22-28 0-80-2-180-4-250 0-16 12-36 22-42 10-4 18-4 22-8z"/>
+      <path fill="#f3efe8" d="M196 148h48c2 28 4 60 2 96h-52c-2-36 0-68 2-96z"/>
+      <path fill="#efeae2" d="M198 156c4 24 8 42 10 58h24c2-16 6-34 10-58-8 8-28 8-44 0z"/>
+      <ellipse cx="220" cy="118" rx="42" ry="48" fill="url(#dt-volumen)"/>
+      <ellipse cx="206" cy="114" rx="22" ry="32" fill="#fffdfb" opacity="0.55"/>`;
+    const cabeza = `<ellipse cx="220" cy="112" rx="46" ry="52" fill="#f4f0e8" stroke="#c8c1b4" stroke-width="2"/><ellipse cx="204" cy="106" rx="22" ry="34" fill="#fffdfb" opacity="0.72"/><ellipse cx="236" cy="118" rx="14" ry="26" fill="#cfc8bc" opacity="0.45"/>`;
+    const corte = cuerpo.indexOf('<path fill="#efeae2"');
+    const sinCabeza = corte > 0 ? cuerpo.slice(0, corte) : cuerpo;
+    if (soloCabeza === "sin-cabeza") svg.innerHTML = sinCabeza;
+    else svg.innerHTML = soloCabeza ? cabeza : cuerpo;
     return svg;
   }
 
-  function frame(item, numero, clase) {
-    const image = document.createElement("img");
-    image.src = esPrenda(item) ? vista(item, numero) : foto(item);
-    image.alt = numero === 1 ? item.name : "";
-    image.draggable = false;
-    image.className = clase;
-    image.dataset.capa = "prenda";
-    image.style.cssText = "opacity:0;visibility:hidden;";
-    image.dataset.zona = clase === "fit-abajo" ? "abajo" : clase === "fit-arriba" ? "arriba" : "completo";
-    image.dataset.prenda = categoria(item);
-    if (/\blicra\b|pantaloneta|\bfalda\b/.test(plain(item.name))) image.dataset.largo = "corto";
-    image.className = "fit-capa";
-    return image;
+  function cajaDe(img) {
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    if (!w || !h) return null;
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0);
+    let data;
+    try {
+      data = ctx.getImageData(0, 0, w, h).data;
+    } catch (error) {
+      return { x: 0, y: 0, w, h };
+    }
+    const step = Math.max(1, Math.round(Math.min(w, h) / 220));
+    let minX = w;
+    let minY = h;
+    let maxX = 0;
+    let maxY = 0;
+    let n = 0;
+    for (let y = 0; y < h; y += step) {
+      for (let x = 0; x < w; x += step) {
+        if (data[(y * w + x) * 4 + 3] < 28) continue;
+        n += 1;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
+    if (n < 12) return null;
+    return { x: minX, y: minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY) };
+  }
+
+  function medidaFrente(img, box, tren) {
+    const bw = box.w * (440 / img.naturalWidth);
+    const bh = box.h * (1120 / img.naturalHeight);
+    let scale = tren.alto / Math.max(1, bh);
+    if (bw * scale > tren.ancho) scale = tren.ancho / Math.max(1, bw);
+    return scale;
+  }
+
+  function pintarRecorte(canvas, img, box, scale, tren) {
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, 440, 1120);
+    const dw = box.w * (440 / img.naturalWidth) * scale;
+    const dh = box.h * (1120 / img.naturalHeight) * scale;
+    const dx = tren.x != null ? tren.x : (440 - dw) / 2;
+    const dy = tren.base != null ? tren.base - dh : tren.y;
+    ctx.drawImage(img, box.x, box.y, box.w, box.h, dx, dy, dw, dh);
+  }
+
+  function cuandoCargue(img, listo) {
+    if (img.complete && img.naturalWidth) listo();
+    else {
+      img.onload = listo;
+      img.onerror = listo;
+    }
+  }
+
+  function vestirPrenda(item, clase, caja) {
+    const corto = /\blicra\b|pantaloneta|\bfalda\b|bermuda/.test(plain(item.name));
+    const largo = /chaqueta|chaleco/.test(plain(item.name));
+    const tren = clase === "fit-abajo"
+      ? (corto ? { y: 440, alto: 280, ancho: 300 } : trenInferior)
+      : clase === "fit-full"
+        ? trenCompleto
+        : (largo ? { y: 168, alto: 470, ancho: 348 } : trenSuperior);
+    const zonaNombre = clase === "fit-abajo" ? "abajo" : clase === "fit-full" ? "completo" : "arriba";
+    const imgs = [];
+    const lienzos = [];
+    for (let numero = 1; numero <= 4; numero += 1) {
+      const image = new Image();
+      image.src = vista(item, numero);
+      imgs.push(image);
+      const canvas = document.createElement("canvas");
+      canvas.width = 440;
+      canvas.height = 1120;
+      canvas.className = "fit-capa";
+      canvas.dataset.grupo = item.id;
+      canvas.dataset.zona = zonaNombre;
+      canvas.style.cssText = "opacity:0;visibility:hidden;";
+      lienzos.push(canvas);
+      caja.append(canvas);
+      frames.push(canvas);
+    }
+    let listos = 0;
+    const aplicar = () => {
+      const frente = cajaDe(imgs[0]);
+      if (!frente) return;
+      const scale = medidaFrente(imgs[0], frente, tren);
+      imgs.forEach((img, index) => {
+        if (!img.naturalWidth) return;
+        pintarRecorte(lienzos[index], img, cajaDe(img) || frente, scale, tren);
+      });
+      paint();
+    };
+    imgs.forEach((img) => cuandoCargue(img, () => {
+      listos += 1;
+      if (listos === imgs.length) aplicar();
+    }));
+  }
+
+  function vestirAccesorio(item, zone) {
+    const tren = trenExtra[zone] || trenExtra.cintura;
+    const canvas = document.createElement("canvas");
+    canvas.width = 440;
+    canvas.height = 1120;
+    canvas.className = "fit-capa fit-accesorio";
+    canvas.dataset.zona = zone;
+    const image = new Image();
+    image.src = foto(item);
+    cuandoCargue(image, () => {
+      const box = cajaDe(image) || { x: 0, y: 0, w: image.naturalWidth, h: image.naturalHeight };
+      if (!box.w) return;
+      pintarRecorte(canvas, image, box, medidaFrente(image, box, tren), tren);
+    });
+    return canvas;
   }
 
   function paint() {
-    if (!frames.length) return;
     let turn = angle % 360;
     if (turn < 0) turn += 360;
-    const pos = turn / 360 * 4;
+    const pos = frames.length ? (turn / 360) * 4 : 0;
     const frac = pos - Math.floor(pos);
-    const yaw = (frac - 0.5) * 34;
-    const groups = {};
-    frames.forEach((image) => {
-      const key = image.dataset.grupo || "a";
-      groups[key] = groups[key] || [];
-      groups[key].push(image);
-    });
-    Object.values(groups).forEach((group) => {
-      const local = Math.floor(pos) % group.length;
-      group.forEach((image, key) => {
-        const on = key === local;
-        image.style.opacity = on ? "1" : "0";
-        image.style.visibility = on ? "visible" : "hidden";
-        image.style.transform = on ? `perspective(1600px) rotateY(${yaw.toFixed(2)}deg)` : "none";
+    const yaw = (frac - 0.5) * 42;
+    const cuerpo = stage.querySelector(".fit-body");
+    if (cuerpo) {
+      const volumen = (0.93 + 0.07 * Math.abs(Math.cos((turn * Math.PI) / 180))).toFixed(3);
+      cuerpo.style.transform = `perspective(980px) rotateY(${yaw.toFixed(2)}deg) scaleX(${volumen})`;
+    }
+    if (frames.length) {
+      const groups = {};
+      frames.forEach((image) => {
+        const key = image.dataset.grupo || "a";
+        groups[key] = groups[key] || [];
+        groups[key].push(image);
       });
-    });
-    const giro = `perspective(1600px) rotateY(${yaw.toFixed(2)}deg)`;
-    stage.querySelectorAll(".fit-blank, .fit-piel").forEach((pieza) => {
-      pieza.style.transform = giro;
-    });
-    const frente = Math.cos(turn * Math.PI / 180);
-    const visible = frente > 0.2 ? Math.min(1, (frente - 0.2) / 0.45) : 0;
+      Object.values(groups).forEach((group) => {
+        const local = Math.floor(pos) % group.length;
+        group.forEach((image, key) => {
+          const on = key === local;
+          image.style.opacity = on ? "1" : "0";
+          image.style.visibility = on ? "visible" : "hidden";
+        });
+      });
+    }
+    const frente = Math.cos((turn * Math.PI) / 180);
+    const visible = frente > 0.15 ? Math.min(1, (frente - 0.15) / 0.4) : 0;
     extras.forEach((image) => {
       image.style.opacity = String(visible);
     });
@@ -173,41 +300,29 @@
     const puestos = todosPuestos();
     name.textContent = puestos.map((item) => item.name).join(" + ") || "Maniquí en blanco";
     note.textContent = prendas.length
-      ? "Arrastre para girar. Toque la pieza puesta para quitarla y probar otra."
-      : "El maniquí está en blanco. Elija una categoría y ponga la primera pieza.";
+      ? "Arrastre de lado a lado para dar la vuelta. Toque la pieza puesta para quitarla."
+      : "Maniquí listo. Elija una categoría y ponga la prenda: el tren superior viste camisas y el inferior, pantalones.";
     add.hidden = !puestos.length;
     const cuerpoCaja = document.createElement("div");
     cuerpoCaja.className = "fit-body";
     stage.replaceChildren(cuerpoCaja);
-    cuerpoCaja.append(figura("fit-blank", false));
+    const base = figura("fit-blank", (puesto.arriba || puesto.completo) ? "sin-cabeza" : false);
+    if (puesto.abajo || puesto.completo) base.style.clipPath = "inset(0 0 9% 0)";
+    cuerpoCaja.append(base);
     frames = [];
     extras = [];
     const cuerpo = puesto.completo ? [puesto.completo] : prendas;
     cuerpo.forEach((item) => {
       const clase = puesto.completo ? "fit-full" : (abajo.has(item.id) ? "fit-abajo" : "fit-arriba");
-      for (let numero = 1; numero <= 4; numero += 1) {
-        const image = frame(item, numero, clase);
-        image.dataset.grupo = item.id;
-        cuerpoCaja.append(image);
-        frames.push(image);
-      }
+      vestirPrenda(item, clase, cuerpoCaja);
     });
     if (puesto.arriba || puesto.completo) cuerpoCaja.append(figura("fit-piel", true));
-    let extraIndex = 0;
     accesoriosPuestos().forEach((item) => {
-      const image = document.createElement("img");
-      image.src = foto(item);
-      image.alt = item.name;
-      image.draggable = false;
-      image.className = "fit-piece";
       const zone = zona(item);
-      image.dataset.zona = zone === "extra" ? "extra" : zone;
-      if (zone === "extra") {
-        image.style.top = `${6 + extraIndex * 23}%`;
-        extraIndex += 1;
-      }
-      cuerpoCaja.append(image);
-      extras.push(image);
+      if (!trenExtra[zone]) return;
+      const lienzo = vestirAccesorio(item, zone);
+      cuerpoCaja.append(lienzo);
+      extras.push(lienzo);
     });
     angle = frames.length ? angle : 0;
     paint();
@@ -295,7 +410,6 @@
   });
 
   stage.addEventListener("pointerdown", (event) => {
-    if (!frames.length) return;
     dragging = true;
     anchorX = event.clientX;
     anchorA = angle;
