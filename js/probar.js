@@ -140,8 +140,8 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
 
   function perfil(med) {
     return med.mujer
-      ? [[0.72, 0.15, 0.112], [0.84, 0.184, 0.13], [1.0, 0.124, 0.096], [1.16, 0.148, 0.12], [1.28, 0.158, 0.128], [1.36, 0.168, 0.108], [1.42, 0.09, 0.072], [1.48, 0.06, 0.054]]
-      : [[0.74, 0.15, 0.112], [0.86, 0.172, 0.126], [1.0, 0.138, 0.104], [1.18, 0.164, 0.124], [1.32, 0.2, 0.12], [1.4, 0.15, 0.1], [1.46, 0.072, 0.064]];
+      ? [[0.72, 0.15, 0.112], [0.86, 0.184, 0.13], [1.02, 0.128, 0.1], [1.2, 0.16, 0.12], [1.32, 0.158, 0.112], [1.38, 0.118, 0.094], [1.44, 0.074, 0.064], [1.48, 0.058, 0.052]]
+      : [[0.74, 0.152, 0.114], [0.88, 0.174, 0.128], [1.04, 0.142, 0.108], [1.22, 0.168, 0.122], [1.32, 0.165, 0.118], [1.38, 0.125, 0.098], [1.44, 0.08, 0.068], [1.49, 0.062, 0.054]];
   }
 
   function seccionEn(med, y) {
@@ -457,39 +457,45 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
 
   const cacheAtlas = new Map();
 
-  function pintarCara(ctx, imagen, origen) {
-    const ancho = imagen.width;
-    const alto = imagen.height;
-    ctx.drawImage(imagen, ancho * 0.28, 0, ancho * 0.44, alto, origen + 96, 0, 320, 1024);
-    ctx.drawImage(imagen, 0, 0, ancho * 0.34, alto, origen, 0, 88, 1024);
-    ctx.drawImage(imagen, ancho * 0.66, 0, ancho * 0.34, alto, origen + 424, 0, 88, 1024);
+  function encajar(ctx, imagen, origen, panelAncho, panelAlto, lienzoAncho, lienzoAlto) {
+    const aspecto = imagen.width / Math.max(1, imagen.height);
+    let ancho = panelAncho;
+    let alto = ancho / aspecto;
+    if (alto > panelAlto) {
+      alto = panelAlto;
+      ancho = alto * aspecto;
+    }
+    const x = origen + (panelAncho - ancho) / 2;
+    const y = (panelAlto - alto) / 2;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(imagen, x, y, ancho, alto);
+    return {
+      u0: x / lienzoAncho,
+      u1: (x + ancho) / lienzoAncho,
+      v0: 1 - (y + alto) / lienzoAlto,
+      v1: 1 - y / lienzoAlto
+    };
   }
 
   function atlasDe(frente, espalda) {
     const clave = `${frente.tex.uuid}:${espalda ? espalda.tex.uuid : ""}`;
     if (cacheAtlas.has(clave)) return cacheAtlas.get(clave);
     const lienzo = document.createElement("canvas");
-    lienzo.width = 1024;
-    lienzo.height = 1024;
+    const lado = 2048;
+    lienzo.width = lado;
+    lienzo.height = lado;
     const ctx = lienzo.getContext("2d");
-    const muestra = frente.tex.image;
-    ctx.fillStyle = "#3a3a3a";
-    ctx.fillRect(0, 0, 1024, 1024);
-    if (muestra) {
-      const mini = document.createElement("canvas");
-      mini.width = 8;
-      mini.height = 8;
-      const mctx = mini.getContext("2d");
-      mctx.drawImage(muestra, muestra.width * 0.4, muestra.height * 0.35, muestra.width * 0.2, muestra.height * 0.2, 0, 0, 8, 8);
-      const pixel = mctx.getImageData(4, 4, 1, 1).data;
-      ctx.fillStyle = `rgb(${pixel[0]},${pixel[1]},${pixel[2]})`;
-      ctx.fillRect(0, 0, 1024, 1024);
-    }
-    pintarCara(ctx, frente.tex.image, 0);
-    pintarCara(ctx, (espalda || frente).tex.image, 512);
+    ctx.fillStyle = "#1c1c1c";
+    ctx.fillRect(0, 0, lado, lado);
     const tex = new THREE.CanvasTexture(lienzo);
     tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = 8;
+    tex.anisotropy = 16;
+    tex.userData = {
+      frente: encajar(ctx, frente.tex.image, 0, lado / 2, lado, lado, lado),
+      espalda: encajar(ctx, (espalda || frente).tex.image, lado / 2, lado / 2, lado, lado, lado)
+    };
+    tex.needsUpdate = true;
     cacheAtlas.set(clave, tex);
     return tex;
   }
@@ -590,6 +596,43 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     const malla = new THREE.Mesh(geometria, material);
     malla.castShadow = true;
     return malla;
+  }
+
+  function uvFoto(grupo) {
+    const mallas = [];
+    grupo.traverse((nodo) => {
+      if (nodo.isMesh && nodo.geometry && nodo.material && nodo.material.map && nodo.material.map.userData && nodo.material.map.userData.frente) {
+        mallas.push(nodo);
+      }
+    });
+    if (!mallas.length) return;
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    mallas.forEach((nodo) => {
+      const pos = nodo.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i += 1) {
+        minX = Math.min(minX, pos.getX(i));
+        maxX = Math.max(maxX, pos.getX(i));
+        minY = Math.min(minY, pos.getY(i));
+        maxY = Math.max(maxY, pos.getY(i));
+      }
+    });
+    const ancho = Math.max(0.001, maxX - minX);
+    const alto = Math.max(0.001, maxY - minY);
+    const cara = mallas[0].material.map.userData;
+    mallas.forEach((nodo) => {
+      const pos = nodo.geometry.attributes.position;
+      const uv = nodo.geometry.attributes.uv;
+      for (let i = 0; i < pos.count; i += 1) {
+        const nx = (pos.getX(i) - minX) / ancho;
+        const ny = (pos.getY(i) - minY) / alto;
+        const rect = pos.getZ(i) >= 0 ? cara.frente : cara.espalda;
+        uv.setXY(i, rect.u0 + nx * (rect.u1 - rect.u0), rect.v0 + ny * (rect.v1 - rect.v0));
+      }
+      uv.needsUpdate = true;
+    });
   }
 
   function uvGrupo(grupo) {
@@ -712,10 +755,10 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   function puntosBrazo(med, lado, munecaY) {
     const alcance = med.hombro;
     return [
-      new THREE.Vector3(lado * alcance * 0.7, 1.38, 0.02),
-      new THREE.Vector3(lado * (alcance + 0.015), 1.22, 0.035),
-      new THREE.Vector3(lado * (alcance + 0.06), 1.02, 0.045),
-      new THREE.Vector3(lado * (alcance + 0.02), munecaY, 0.05)
+      new THREE.Vector3(lado * 0.17, 1.4, 0.02),
+      new THREE.Vector3(lado * 0.24, 1.22, 0.04),
+      new THREE.Vector3(lado * 0.29, 1.0, 0.048),
+      new THREE.Vector3(lado * 0.25, munecaY, 0.05)
     ];
   }
 
@@ -723,12 +766,28 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     const factor = Number.isFinite(alcance) ? alcance : 1;
     const munecaY = corta ? 1.05 : 0.76 + (1 - factor) * 0.2;
     [-1, 1].forEach((lado) => {
-      const puntos = puntosBrazo(med, lado, munecaY);
+      const puntos = [
+        new THREE.Vector3(lado * 0.075, 1.43, 0.02),
+        new THREE.Vector3(lado * 0.175, 1.36, 0.03),
+        new THREE.Vector3(lado * 0.25, 1.16, 0.04),
+        new THREE.Vector3(lado * 0.28, 0.98, 0.048),
+        new THREE.Vector3(lado * 0.24, munecaY, 0.05)
+      ];
       const usados = corta ? puntos.slice(0, 3) : puntos;
-      const radios = corta ? [radio * 1.45, radio * 1.05, radio * 0.9] : [radio * 1.7, radio * 1.15, radio * 0.92, radio * 0.68];
+      const radios = corta
+        ? [radio * 1.35, radio * 1.45, radio * 0.95]
+        : [radio * 1.2, radio * 1.55, radio * 1.1, radio * 0.88, radio * 0.64];
       const u0 = lado < 0 ? 0.008 : 0.418;
       const u1 = lado < 0 ? 0.08 : 0.492;
       grupo.add(tuboTela(usados, radios, material, u0, u1));
+      const codos = corta ? [1] : [1, 2];
+      codos.forEach((indice) => {
+        const junta = new THREE.Mesh(new THREE.SphereGeometry(radios[indice] * 0.98, 24, 16), material);
+        junta.geometry.scale(1.08, 0.78, 0.9);
+        junta.geometry.translate(usados[indice].x, usados[indice].y, usados[indice].z);
+        junta.castShadow = true;
+        grupo.add(junta);
+      });
     });
   }
 
@@ -776,12 +835,10 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       grupo.add(superior, inferior);
       sumarMangas(grupo, med, telaPrenda, false, ajuste.manga, med.brazo + 0.01);
       sumarPiernas(grupo, med, telaPrenda, 0.8, 0.06, (med.pierna + 0.012) * ajuste.ancho);
-      uvGrupo(grupo);
       ocultarCuerpo(/^brazo|^mano|^hombroCarne|^pierna|^pie|^nalga/);
     } else if (slot === "inferior" && tipo === "falda") {
       const falda = concha(med, 0.5, med.cinturaY + 0.04, 0.032 * ajuste.cintura, telaPrenda, ajuste.ancho);
       grupo.add(falda);
-      uvGrupo(grupo);
     } else if (slot === "inferior") {
       const yFin = tipo === "corto" ? 0.5 : 0.055;
       const cadera = tipo === "corto" ? 0.64 : 0.74;
@@ -790,7 +847,6 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       const caderaMalla = concha(med, cadera, med.cinturaY + (cubreCamisa ? 0.045 : -0.03), 0.016 * ajuste.cintura, telaPrenda, ajuste.ancho);
       grupo.add(caderaMalla);
       sumarPiernas(grupo, med, telaPrenda, 0.8, tobillo, (med.pierna + 0.01) * ajuste.ancho);
-      uvGrupo(grupo);
       if (tipo !== "corto") ocultarCuerpo(/^pierna|^pie|^nalga/);
     } else if (slot === "cinturon") {
       const base = puesto.inferior || puesto.completo;
@@ -851,15 +907,12 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       frenteGorra.position.y = med.cabezaY + med.cabezaR * 0.42;
       frenteGorra.rotation.y = -Math.PI / 2;
       frenteGorra.castShadow = true;
-      const uvGorra = frenteGorra.geometry.attributes.uv;
-      for (let i = 0; i < uvGorra.count; i += 1) {
-        uvGorra.setXY(i, 0.14 + uvGorra.getX(i) * 0.22, 0.2 + uvGorra.getY(i) * 0.6);
-      }
       const visera = new THREE.Mesh(new THREE.BoxGeometry(med.cabezaR * 1.45, 0.014, med.cabezaR * 0.78), solido);
       visera.position.set(0, med.cabezaY + med.cabezaR * 0.05, med.cabezaR * 0.95);
       visera.castShadow = true;
       grupo.add(copa, frenteGorra, visera);
     }
+    uvFoto(grupo);
     ropa.add(grupo);
   }
 
