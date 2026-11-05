@@ -104,10 +104,10 @@
   const trenInferior = { y: 400, alto: 630, ancho: 400 };
   const trenCompleto = { y: 164, alto: 830, ancho: 336 };
   const trenExtra = {
-    cabeza: { y: 18, alto: 156, ancho: 200, base: 176 },
-    cara: { y: 118, alto: 36, ancho: 110 },
-    cintura: { y: 438, alto: 52, ancho: 300 },
-    pies: { y: 700, alto: 160, ancho: 250, base: 860 },
+    cabeza: { y: 8, alto: 250, ancho: 230, base: 210 },
+    cara: { y: 130, alto: 40, ancho: 120 },
+    cintura: { y: 340, alto: 120, ancho: 320 },
+    pies: { y: 720, alto: 170, ancho: 270, base: 900 },
     manos: { y: 400, alto: 110, ancho: 120, x: 300 },
   };
 
@@ -256,6 +256,20 @@
     }));
   }
 
+  function pintarFoto(canvas, img, box, tren) {
+    const ctx = canvas.getContext("2d");
+    const aspecto = box.w / Math.max(1, box.h);
+    let dw = tren.ancho;
+    let dh = dw / aspecto;
+    if (dh > tren.alto) {
+      dh = tren.alto;
+      dw = dh * aspecto;
+    }
+    const dx = tren.x != null ? tren.x : (440 - dw) / 2;
+    const dy = tren.base != null ? tren.base - dh : tren.y;
+    ctx.drawImage(img, box.x, box.y, box.w, box.h, dx, dy, dw, dh);
+  }
+
   function vestirAccesorio(item, zone) {
     const tren = { ...(trenExtra[zone] || trenExtra.cintura) };
     const canvas = document.createElement("canvas");
@@ -271,23 +285,16 @@
       const aspecto = box.w / box.h;
       if (zone === "pies") {
         const cortoPuesto = puesto.abajo && /\blicra\b|pantaloneta|\bfalda\b|bermuda/.test(plain(puesto.abajo.name));
-        tren.base = cortoPuesto || !puesto.abajo ? 860 : 1040;
+        tren.base = cortoPuesto || !puesto.abajo ? 900 : 1060;
       }
       if (zone === "cintura" && aspecto < 1.15) {
         const ctx = canvas.getContext("2d");
         ctx.fillStyle = "#1a1a1a";
-        ctx.fillRect(96, 448, 248, 18);
-        ctx.fillStyle = "#3a3a3a";
-        ctx.fillRect(96, 448, 248, 4);
-        const hebilla = { x: box.x, y: box.y, w: box.w, h: Math.max(1, Math.round(box.h * 0.42)) };
-        const sitio = { y: 412, alto: 78, ancho: 78, x: 181 };
-        const scale = medidaFrente(image, hebilla, sitio);
-        const dw = hebilla.w * (440 / image.naturalWidth) * scale;
-        const dh = hebilla.h * (1120 / image.naturalHeight) * scale;
-        ctx.drawImage(image, hebilla.x, hebilla.y, hebilla.w, hebilla.h, sitio.x, sitio.y, dw, dh);
+        ctx.fillRect(90, 448, 260, 22);
+        pintarFoto(canvas, image, box, { y: 400, alto: 120, ancho: 110, x: 165 });
         return;
       }
-      pintarRecorte(canvas, image, box, medidaFrente(image, box, tren), tren);
+      pintarFoto(canvas, image, box, tren);
     });
     return canvas;
   }
@@ -356,7 +363,7 @@
       const clase = puesto.completo ? "fit-full" : (abajo.has(item.id) ? "fit-abajo" : "fit-arriba");
       vestirPrenda(item, clase, cuerpoCaja);
     });
-    if (puesto.arriba || puesto.completo) cuerpoCaja.append(figura("fit-piel", true));
+    if ((puesto.arriba || puesto.completo) && !puesto.cabeza) cuerpoCaja.append(figura("fit-piel", true));
     accesoriosPuestos().forEach((item) => {
       const zone = zona(item);
       if (!trenExtra[zone]) return;
