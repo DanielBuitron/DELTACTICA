@@ -315,7 +315,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   }
 
   async function cargarManiqui(modo) {
-    const archivo = modo === "f" ? "modelos/deltactica-mujer.glb?v=2" : "modelos/deltactica-hombre.glb?v=2";
+    const archivo = modo === "f" ? "modelos/cuerpo-mujer.glb?v=1" : "modelos/cuerpo-hombre.glb?v=1";
     let gltf = null;
     try {
       gltf = await cargador.loadAsync(`${root}${archivo}`);
