@@ -1025,18 +1025,34 @@ button.consult {
   pointer-events: none;
 }
 
-.fit-capa[data-zona="arriba"],
-.fit-capa[data-zona="completo"] {
+.fit-capa[data-zona="arriba"] {
   z-index: 2;
 }
 
-.fit-accesorio {
-  z-index: 8;
+.fit-capa[data-zona="cintura"] {
+  z-index: 3;
+}
+
+.fit-capa[data-zona="abajo"],
+.fit-capa[data-zona="completo"] {
+  z-index: 4;
 }
 
 .fit-capa[data-prenda="chaquetas"],
 .fit-capa[data-prenda="chalecos"] {
+  z-index: 5;
+}
+
+.fit-accesorio {
+  z-index: 7;
+}
+
+.fit-capa.fit-accesorio[data-zona="cintura"] {
   z-index: 3;
+}
+
+.fit-capa[data-zona="hebilla"] {
+  z-index: 8;
 }
 
 .variant-row {
@@ -1082,7 +1098,7 @@ button.consult {
 }
 
 .fit-capa[data-zona="completo"] {
-  z-index: 2;
+  z-index: 4;
 }
 
 .fit-room [data-fit-name] {

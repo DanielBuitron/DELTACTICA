@@ -23,7 +23,7 @@
   const note = document.querySelector("[data-fit-note]");
   const picksEl = document.querySelector("[data-fit-picks]");
   const add = document.querySelector("[data-fit-add]");
-  const puesto = { arriba: null, abajo: null, completo: null, cabeza: null, pies: null, cintura: null, manos: null, extra: [] };
+  const puesto = { arriba: null, abajo: null, completo: null, cabeza: null, cara: null, pies: null, cintura: null, manos: null, extra: [] };
   let tab = "camisas";
   let frames = [];
   let extras = [];
@@ -77,7 +77,7 @@
 
   function vista(item, numero) {
     const clave = item.id.toLowerCase().replace(/-/g, "");
-    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=12`;
+    return `img/puesto/${clave}-${String(numero).padStart(2, "0")}.webp?v=13`;
   }
 
   function foto(item) {
@@ -89,7 +89,7 @@
   }
 
   function accesoriosPuestos() {
-    return [puesto.cabeza, puesto.pies, puesto.cintura, puesto.manos, ...puesto.extra].filter(Boolean);
+    return [puesto.cabeza, puesto.cara, puesto.pies, puesto.cintura, puesto.manos, ...puesto.extra].filter(Boolean);
   }
 
   function todosPuestos() {
@@ -100,33 +100,54 @@
     return todosPuestos().some((item) => item.id === id);
   }
 
-  const cuello = 150;
-  const cinturaY = 448;
-  const tobillo = 1005;
-  const trenSuperior = { y: cuello, alto: cinturaY - cuello + 20, ancho: 286 };
-  const trenInferior = { y: cinturaY - 16, alto: tobillo - (cinturaY - 16), ancho: 400, soporte: true };
-  const trenCompleto = { y: cuello, alto: tobillo - cuello, ancho: 286 };
+  const cuello = 196;
+  const cinturaY = 430;
+  const tobillo = 1004;
+  const planta = 1056;
+  const mete = 72;
+  const trenSuperior = { y: cuello, alto: cinturaY - cuello + mete, ancho: 320 };
+  const trenInferior = { y: cinturaY - 14, alto: tobillo - (cinturaY - 14), ancho: 260, soporte: true };
+  const trenCompleto = { y: cuello, alto: tobillo - cuello, ancho: 320 };
   const trenExtra = {
-    cabeza: { y: 28, alto: 128, ancho: 112, base: 152 },
-    cara: { y: 104, alto: 26, ancho: 72 },
-    cintura: { y: cinturaY - 6, alto: 26, ancho: 220 },
-    pies: { y: 940, alto: 92, ancho: 156, base: 1038 },
-    manos: { y: 380, alto: 72, ancho: 64, x: 336 },
+    cabeza: { y: 0, alto: 168, ancho: 148, base: 128 },
+    cara: { y: 124, alto: 28, ancho: 102 },
+    cintura: { y: cinturaY - 20, alto: 22, ancho: 148 },
+    pies: { y: planta - 84, alto: 84, ancho: 176, base: planta },
+    manos: { y: 500, alto: 78, ancho: 72 },
   };
 
   function figura(clase) {
+    const gid = "dt-vol-" + String(clase).replace(/[^a-z]/gi, "");
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("class", clase);
     svg.setAttribute("viewBox", "0 0 440 1120");
     svg.setAttribute("aria-hidden", "true");
-    svg.innerHTML = `<defs><linearGradient id="dt-volumen" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b7b1a6"/><stop offset="0.2" stop-color="#f7f4ee"/><stop offset="0.5" stop-color="#fffdfb"/><stop offset="0.8" stop-color="#efeae2"/><stop offset="1" stop-color="#aea79c"/></linearGradient></defs>
-      <ellipse cx="220" cy="1052" rx="54" ry="8" fill="rgba(40,32,20,0.16)"/>
-      <path fill="url(#dt-volumen)" d="M172 492c-4 70-8 240 0 430 2 24 12 42 26 44 12 1 20-14 20-34 0-130 2-300 4-410 0-14-16-24-26-26-12-2-22 4-24-4z"/>
-      <path fill="url(#dt-volumen)" d="M268 492c4 70 8 240 0 430-2 24-12 42-26 44-12 1-20-14-20-34 0-130-2-300-4-410 0-14 16-24 26-26 12-2 22 4 24-4z"/>
-      <path fill="url(#dt-volumen)" d="M150 168c-8 40-2 130 14 220 8 48 18 86 30 112h52c12-26 22-64 30-112 16-90 22-180 14-220-24 16-62 24-70 24s-46-8-70-24z"/>
-      <path fill="#efeae2" d="M204 122c2 14 4 26 6 40h20c2-14 4-26 6-40-6 4-16 6-16 6s-10-2-16-6z"/>
-      <ellipse cx="220" cy="86" rx="32" ry="38" fill="url(#dt-volumen)"/>
-      <ellipse cx="208" cy="80" rx="14" ry="22" fill="#fffdfb" opacity="0.55"/>`;
+    svg.innerHTML = `<defs>
+      <linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#8a847b"/>
+        <stop offset="0.14" stop-color="#d4cec3"/>
+        <stop offset="0.36" stop-color="#fbf8f4"/>
+        <stop offset="0.58" stop-color="#f1ece4"/>
+        <stop offset="0.82" stop-color="#c9c2b6"/>
+        <stop offset="1" stop-color="#7a746b"/>
+      </linearGradient>
+      <radialGradient id="${gid}-h" cx="40%" cy="36%" r="68%">
+        <stop offset="0" stop-color="#fffdfb"/>
+        <stop offset="0.45" stop-color="#efeae2"/>
+        <stop offset="1" stop-color="#9c968c"/>
+      </radialGradient>
+    </defs>
+      <ellipse cx="220" cy="1078" rx="70" ry="9" fill="rgba(40,32,20,0.16)"/>
+      <path fill="url(#${gid})" d="M170 548 C154 610 142 700 146 790 C150 860 154 930 158 990 C156 1020 150 1042 146 1054 C158 1068 198 1070 210 1056 C204 1030 196 1004 190 978 C186 900 184 820 188 760 C194 680 206 610 214 566 C200 548 182 540 170 548 Z"/>
+      <path fill="url(#${gid})" d="M270 548 C286 610 298 700 294 790 C290 860 286 930 282 990 C284 1020 290 1042 294 1054 C282 1068 242 1070 230 1056 C236 1030 244 1004 250 978 C254 900 256 820 252 760 C246 680 234 610 226 566 C240 548 258 540 270 548 Z"/>
+      <path fill="url(#${gid})" d="M150 224 C160 196 188 188 206 204 L234 204 C252 188 280 196 290 224 C302 260 298 320 290 370 C284 410 270 430 258 444 C268 488 276 518 268 548 C246 564 220 572 220 572 C220 572 194 564 172 548 C164 518 172 488 182 444 C170 430 156 410 150 370 C142 320 138 260 150 224 Z"/>
+      <path fill="url(#${gid})" d="M138 214 C118 230 102 280 104 340 C106 390 114 450 122 500 C126 524 120 542 126 558 C118 570 132 584 150 576 C164 568 160 544 154 522 C152 470 146 400 142 350 C138 290 152 246 166 220 C158 206 148 204 138 214 Z"/>
+      <path fill="url(#${gid})" d="M302 214 C322 230 338 280 336 340 C334 390 326 450 318 500 C314 524 320 542 314 558 C322 570 308 584 290 576 C276 568 280 544 286 522 C288 470 294 400 298 350 C302 290 288 246 274 220 C282 206 292 204 302 214 Z"/>
+      <path fill="#000" opacity="0.06" d="M176 218 C196 232 244 232 264 218 C248 234 192 234 176 218 Z"/>
+      <path fill="url(#${gid})" d="M202 160 C198 178 192 194 186 210 L254 210 C248 194 242 178 238 160 C226 168 214 168 202 160 Z"/>
+      <ellipse cx="176" cy="116" rx="9" ry="13" fill="url(#${gid})"/>
+      <ellipse cx="264" cy="116" rx="9" ry="13" fill="url(#${gid})"/>
+      <path fill="url(#${gid}-h)" d="M220 48 C246 48 268 70 270 100 C272 126 262 148 248 160 C236 172 228 178 220 180 C212 178 204 172 192 160 C178 148 168 126 170 100 C172 70 194 48 220 48 Z"/>`;
     return svg;
   }
 
@@ -177,9 +198,9 @@
   function medidaFrente(img, box, tren) {
     const bw = box.w * (440 / img.naturalWidth);
     const bh = box.h * (1120 / img.naturalHeight);
-    let scale = tren.alto / Math.max(1, bh);
-    if (bw * scale > tren.ancho) scale = tren.ancho / Math.max(1, bw);
-    return scale;
+    const porAlto = tren.alto / Math.max(1, bh);
+    const porAncho = tren.ancho / Math.max(1, bw);
+    return Math.max(porAlto, porAncho);
   }
 
   function pintarRecorte(canvas, img, box, scale, tren) {
@@ -214,10 +235,10 @@
     const corto = /\blicra\b|pantaloneta|\bfalda\b|bermuda/.test(plain(item.name));
     const largo = /chaqueta|chaleco/.test(plain(item.name));
     const tren = clase === "fit-abajo"
-      ? (corto ? { y: cinturaY - 16, alto: 220, ancho: 210, soporte: true } : trenInferior)
+      ? (corto ? { y: cinturaY - 14, alto: 248, ancho: 230, soporte: true } : trenInferior)
       : clase === "fit-full"
         ? trenCompleto
-        : (largo ? { y: cuello, alto: 400, ancho: 310 } : trenSuperior);
+        : (largo ? { y: cuello, alto: 520, ancho: 340 } : trenSuperior);
     const zonaNombre = clase === "fit-abajo" ? "abajo" : clase === "fit-full" ? "completo" : "arriba";
     const imgs = [];
     const lienzos = [];
@@ -231,6 +252,7 @@
       canvas.className = "fit-capa";
       canvas.dataset.grupo = item.id;
       canvas.dataset.zona = zonaNombre;
+      canvas.dataset.prenda = categoria(item);
       canvas.style.cssText = "opacity:0;visibility:hidden;";
       lienzos.push(canvas);
       caja.append(canvas);
@@ -267,42 +289,86 @@
     ctx.drawImage(img, box.x, box.y, box.w, box.h, dx, dy, dw, dh);
   }
 
-  function vestirCintura(canvas, img, box) {
-    const ctx = canvas.getContext("2d");
-    const y = cinturaY - 4;
-    ctx.fillStyle = "#161616";
-    ctx.beginPath();
-    ctx.roundRect(112, y, 216, 18, 8);
-    ctx.fill();
-    ctx.fillStyle = "#3a3a3a";
-    ctx.fillRect(112, y, 216, 3);
-    const bw = Math.max(1, box.w * 0.38);
-    const bh = Math.max(1, box.h * 0.62);
-    const bx = box.x + (box.w - bw) / 2;
-    const by = box.y + box.h * 0.18;
-    ctx.drawImage(img, bx, by, bw, bh, 176, y - 22, 88, 58);
+  function colorTela(img, box) {
+    const c = document.createElement("canvas");
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0);
+    const puntos = [
+      [box.x + box.w * 0.5, box.y + box.h * 0.55],
+      [box.x + box.w * 0.2, box.y + box.h * 0.5],
+      [box.x + box.w * 0.8, box.y + box.h * 0.5]
+    ];
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    let n = 0;
+    puntos.forEach(([x, y]) => {
+      const px = ctx.getImageData(Math.max(0, Math.floor(x)), Math.max(0, Math.floor(y)), 1, 1).data;
+      if (px[3] < 40) return;
+      r += px[0];
+      g += px[1];
+      b += px[2];
+      n += 1;
+    });
+    if (!n) return "#1a1a1a";
+    return `rgb(${Math.round(r / n)},${Math.round(g / n)},${Math.round(b / n)})`;
   }
 
-  function vestirAccesorio(item, zone) {
-    const tren = { ...(trenExtra[zone] || trenExtra.cintura) };
+  function vestirCintura(correa, hebilla, img, box) {
+    const y = cinturaY - 18;
+    const ctx = correa.getContext("2d");
+    ctx.fillStyle = colorTela(img, box);
+    ctx.beginPath();
+    ctx.roundRect(136, y, 168, 16, 7);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.18)";
+    ctx.fillRect(136, y, 168, 3);
+    const h = hebilla.getContext("2d");
+    const bw = Math.max(1, box.w * 0.34);
+    const bh = Math.max(1, box.h * 0.55);
+    const bx = box.x + (box.w - bw) / 2;
+    const by = box.y + box.h * 0.2;
+    h.drawImage(img, bx, by, bw, bh, 188, y - 10, 64, 40);
+  }
+
+  function vestirManos(canvas, img, box) {
+    [[96, 508], [272, 508]].forEach(([x, y]) => {
+      pintarFoto(canvas, img, box, { x, y, ancho: 72, alto: 78 });
+    });
+  }
+
+  function lienzoAccesorio(zone) {
     const canvas = document.createElement("canvas");
     canvas.width = 440;
     canvas.height = 1120;
     canvas.className = "fit-capa fit-accesorio";
     canvas.dataset.zona = zone;
+    return canvas;
+  }
+
+  function vestirAccesorio(item, zone) {
+    const tren = { ...(trenExtra[zone] || trenExtra.cintura) };
+    const canvas = lienzoAccesorio(zone);
+    const extra = zone === "cintura" ? lienzoAccesorio("hebilla") : null;
     const image = new Image();
     image.src = foto(item);
     cuandoCargue(image, () => {
       const box = cajaDe(image) || { x: 0, y: 0, w: image.naturalWidth, h: image.naturalHeight };
       if (!box.w || !image.naturalWidth) return;
       if (zone === "cintura") {
-        vestirCintura(canvas, image, box);
+        vestirCintura(canvas, extra, image, box);
         return;
       }
-      if (zone === "pies") tren.base = 1038;
+      if (zone === "manos") {
+        vestirManos(canvas, image, box);
+        return;
+      }
+      if (zone === "pies") tren.base = planta;
       pintarFoto(canvas, image, box, tren);
     });
-    return canvas;
+    return extra ? [canvas, extra] : canvas;
   }
 
   function paint() {
@@ -358,8 +424,9 @@
     cuerpoCaja.className = "fit-body";
     stage.replaceChildren(cuerpoCaja);
     const base = figura("fit-blank");
-    if (puesto.pies) base.style.clipPath = "inset(0 0 6% 0)";
-    else if (puesto.abajo && !/\blicra\b|pantaloneta|\bfalda\b|bermuda/.test(plain(puesto.abajo.name))) base.style.clipPath = "inset(0 0 4% 0)";
+    const abajoCorto = puesto.abajo && /\blicra\b|pantaloneta|\bfalda\b|bermuda/.test(plain(puesto.abajo.name));
+    if (puesto.completo) base.style.clipPath = "inset(0 0 82% 0)";
+    else if (puesto.abajo && !abajoCorto) base.style.clipPath = "inset(0 0 58% 0)";
     cuerpoCaja.append(base);
     frames = [];
     extras = [];
@@ -370,15 +437,17 @@
     });
     if ((puesto.arriba || puesto.completo) && !puesto.cabeza) {
       const piel = figura("fit-piel");
-      piel.style.clipPath = "inset(0 0 86% 0)";
+      piel.style.clipPath = "inset(0 0 84% 0)";
       cuerpoCaja.append(piel);
     }
     accesoriosPuestos().forEach((item) => {
       const zone = zona(item);
       if (!trenExtra[zone]) return;
-      const lienzo = vestirAccesorio(item, zone);
-      cuerpoCaja.append(lienzo);
-      extras.push(lienzo);
+      const lienzos = vestirAccesorio(item, zone);
+      (Array.isArray(lienzos) ? lienzos : [lienzos]).forEach((lienzo) => {
+        cuerpoCaja.append(lienzo);
+        extras.push(lienzo);
+      });
     });
     angle = frames.length ? angle : 0;
     paint();
@@ -386,7 +455,7 @@
   }
 
   function quitar(id) {
-    ["arriba", "abajo", "completo", "cabeza", "pies", "cintura", "manos"].forEach((key) => {
+    ["arriba", "abajo", "completo", "cabeza", "cara", "pies", "cintura", "manos"].forEach((key) => {
       if (puesto[key] && puesto[key].id === id) puesto[key] = null;
     });
     puesto.extra = puesto.extra.filter((item) => item.id !== id);
@@ -508,7 +577,7 @@
       note.textContent = "En el carrito no hay prendas ni accesorios para vestir el maniquí.";
       return;
     }
-    ["arriba", "abajo", "completo", "cabeza", "pies", "cintura", "manos"].forEach((key) => { puesto[key] = null; });
+    ["arriba", "abajo", "completo", "cabeza", "cara", "pies", "cintura", "manos"].forEach((key) => { puesto[key] = null; });
     puesto.extra = [];
     items.forEach((item) => poner(item));
     pintarGrid();
