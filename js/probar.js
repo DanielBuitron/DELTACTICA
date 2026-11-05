@@ -80,6 +80,18 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     return typeof window.productImage === "function" ? window.productImage(item) : (item.image || "");
   }
 
+  function sexoDe(item) {
+    const nombre = plain(item.name);
+    if (/femenin|\bmujer\b|\bdama\b/.test(nombre)) return "f";
+    if (/masculin|\bhombre\b|caballer/.test(nombre)) return "m";
+    return "";
+  }
+
+  function coincide(item) {
+    const marca = sexoDe(item);
+    return !marca || marca === sexo;
+  }
+
   function corte(item) {
     const nombre = plain(item.name);
     if (/\bfalda\b/.test(nombre)) return "falda";
@@ -275,21 +287,25 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     [-1, 1].forEach((lado) => {
       const signo = lado;
       const hombro = new THREE.Vector3(signo * med.hombro, hombroY, 0);
-      cuerpo.add(cadena([
+      const brazo = cadena([
         hombro,
         new THREE.Vector3(signo * codo.x, codo.y, codo.z),
         new THREE.Vector3(signo * muneca.x, muneca.y, muneca.z)
-      ], [med.brazo * 1.35, med.brazo, med.brazo * 0.72], piel));
+      ], [med.brazo * 1.35, med.brazo, med.brazo * 0.72], piel);
+      brazo.name = signo < 0 ? "brazoI" : "brazoD";
+      cuerpo.add(brazo);
       const mano = new THREE.Mesh(new THREE.CapsuleGeometry(med.brazo * 0.55, 0.07, 4, 8), piel);
       mano.position.set(signo * muneca.x, muneca.y - 0.06, muneca.z + 0.01);
       mano.name = signo < 0 ? "manoI" : "manoD";
       mano.castShadow = true;
       cuerpo.add(mano);
-      cuerpo.add(cadena([
+      const pierna = cadena([
         new THREE.Vector3(signo * med.cadera, caderaY, 0),
         new THREE.Vector3(signo * rodilla.x, rodilla.y, rodilla.z),
         new THREE.Vector3(signo * tobillo.x, tobillo.y, tobillo.z)
-      ], [med.pierna * 1.35, med.pierna, med.pierna * 0.72], piel));
+      ], [med.pierna * 1.35, med.pierna, med.pierna * 0.72], piel);
+      pierna.name = signo < 0 ? "piernaI" : "piernaD";
+      cuerpo.add(pierna);
       const pie = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, 0.22), piel);
       pie.position.set(signo * tobillo.x, 0.03, 0.06);
       pie.name = signo < 0 ? "pieI" : "pieD";
@@ -315,6 +331,117 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       metalness: 0.02,
       side: THREE.FrontSide
     });
+  }
+
+  const cacheTelas = new Map();
+
+  function texturaDe(imagen, x, y, w, h) {
+    const lienzo = document.createElement("canvas");
+    const ancho = Math.max(1, Math.round(w));
+    const alto = Math.max(1, Math.round(h));
+    lienzo.width = ancho;
+    lienzo.height = alto;
+    lienzo.getContext("2d").drawImage(imagen, x, y, ancho, alto, 0, 0, ancho, alto);
+    const tex = new THREE.CanvasTexture(lienzo);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 8;
+    return { tex, aspect: ancho / alto };
+  }
+
+  function recortar(url) {
+    if (!url) return Promise.resolve(null);
+    if (cacheTelas.has(url)) return cacheTelas.get(url);
+    const promesa = new Promise((resolve) => {
+      const imagen = new Image();
+      imagen.onload = () => {
+        const w = imagen.naturalWidth;
+        const h = imagen.naturalHeight;
+        if (!w || !h) {
+          resolve(null);
+          return;
+        }
+        const base = document.createElement("canvas");
+        base.width = w;
+        base.height = h;
+        const ctx = base.getContext("2d", { willReadFrequently: true });
+        ctx.drawImage(imagen, 0, 0);
+        let data = null;
+        try {
+          data = ctx.getImageData(0, 0, w, h).data;
+        } catch (error) {
+          resolve(texturaDe(imagen, 0, 0, w, h));
+          return;
+        }
+        const step = Math.max(1, Math.round(Math.min(w, h) / 200));
+        let minX = w;
+        let minY = h;
+        let maxX = 0;
+        let maxY = 0;
+        let n = 0;
+        for (let py = 0; py < h; py += step) {
+          for (let px = 0; px < w; px += step) {
+            const i = (py * w + px) * 4;
+            if (data[i + 3] < 28) continue;
+            const mx = Math.max(data[i], data[i + 1], data[i + 2]);
+            const mn = Math.min(data[i], data[i + 1], data[i + 2]);
+            if (mx > 244 && mx - mn < 16) continue;
+            n += 1;
+            if (px < minX) minX = px;
+            if (py < minY) minY = py;
+            if (px > maxX) maxX = px;
+            if (py > maxY) maxY = py;
+          }
+        }
+        if (n < 12) resolve(texturaDe(imagen, 0, 0, w, h));
+        else resolve(texturaDe(imagen, minX, minY, Math.max(1, maxX - minX), Math.max(1, maxY - minY)));
+      };
+      imagen.onerror = () => resolve(null);
+      imagen.src = url;
+    });
+    cacheTelas.set(url, promesa);
+    return promesa;
+  }
+
+  function lamina(entrada, ancho, alto, y, z, rotY) {
+    const mat = new THREE.MeshStandardMaterial({
+      map: entrada.tex,
+      transparent: true,
+      alphaTest: 0.16,
+      roughness: 0.58,
+      metalness: 0.02,
+      side: THREE.FrontSide
+    });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(ancho, alto), mat);
+    mesh.position.set(0, y, z);
+    mesh.rotation.y = rotY || 0;
+    return mesh;
+  }
+
+  function cajaVisual(aspect, anchoMax, altoMax) {
+    let ancho = anchoMax;
+    let alto = ancho / Math.max(0.08, aspect);
+    if (alto > altoMax) {
+      alto = altoMax;
+      ancho = alto * aspect;
+    }
+    return { ancho, alto };
+  }
+
+  function ponerCara(grupo, entrada, anchoMax, altoMax, tope, z) {
+    if (!entrada) return null;
+    const caja = cajaVisual(entrada.aspect, anchoMax, altoMax);
+    grupo.add(lamina(entrada, caja.ancho, caja.alto, tope - caja.alto / 2, z, 0));
+    return caja;
+  }
+
+  async function telasDe(item) {
+    const clave = item.id.toLowerCase().replace(/-/g, "");
+    if (esPrenda(item)) {
+      const frente = await recortar(`${root}img/puesto/${clave}-01.webp?v=13`);
+      const espalda = await recortar(`${root}img/puesto/${clave}-03.webp?v=13`);
+      return { frente: frente || await recortar(foto(item)), espalda };
+    }
+    return { frente: await recortar(foto(item)), espalda: null };
   }
 
   function colorDe(item) {
@@ -387,27 +514,81 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     return grupo;
   }
 
-  function agregarPrenda(item, color) {
+  function aplicarEstilo(grupo, item, telas, slot, tipo) {
+    if (!telas || !telas.frente) return;
+    const med = medidas;
+    const frente = telas.frente;
+    const espalda = telas.espalda;
+    const ponerEspalda = (cara, tope, z) => {
+      if (espalda && cara) grupo.add(lamina(espalda, cara.ancho, cara.alto, tope - cara.alto / 2, z, Math.PI));
+    };
+    if (slot === "camisa" || slot === "chaqueta" || slot === "chaleco") {
+      const tope = med.cuelloY + 0.04;
+      const cara = ponerCara(grupo, frente, slot === "chaleco" ? 0.46 : 0.72, slot === "chaqueta" ? 0.82 : 0.66, tope, slot === "chaqueta" ? 0.26 : 0.22);
+      ponerEspalda(cara, tope, -0.2);
+    } else if (slot === "completo") {
+      const tope = med.cuelloY + 0.04;
+      const cara = ponerCara(grupo, frente, 0.66, 1.4, tope, 0.22);
+      ponerEspalda(cara, tope, -0.2);
+    } else if (slot === "inferior") {
+      const tope = med.cinturaY + 0.1;
+      const alto = tipo === "corto" || tipo === "falda" ? 0.52 : 1.02;
+      const caja = cajaVisual(frente.aspect, 0.62, alto);
+      const cara = { ancho: Math.min(0.62, Math.max(caja.ancho, alto * frente.aspect * 0.85)), alto };
+      if (cara.ancho / frente.aspect < alto) cara.alto = cara.ancho / frente.aspect;
+      grupo.add(lamina(frente, cara.ancho, cara.alto, tope - cara.alto / 2, 0.2, 0));
+      ponerEspalda(cara, tope, -0.18);
+    } else if (slot === "gorra") {
+      ponerCara(grupo, frente, med.cabezaR * 2.7, med.cabezaR * 2.1, med.cabezaY + med.cabezaR * 2.2, med.cabezaR * 1.25);
+    } else if (slot === "gafas") {
+      ponerCara(grupo, frente, 0.22, 0.09, med.cabezaY + 0.06, med.cabezaR * 1.25);
+    } else if (slot === "cinturon") {
+      ponerCara(grupo, frente, 0.5, 0.18, med.cinturaY + 0.12, 0.24);
+    } else if (slot === "calzado") {
+      ponerCara(grupo, frente, 0.46, 0.22, 0.22, 0.18);
+    } else if (slot === "guantes") {
+      ponerCara(grupo, frente, 0.32, 0.2, 0.9, 0.14);
+    }
+  }
+
+  function agregarPrenda(item, color, telas) {
     const med = medidas;
     const material = tela(color);
     const grupo = new THREE.Group();
     grupo.name = item.id;
     const tipo = corte(item);
     const slot = pieza(item);
+    const conFoto = !!(telas && telas.frente);
     const conPantalon = puesto.inferior && corte(puesto.inferior) === "largo";
+    if (conFoto) {
+      aplicarEstilo(grupo, item, telas, slot, tipo);
+      if (slot === "calzado" || slot === "guantes" || slot === "camisa" || slot === "chaqueta" || slot === "completo" || slot === "inferior") {
+        const mangaLarga = tipo !== "manga-corta" && (slot === "camisa" || slot === "chaqueta" || slot === "completo");
+        const piernaLarga = slot === "completo" || (slot === "inferior" && tipo !== "corto" && tipo !== "falda");
+        cuerpo.traverse((nodo) => {
+          const nombre = nodo.name || "";
+          if (slot === "calzado" && /^pie/.test(nombre)) nodo.visible = false;
+          if (slot === "guantes" && /^mano/.test(nombre)) nodo.visible = false;
+          if (mangaLarga && (/^brazo/.test(nombre) || /^mano/.test(nombre))) nodo.visible = false;
+          if (piernaLarga && (/^pierna/.test(nombre) || /^pie/.test(nombre))) nodo.visible = false;
+        });
+      }
+      ropa.add(grupo);
+      return;
+    }
     if (slot === "camisa") {
       const porDentro = tipo !== "fuera" && (conPantalon || puesto.completo);
       const bajo = porDentro ? 0.8 : med.caderaY - 0.02;
       grupo.add(casco(med, bajo, med.cuelloY - 0.02, 0.02, material));
-      grupo.add(brazosDe(med, med.brazo + 0.016, material, tipo === "manga-corta"));
+      if (!conFoto) grupo.add(brazosDe(med, med.brazo + 0.016, material, tipo === "manga-corta"));
     } else if (slot === "chaleco") {
       grupo.add(casco(med, med.cinturaY - 0.02, 1.42, 0.034, material));
     } else if (slot === "chaqueta") {
       grupo.add(casco(med, med.caderaY - 0.08, med.cuelloY - 0.01, 0.046, material));
-      grupo.add(brazosDe(med, med.brazo + 0.03, material, false));
+      if (!conFoto) grupo.add(brazosDe(med, med.brazo + 0.03, material, false));
     } else if (slot === "completo") {
       grupo.add(casco(med, med.cinturaY, med.cuelloY - 0.02, 0.02, material));
-      grupo.add(brazosDe(med, med.brazo + 0.016, material, false));
+      if (!conFoto) grupo.add(brazosDe(med, med.brazo + 0.016, material, false));
       grupo.add(casco(med, 0.78, med.cinturaY + 0.04, 0.03, material));
       grupo.add(piernasDe(med, med.pierna + 0.02, 0.08, material));
     } else if (slot === "inferior" && tipo === "falda") {
@@ -472,6 +653,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       visera.castShadow = true;
       grupo.add(copa, visera);
     }
+    aplicarEstilo(grupo, item, telas, slot, tipo);
     ropa.add(grupo);
   }
 
@@ -513,7 +695,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     desechar(ropa);
     ropa.clear();
     cuerpo.traverse((nodo) => {
-      if (nodo.name === "pieI" || nodo.name === "pieD" || nodo.name === "manoI" || nodo.name === "manoD") nodo.visible = true;
+      if (/^(pie|mano|brazo|pierna)/.test(nodo.name || "")) nodo.visible = true;
     });
     const entradas = listaPuesta();
     await Promise.all(entradas.map(async (item) => {
@@ -527,9 +709,9 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
         }
       }
       if (gen !== generacion) return;
-      const color = await colorDe(item);
+      const [color, telas] = await Promise.all([colorDe(item), telasDe(item)]);
       if (gen !== generacion) return;
-      agregarPrenda(item, color);
+      agregarPrenda(item, color, telas);
     }));
   }
 
@@ -538,8 +720,8 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     nameEl.textContent = puestos.map((item) => item.name).join(" + ") || "Maniquí en blanco";
     if (!puestos.length) {
       note.textContent = sexo === "f"
-        ? "Maniquí femenino. Elija una prenda: cada una ocupa su lugar y se puede combinar."
-        : "Maniquí masculino. Elija una prenda: cada una ocupa su lugar y se puede combinar.";
+        ? "Maniquí femenino. Aquí salen las prendas de mujer y las que sirven para los dos."
+        : "Maniquí masculino. Aquí salen las prendas de hombre y las que sirven para los dos.";
     }
     if (add) add.hidden = !puestos.length;
     picksEl.innerHTML = puestos.map((item) => `<article class="fit-pick is-on">
@@ -559,7 +741,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
 
   function poner(item) {
     const slot = pieza(item);
-    if (!slot) return;
+    if (!slot || !coincide(item)) return;
     if (estaPuesto(item.id)) {
       quitar(item.id);
       texto();
@@ -605,12 +787,13 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   }
 
   function pintarTabs() {
-    const visibles = nombres.filter(([id]) => catalogo.some((item) => categoria(item) === id));
+    const visibles = nombres.filter(([id]) => catalogo.some((item) => categoria(item) === id && coincide(item)));
+    if (visibles.length && !visibles.some(([id]) => id === tab)) tab = visibles[0][0];
     tabs.innerHTML = visibles.map(([id, etiqueta]) => `<button class="filter${id === tab ? " is-active" : ""}" type="button" data-fit-tab="${id}">${etiqueta}</button>`).join("");
   }
 
   function pintarGrid() {
-    const lista = catalogo.filter((item) => categoria(item) === tab);
+    const lista = catalogo.filter((item) => categoria(item) === tab && coincide(item));
     grid.innerHTML = lista.map((item) => {
       const puestoAhora = estaPuesto(item.id);
       return `<article class="card${puestoAhora ? " is-on" : ""}">
@@ -621,7 +804,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
           <button class="consult" type="button" data-fit-try="${item.id}">${puestoAhora ? "Quitar" : "Poner"}</button>
         </div>
       </article>`;
-    }).join("") || `<p class="lead">En esta categoría no hay fotos listas.</p>`;
+    }).join("") || `<p class="lead">En este maniquí no hay prendas de esta categoría.</p>`;
   }
 
   function marcarSexo() {
@@ -685,10 +868,15 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   document.querySelectorAll("[data-fit-sexo]").forEach((boton) => {
     boton.addEventListener("click", () => {
       sexo = boton.dataset.fitSexo === "f" ? "f" : "m";
+      orden.forEach((clave) => {
+        if (puesto[clave] && !coincide(puesto[clave])) puesto[clave] = null;
+      });
       marcarSexo();
       construirCuerpo();
       texto();
       vestir();
+      pintarTabs();
+      pintarGrid();
     });
   });
 
@@ -769,6 +957,12 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   const presetId = String(new URLSearchParams(location.search).get("id") || "").toUpperCase();
   const preset = catalogo.find((item) => item.id === presetId);
   if (preset && categoria(preset)) {
+    const marca = sexoDe(preset);
+    if (marca && marca !== sexo) {
+      sexo = marca;
+      marcarSexo();
+      construirCuerpo();
+    }
     tab = categoria(preset);
     pintarTabs();
     poner(preset);
@@ -782,7 +976,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
         construirCuerpo();
         guardado.ids.forEach((id) => {
           const item = catalogo.find((entry) => entry.id === id);
-          if (item && pieza(item)) puesto[pieza(item)] = item;
+          if (item && pieza(item) && coincide(item)) puesto[pieza(item)] = item;
         });
         texto();
         vestir();
