@@ -145,7 +145,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
         pierna: 0.062,
         mano: [0.46, 0.88, 0.2],
         pie: [0.17, 0.09],
-        brazoPuntos: [[0.1, 1.28, 0.06], [0.18, 1.24, 0.045], [0.26, 1.14, 0.03], [0.35, 1.04, 0.05], [0.46, 0.9, 0.18]],
+        brazoPuntos: [[0.12, 1.26, 0.04], [0.18, 1.2, 0.03], [0.27, 1.1, 0.03], [0.36, 0.98, 0.06], [0.45, 0.88, 0.16]],
         piernaPuntos: [[0.09, 0.82, 0.02], [0.11, 0.68, 0.03], [0.13, 0.46, 0.04], [0.15, 0.26, 0.03], [0.16, 0.07, 0.04]]
       };
     }
@@ -166,15 +166,15 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       pierna: 0.07,
       mano: [0.56, 1, 0.28],
       pie: [0.2, 0.085],
-      brazoPuntos: [[0.14, 1.46, 0.06], [0.24, 1.4, 0.045], [0.33, 1.28, 0.03], [0.42, 1.14, 0.05], [0.55, 0.98, 0.22]],
+      brazoPuntos: [[0.2, 1.4, 0.045], [0.28, 1.32, 0.035], [0.36, 1.2, 0.03], [0.45, 1.08, 0.07], [0.54, 0.98, 0.18]],
       piernaPuntos: [[0.11, 0.95, 0.02], [0.14, 0.76, 0.02], [0.15, 0.52, 0.03], [0.18, 0.3, 0.02], [0.2, 0.08, 0.04]]
     };
   }
 
   function perfil(med) {
     return med.mujer
-      ? [[0.7, 0.19, 0.1], [0.84, 0.185, 0.115], [0.96, 0.155, 0.1], [1.06, 0.15, 0.1], [1.16, 0.18, 0.11], [1.26, 0.22, 0.1], [1.32, 0.1, 0.07], [1.4, 0.055, 0.06]]
-      : [[0.86, 0.2, 0.12], [0.97, 0.19, 0.13], [1.08, 0.16, 0.115], [1.18, 0.155, 0.11], [1.28, 0.2, 0.125], [1.4, 0.25, 0.12], [1.48, 0.15, 0.085], [1.54, 0.075, 0.07]];
+      ? [[0.7, 0.175, 0.1], [0.84, 0.17, 0.11], [0.96, 0.145, 0.095], [1.06, 0.14, 0.095], [1.16, 0.155, 0.105], [1.24, 0.17, 0.1], [1.32, 0.09, 0.065], [1.4, 0.05, 0.055]]
+      : [[0.78, 0.19, 0.12], [0.97, 0.185, 0.13], [1.12, 0.16, 0.115], [1.26, 0.18, 0.12], [1.36, 0.24, 0.125], [1.44, 0.26, 0.115], [1.5, 0.11, 0.075], [1.56, 0.065, 0.06]];
   }
 
   function seccionEn(med, y) {
@@ -801,19 +801,18 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       const puntos = puntosBrazo(med, lado);
       const usados = corta ? puntos.slice(0, 3) : puntos;
       const radios = corta
-        ? [radio * 1.2, radio * 1.4, radio * 1.05]
-        : [radio * 1.75, radio * 1.6, radio * 1.25, radio * 1.05, radio * 0.9];
+        ? [radio * 1.15, radio * 1.05, radio * 0.9]
+        : [radio * 1.55, radio * 1.25, radio * 1.05, radio * 0.9, radio * 0.75];
       const u0 = lado < 0 ? 0.008 : 0.418;
       const u1 = lado < 0 ? 0.08 : 0.492;
       grupo.add(tuboTela(usados, radios, material, u0, u1));
-      const codos = corta ? [1] : [1, 2];
-      codos.forEach((indice) => {
-        const junta = new THREE.Mesh(new THREE.SphereGeometry(radios[indice] * 0.98, 24, 16), material);
-        junta.geometry.scale(1.08, 0.78, 0.9);
-        junta.geometry.translate(usados[indice].x, usados[indice].y, usados[indice].z);
+      if (!corta) {
+        const junta = new THREE.Mesh(new THREE.SphereGeometry(radios[0] * 0.85, 18, 12), material);
+        junta.geometry.scale(1.15, 0.65, 0.9);
+        junta.geometry.translate(usados[0].x, usados[0].y, usados[0].z);
         junta.castShadow = true;
         grupo.add(junta);
-      });
+      }
     });
   }
 
@@ -827,7 +826,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       puntos[puntos.length - 1].y = y1;
       const radios = corta
         ? [radio * 1.18, radio * 0.9]
-        : [radio * 1.28, radio * 1.08, radio * 0.84, radio * 0.78, radio * 0.62];
+        : [radio * 1.45, radio * 1.15, radio * 0.9, radio * 0.78, radio * 0.66];
       grupo.add(tuboTela(puntos, radios, material, lado < 0 ? 0.08 : 0.3, lado < 0 ? 0.22 : 0.44));
     });
   }
@@ -875,6 +874,72 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     return malla;
   }
 
+  function bandaCintura(med, y, material) {
+    const seccion = seccionEn(med, y);
+    const rx = seccion.x + 0.018;
+    const rz = seccion.z + 0.014;
+    const alto = 0.034;
+    const grueso = 0.006;
+    const seg = 48;
+    const posiciones = [];
+    const indices = [];
+    const anillo = (radioX, radioZ, altura) => {
+      const base = posiciones.length / 3;
+      for (let i = 0; i <= seg; i += 1) {
+        const angulo = (i / seg) * Math.PI * 2;
+        posiciones.push(Math.sin(angulo) * radioX, altura, Math.cos(angulo) * radioZ + med.adelante);
+      }
+      return base;
+    };
+    const abajoDentro = anillo(rx, rz, y - alto / 2);
+    const abajoFuera = anillo(rx + grueso, rz + grueso, y - alto / 2);
+    const arribaDentro = anillo(rx, rz, y + alto / 2);
+    const arribaFuera = anillo(rx + grueso, rz + grueso, y + alto / 2);
+    const unir = (origen, destino) => {
+      for (let i = 0; i < seg; i += 1) {
+        indices.push(origen + i, destino + i, origen + i + 1, destino + i, destino + i + 1, origen + i + 1);
+      }
+    };
+    unir(abajoFuera, arribaFuera);
+    unir(arribaDentro, abajoDentro);
+    unir(abajoDentro, abajoFuera);
+    unir(arribaFuera, arribaDentro);
+    const geometria = new THREE.BufferGeometry();
+    geometria.setAttribute("position", new THREE.Float32BufferAttribute(posiciones, 3));
+    geometria.setIndex(indices);
+    geometria.computeVertexNormals();
+    const malla = new THREE.Mesh(geometria, material);
+    malla.castShadow = true;
+    return malla;
+  }
+
+  function viseraGorra(ancho, largo, material) {
+    const seg = 14;
+    const posiciones = [];
+    const uvs = [];
+    const indices = [];
+    for (let j = 0; j <= 1; j += 1) {
+      for (let i = 0; i <= seg; i += 1) {
+        const t = i / seg;
+        const angulo = (t - 0.5) * 1.2;
+        posiciones.push(Math.sin(angulo) * ancho, -j * j * 0.016, j * largo);
+        uvs.push(t, j);
+      }
+    }
+    const columnas = seg + 1;
+    for (let i = 0; i < seg; i += 1) {
+      indices.push(i, i + columnas, i + 1, i + columnas, i + columnas + 1, i + 1);
+    }
+    const geometria = new THREE.BufferGeometry();
+    geometria.setAttribute("position", new THREE.Float32BufferAttribute(posiciones, 3));
+    geometria.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geometria.setIndex(indices);
+    geometria.computeVertexNormals();
+    const malla = new THREE.Mesh(geometria, material);
+    malla.castShadow = true;
+    return malla;
+  }
+
   function agregarPrenda(item, color, telas) {
     const med = medidas;
     const solido = tela(color);
@@ -888,9 +953,9 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     if (slot === "camisa" || slot === "chaqueta" || slot === "chaleco") {
       const porDentro = slot === "camisa" && tipo !== "fuera" && (conPantalon || puesto.completo);
       const cuello = med.cuelloY - 0.012;
-      let bajoBase = med.caderaY - 0.16;
-      let vuelo = 0.028;
-      let caida = tipo === "fuera" ? 0.72 : 0.2;
+      let bajoBase = med.cinturaY - 0.02;
+      let vuelo = 0.008;
+      let caida = tipo === "fuera" ? 0.22 : 0.18;
       if (slot === "chaqueta") {
         bajoBase = med.caderaY - 0.02;
         vuelo = 0.016;
@@ -905,12 +970,12 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
         caida = 0.15;
       }
       const bajo = cuello - (cuello - bajoBase) * (slot === "camisa" ? ajuste.largo : 1);
-      const holgura = (slot === "chaqueta" ? 0.05 : slot === "chaleco" ? 0.034 : (tipo === "fuera" ? 0.036 : (porDentro ? 0.012 : 0.02))) * ajuste.ancho;
+      const holgura = (slot === "chaqueta" ? 0.032 : slot === "chaleco" ? 0.024 : (tipo === "fuera" ? 0.02 : (porDentro ? 0.01 : 0.016))) * ajuste.ancho;
       grupo.add(concha(med, Math.min(bajo, cuello - 0.18), cuello, holgura, telaPrenda, 1, vuelo, caida));
         if (slot === "chaleco") ocultarCuerpo(/^hombroCarne/);
         if (slot !== "chaleco") {
         const corta = slot === "camisa" && tipo === "manga-corta";
-        const radio = med.brazo + (slot === "chaqueta" ? 0.028 : 0.018);
+        const radio = med.brazo + (slot === "chaqueta" ? 0.016 : 0.01);
         sumarMangas(grupo, med, telaPrenda, corta, ajuste.manga, radio);
         if (!corta) ocultarCuerpo(/^brazo|^mano|^hombroCarne/);
       }
@@ -925,34 +990,27 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       const falda = concha(med, med.caderaY - 0.4, med.cinturaY + 0.04, 0.02 * ajuste.cintura, telaPrenda, ajuste.ancho, 0.06);
       grupo.add(falda);
     } else if (slot === "inferior") {
-      const yFin = tipo === "corto" ? med.caderaY - 0.42 : 0.06;
-      const cadera = med.caderaY - (tipo === "corto" ? 0.34 : 0.3);
+      const yFin = tipo === "corto" ? med.caderaY - 0.42 : 0.12;
+      const cadera = med.caderaY - (tipo === "corto" ? 0.3 : 0.28);
       const tobillo = cadera - (cadera - yFin) * ajuste.pierna;
       const buzoEncima = puesto.camisa && corte(puesto.camisa) === "fuera";
       const camisaDentro = puesto.camisa && corte(puesto.camisa) !== "fuera";
       const encima = buzoEncima || !!puesto.chaqueta || !!puesto.chaleco;
       const cima = camisaDentro ? med.cinturaY + 0.04 : (encima ? med.cinturaY + 0.02 : med.cinturaY + 0.015);
-      const caderaMalla = concha(med, cadera, Math.max(cima, cadera + 0.16), 0.04 * ajuste.cintura, telaPrenda, ajuste.ancho, 0.01, 0.15);
+      const caderaMalla = concha(med, cadera, Math.max(cima, cadera + 0.22), 0.042 * ajuste.cintura, telaPrenda, ajuste.ancho, 0.004, 0.08);
       grupo.add(caderaMalla);
-      sumarPiernas(grupo, med, telaPrenda, med.caderaY - 0.02, tobillo, (med.pierna + 0.02) * ajuste.ancho);
+      sumarPiernas(grupo, med, telaPrenda, med.caderaY + 0.02, tobillo, (med.pierna + 0.02) * ajuste.ancho);
       if (tipo !== "corto") ocultarCuerpo(/^pierna|^pie|^nalga|^caderaCuerpo/);
     } else if (slot === "cinturon") {
       const base = puesto.inferior || puesto.completo;
       if (base && admiteCinturon(base)) {
-        const cintura = seccionEn(med, med.cinturaY);
-        const aro = new THREE.Mesh(new THREE.TorusGeometry(1, 0.011, 8, 36), solido);
-        aro.rotation.x = Math.PI / 2;
-        aro.position.y = med.cinturaY + 0.02;
-        aro.scale.set(cintura.x + 0.028, cintura.z + 0.028, 1);
-        aro.castShadow = true;
-        grupo.add(aro);
+        const yReata = med.cinturaY + 0.01;
+        grupo.add(bandaCintura(med, yReata, solido));
         const foto = fotoSuelta(telas && telas.frente);
         if (foto) {
-          const aspecto = telas.frente.aspect || 2.4;
-          const ancho = Math.min(0.28, cintura.x * 1.3);
-          const alto = Math.min(0.11, Math.max(0.045, ancho / aspecto));
-          const hebilla = mallaCurva(ancho * 0.55, alto, 1.1, foto);
-          hebilla.position.set(0, med.cinturaY + 0.02, cintura.z + 0.01);
+          const cintura = seccionEn(med, med.cinturaY);
+          const hebilla = mallaCurva(0.045, 0.04, 0.7, foto);
+          hebilla.position.set(0, yReata, med.adelante + cintura.z + 0.02);
           grupo.add(hebilla);
         }
       }
@@ -961,19 +1019,23 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       const foto = fotoSuelta(telas && telas.frente);
       [-1, 1].forEach((lado) => {
         const x = lado * med.pie[0];
-        const suela = new THREE.Mesh(new THREE.BoxGeometry(0.12, alta ? 0.05 : 0.04, 0.27), solido);
-        suela.position.set(x, 0.03, med.pie[1]);
+        const z = med.pie[1];
+        const suela = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.045, 0.36), solido);
+        suela.position.set(x, 0.028, z + 0.07);
         suela.castShadow = true;
-        const cana = new THREE.Mesh(new THREE.BoxGeometry(0.1, alta ? 0.26 : 0.08, 0.16), solido);
-        cana.position.set(x, alta ? 0.16 : 0.08, med.pie[1] - 0.02);
-        cana.castShadow = true;
-        grupo.add(suela, cana);
+        const empeine = new THREE.Mesh(new THREE.BoxGeometry(0.13, alta ? 0.12 : 0.13, 0.24), solido);
+        empeine.position.set(x, alta ? 0.1 : 0.09, z + 0.06);
+        empeine.castShadow = true;
+        grupo.add(suela, empeine);
+        if (alta) {
+          const cana = new THREE.Mesh(new THREE.BoxGeometry(0.092, 0.11, 0.11), solido);
+          cana.position.set(x, 0.12, z - 0.02);
+          cana.castShadow = true;
+          grupo.add(cana);
+        }
         if (foto) {
-          const aspecto = telas.frente.aspect || 1.4;
-          const ancho = 0.16;
-          const alto = Math.min(alta ? 0.22 : 0.12, Math.max(0.08, ancho / aspecto));
-          const cara = mallaCurva(ancho * 0.45, alto, 0.8, foto);
-          cara.position.set(x, alta ? 0.12 : 0.07, med.pie[1] + 0.1);
+          const cara = mallaCurva(0.055, alta ? 0.15 : 0.08, 0.4, foto);
+          cara.position.set(x + lado * 0.05, alta ? 0.09 : 0.05, z + 0.01);
           grupo.add(cara);
         }
       });
@@ -982,7 +1044,8 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       const foto = fotoSuelta(telas && telas.frente);
       [-1, 1].forEach((lado) => {
         const mano = new THREE.Vector3(lado * med.mano[0], med.mano[1], med.mano[2]);
-        const volumen = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.11, 0.04), solido);
+        const volumen = new THREE.Mesh(new THREE.SphereGeometry(0.045, 16, 12), solido);
+        volumen.scale.set(1.15, 0.7, 0.85);
         volumen.position.copy(mano);
         volumen.castShadow = true;
         grupo.add(volumen);
@@ -1006,20 +1069,19 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       lentes.position.set(0, med.cabezaY - 0.02, med.cabezaZ + med.cabezaR * 0.8);
       grupo.add(lentes);
     } else if (slot === "gorra") {
-      const copa = new THREE.Mesh(new THREE.SphereGeometry(med.cabezaR * 1.05, 28, 16, 0, Math.PI * 2, 0, Math.PI * 0.52), solido);
-      copa.position.set(0, med.cabezaY + med.cabezaR * 0.2, med.cabezaZ);
+      const r = med.cabezaR;
+      const copa = new THREE.Mesh(new THREE.SphereGeometry(r * 1.2, 32, 18, 0, Math.PI * 2, 0, Math.PI * 0.52), solido);
+      copa.scale.set(1.02, 0.78, 1.08);
+      copa.position.set(0, med.cabezaY + r * 0.55, med.cabezaZ);
       copa.castShadow = true;
-      const visera = new THREE.Mesh(new THREE.BoxGeometry(med.cabezaR * 1.35, 0.012, med.cabezaR * 0.72), solido);
-      visera.position.set(0, med.cabezaY - med.cabezaR * 0.05, med.cabezaZ + med.cabezaR * 1.15);
-      visera.castShadow = true;
+      const visera = viseraGorra(r * 0.95, r * 0.7, solido);
+      visera.position.set(0, med.cabezaY + r * 0.22, med.cabezaZ + r * 0.7);
+      visera.rotation.x = 0.28;
       grupo.add(copa, visera);
       const foto = fotoSuelta(telas && telas.frente);
       if (foto) {
-        const aspecto = telas.frente.aspect || 1;
-        const ancho = med.cabezaR * 2.1;
-        const alto = Math.min(med.cabezaR * 1.45, Math.max(med.cabezaR * 0.85, (ancho * 0.9) / aspecto));
-        const frenteGorra = mallaCurva(ancho * 0.48, alto, 1.25, foto);
-        frenteGorra.position.set(0, med.cabezaY + med.cabezaR * 0.05, med.cabezaZ + med.cabezaR * 0.55);
+        const frenteGorra = mallaCurva(r * 0.62, r * 0.48, 0.65, foto);
+        frenteGorra.position.set(0, med.cabezaY + r * 0.55, med.cabezaZ + r * 0.95);
         grupo.add(frenteGorra);
       }
     }
