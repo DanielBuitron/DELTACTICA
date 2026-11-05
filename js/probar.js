@@ -100,36 +100,33 @@
     return todosPuestos().some((item) => item.id === id);
   }
 
-  const trenSuperior = { y: 148, alto: 340, ancho: 336 };
-  const trenInferior = { y: 400, alto: 630, ancho: 400 };
-  const trenCompleto = { y: 164, alto: 830, ancho: 336 };
+  const cuello = 150;
+  const cinturaY = 448;
+  const tobillo = 1005;
+  const trenSuperior = { y: cuello, alto: cinturaY - cuello + 20, ancho: 286 };
+  const trenInferior = { y: cinturaY - 16, alto: tobillo - (cinturaY - 16), ancho: 400, soporte: true };
+  const trenCompleto = { y: cuello, alto: tobillo - cuello, ancho: 286 };
   const trenExtra = {
-    cabeza: { y: 8, alto: 250, ancho: 230, base: 210 },
-    cara: { y: 130, alto: 40, ancho: 120 },
-    cintura: { y: 340, alto: 120, ancho: 320 },
-    pies: { y: 720, alto: 170, ancho: 270, base: 900 },
-    manos: { y: 400, alto: 110, ancho: 120, x: 300 },
+    cabeza: { y: 28, alto: 128, ancho: 112, base: 152 },
+    cara: { y: 104, alto: 26, ancho: 72 },
+    cintura: { y: cinturaY - 6, alto: 26, ancho: 220 },
+    pies: { y: 940, alto: 92, ancho: 156, base: 1038 },
+    manos: { y: 380, alto: 72, ancho: 64, x: 336 },
   };
 
-  function figura(clase, soloCabeza) {
+  function figura(clase) {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("class", clase);
     svg.setAttribute("viewBox", "0 0 440 1120");
     svg.setAttribute("aria-hidden", "true");
-    const cuerpo = `<defs><linearGradient id="dt-volumen" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b7b1a6"/><stop offset="0.18" stop-color="#f7f4ee"/><stop offset="0.48" stop-color="#fffdfb"/><stop offset="0.78" stop-color="#efeae2"/><stop offset="1" stop-color="#aea79c"/></linearGradient></defs>
-      <ellipse cx="220" cy="1048" rx="72" ry="10" fill="rgba(40,32,20,0.16)"/>
-      <path fill="url(#dt-volumen)" d="M158 214c-8 40-12 110-2 190 6 48 4 90 12 136h104c8-46 6-88 12-136 10-80 6-150-2-190-18 16-48 24-68 24s-50-8-68-24z"/>
-      <path fill="url(#dt-volumen)" d="M170 530c-4 50-8 140-4 250 2 40 8 70 22 78 12 6 22-8 22-28 0-80 2-180 4-250 0-16-12-36-22-42-10-4-18-4-22-8z"/>
-      <path fill="url(#dt-volumen)" d="M270 530c4 50 8 140 4 250-2 40-8 70-22 78-12 6-22-8-22-28 0-80-2-180-4-250 0-16 12-36 22-42 10-4 18-4 22-8z"/>
-      <path fill="#f3efe8" d="M196 148h48c2 28 4 60 2 96h-52c-2-36 0-68 2-96z"/>
-      <path fill="#efeae2" d="M198 156c4 24 8 42 10 58h24c2-16 6-34 10-58-8 8-28 8-44 0z"/>
-      <ellipse cx="220" cy="118" rx="42" ry="48" fill="url(#dt-volumen)"/>
-      <ellipse cx="206" cy="114" rx="22" ry="32" fill="#fffdfb" opacity="0.55"/>`;
-    const cabeza = `<ellipse cx="220" cy="148" rx="48" ry="54" fill="#f4f0e8" stroke="#c8c1b4" stroke-width="2"/><ellipse cx="204" cy="140" rx="24" ry="36" fill="#fffdfb" opacity="0.72"/><ellipse cx="238" cy="154" rx="14" ry="28" fill="#cfc8bc" opacity="0.45"/>`;
-    const corte = cuerpo.indexOf('<path fill="#efeae2"');
-    const sinCabeza = corte > 0 ? cuerpo.slice(0, corte) : cuerpo;
-    if (soloCabeza === "sin-cabeza") svg.innerHTML = sinCabeza;
-    else svg.innerHTML = soloCabeza ? cabeza : cuerpo;
+    svg.innerHTML = `<defs><linearGradient id="dt-volumen" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b7b1a6"/><stop offset="0.2" stop-color="#f7f4ee"/><stop offset="0.5" stop-color="#fffdfb"/><stop offset="0.8" stop-color="#efeae2"/><stop offset="1" stop-color="#aea79c"/></linearGradient></defs>
+      <ellipse cx="220" cy="1052" rx="54" ry="8" fill="rgba(40,32,20,0.16)"/>
+      <path fill="url(#dt-volumen)" d="M172 492c-4 70-8 240 0 430 2 24 12 42 26 44 12 1 20-14 20-34 0-130 2-300 4-410 0-14-16-24-26-26-12-2-22 4-24-4z"/>
+      <path fill="url(#dt-volumen)" d="M268 492c4 70 8 240 0 430-2 24-12 42-26 44-12 1-20-14-20-34 0-130-2-300-4-410 0-14 16-24 26-26 12-2 22 4 24-4z"/>
+      <path fill="url(#dt-volumen)" d="M150 168c-8 40-2 130 14 220 8 48 18 86 30 112h52c12-26 22-64 30-112 16-90 22-180 14-220-24 16-62 24-70 24s-46-8-70-24z"/>
+      <path fill="#efeae2" d="M204 122c2 14 4 26 6 40h20c2-14 4-26 6-40-6 4-16 6-16 6s-10-2-16-6z"/>
+      <ellipse cx="220" cy="86" rx="32" ry="38" fill="url(#dt-volumen)"/>
+      <ellipse cx="208" cy="80" rx="14" ry="22" fill="#fffdfb" opacity="0.55"/>`;
     return svg;
   }
 
@@ -217,10 +214,10 @@
     const corto = /\blicra\b|pantaloneta|\bfalda\b|bermuda/.test(plain(item.name));
     const largo = /chaqueta|chaleco/.test(plain(item.name));
     const tren = clase === "fit-abajo"
-      ? (corto ? { y: 390, alto: 280, ancho: 260, soporte: true } : { ...trenInferior, soporte: true })
+      ? (corto ? { y: cinturaY - 16, alto: 220, ancho: 210, soporte: true } : trenInferior)
       : clase === "fit-full"
         ? trenCompleto
-        : (largo ? { y: 168, alto: 470, ancho: 348 } : trenSuperior);
+        : (largo ? { y: cuello, alto: 400, ancho: 310 } : trenSuperior);
     const zonaNombre = clase === "fit-abajo" ? "abajo" : clase === "fit-full" ? "completo" : "arriba";
     const imgs = [];
     const lienzos = [];
@@ -270,6 +267,22 @@
     ctx.drawImage(img, box.x, box.y, box.w, box.h, dx, dy, dw, dh);
   }
 
+  function vestirCintura(canvas, img, box) {
+    const ctx = canvas.getContext("2d");
+    const y = cinturaY - 4;
+    ctx.fillStyle = "#161616";
+    ctx.beginPath();
+    ctx.roundRect(112, y, 216, 18, 8);
+    ctx.fill();
+    ctx.fillStyle = "#3a3a3a";
+    ctx.fillRect(112, y, 216, 3);
+    const bw = Math.max(1, box.w * 0.38);
+    const bh = Math.max(1, box.h * 0.62);
+    const bx = box.x + (box.w - bw) / 2;
+    const by = box.y + box.h * 0.18;
+    ctx.drawImage(img, bx, by, bw, bh, 176, y - 22, 88, 58);
+  }
+
   function vestirAccesorio(item, zone) {
     const tren = { ...(trenExtra[zone] || trenExtra.cintura) };
     const canvas = document.createElement("canvas");
@@ -282,18 +295,11 @@
     cuandoCargue(image, () => {
       const box = cajaDe(image) || { x: 0, y: 0, w: image.naturalWidth, h: image.naturalHeight };
       if (!box.w || !image.naturalWidth) return;
-      const aspecto = box.w / box.h;
-      if (zone === "pies") {
-        const cortoPuesto = puesto.abajo && /\blicra\b|pantaloneta|\bfalda\b|bermuda/.test(plain(puesto.abajo.name));
-        tren.base = cortoPuesto || !puesto.abajo ? 900 : 1060;
-      }
-      if (zone === "cintura" && aspecto < 1.15) {
-        const ctx = canvas.getContext("2d");
-        ctx.fillStyle = "#1a1a1a";
-        ctx.fillRect(90, 448, 260, 22);
-        pintarFoto(canvas, image, box, { y: 400, alto: 120, ancho: 110, x: 165 });
+      if (zone === "cintura") {
+        vestirCintura(canvas, image, box);
         return;
       }
+      if (zone === "pies") tren.base = 1038;
       pintarFoto(canvas, image, box, tren);
     });
     return canvas;
@@ -351,10 +357,9 @@
     const cuerpoCaja = document.createElement("div");
     cuerpoCaja.className = "fit-body";
     stage.replaceChildren(cuerpoCaja);
-    const base = figura("fit-blank", (puesto.arriba || puesto.completo) ? "sin-cabeza" : false);
-    const licraPuesta = puesto.abajo && /\blicra\b|pantaloneta|\bfalda\b|bermuda/.test(plain(puesto.abajo.name));
-    if (puesto.pies && (licraPuesta || !puesto.abajo)) base.style.clipPath = "inset(0 0 30% 0)";
-    else if (puesto.abajo || puesto.completo) base.style.clipPath = "inset(0 0 9% 0)";
+    const base = figura("fit-blank");
+    if (puesto.pies) base.style.clipPath = "inset(0 0 6% 0)";
+    else if (puesto.abajo && !/\blicra\b|pantaloneta|\bfalda\b|bermuda/.test(plain(puesto.abajo.name))) base.style.clipPath = "inset(0 0 4% 0)";
     cuerpoCaja.append(base);
     frames = [];
     extras = [];
@@ -363,7 +368,11 @@
       const clase = puesto.completo ? "fit-full" : (abajo.has(item.id) ? "fit-abajo" : "fit-arriba");
       vestirPrenda(item, clase, cuerpoCaja);
     });
-    if ((puesto.arriba || puesto.completo) && !puesto.cabeza) cuerpoCaja.append(figura("fit-piel", true));
+    if ((puesto.arriba || puesto.completo) && !puesto.cabeza) {
+      const piel = figura("fit-piel");
+      piel.style.clipPath = "inset(0 0 86% 0)";
+      cuerpoCaja.append(piel);
+    }
     accesoriosPuestos().forEach((item) => {
       const zone = zona(item);
       if (!trenExtra[zone]) return;
