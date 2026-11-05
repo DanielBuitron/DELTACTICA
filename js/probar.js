@@ -123,41 +123,42 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     return {
       mujer,
       alto: mujer ? 0.94 : 1,
-      torsoX: mujer ? 1.06 : 1.26,
-      torsoZ: mujer ? 0.76 : 0.78,
-      hombro: mujer ? 0.19 : 0.235,
-      cadera: mujer ? 0.105 : 0.09,
-      pechoY: 1.3,
+      torsoX: mujer ? 0.72 : 0.78,
+      torsoZ: mujer ? 0.56 : 0.58,
+      hombro: mujer ? 0.2 : 0.232,
+      cadera: mujer ? 0.112 : 0.104,
+      pechoY: 1.28,
       cinturaY: 1.02,
       caderaY: 0.86,
-      cuelloY: 1.5,
+      cuelloY: 1.48,
       cabezaY: mujer ? 1.58 : 1.62,
-      cabezaR: mujer ? 0.1 : 0.11,
-      brazo: mujer ? 0.038 : 0.044,
-      pierna: mujer ? 0.05 : 0.056
+      cabezaR: mujer ? 0.1 : 0.108,
+      brazo: mujer ? 0.04 : 0.046,
+      pierna: mujer ? 0.07 : 0.078
     };
   }
 
   function perfil(med) {
     return med.mujer
-      ? [[0.76, 0.1], [0.88, 0.166], [1.01, 0.134], [1.16, 0.15], [1.28, 0.16], [1.38, 0.176], [1.46, 0.07]]
-      : [[0.78, 0.092], [0.9, 0.155], [1.02, 0.128], [1.16, 0.158], [1.3, 0.176], [1.4, 0.19], [1.48, 0.074]];
+      ? [[0.72, 0.15, 0.112], [0.84, 0.184, 0.13], [1.0, 0.124, 0.096], [1.16, 0.148, 0.12], [1.28, 0.158, 0.128], [1.36, 0.168, 0.108], [1.42, 0.09, 0.072], [1.48, 0.06, 0.054]]
+      : [[0.74, 0.146, 0.108], [0.86, 0.17, 0.124], [1.0, 0.134, 0.1], [1.16, 0.158, 0.122], [1.28, 0.172, 0.128], [1.36, 0.188, 0.11], [1.42, 0.1, 0.078], [1.48, 0.066, 0.058]];
   }
 
-  function radioEn(med, y) {
+  function seccionEn(med, y) {
     const puntos = perfil(med);
-    if (y <= puntos[0][0]) return puntos[0][1];
+    const leer = (punto) => ({ x: punto[1], z: punto[2] });
+    if (y <= puntos[0][0]) return leer(puntos[0]);
     const ultimo = puntos[puntos.length - 1];
-    if (y >= ultimo[0]) return ultimo[1];
+    if (y >= ultimo[0]) return leer(ultimo);
     for (let i = 0; i < puntos.length - 1; i += 1) {
       const a = puntos[i];
       const b = puntos[i + 1];
       if (y >= a[0] && y <= b[0]) {
         const t = (y - a[0]) / (b[0] - a[0]);
-        return a[1] + (b[1] - a[1]) * t;
+        return { x: a[1] + (b[1] - a[1]) * t, z: a[2] + (b[2] - a[2]) * t };
       }
     }
-    return ultimo[1];
+    return leer(ultimo);
   }
 
   const escena = new THREE.Scene();
@@ -240,16 +241,12 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     return grupo;
   }
 
-  function casco(med, y0, y1, holgura, material) {
-    const puntos = [];
-    const pasos = 14;
-    for (let i = 0; i <= pasos; i += 1) {
-      const y = y0 + ((y1 - y0) * i) / pasos;
-      puntos.push(new THREE.Vector2(radioEn(med, y) + holgura, y));
-    }
-    const malla = new THREE.Mesh(new THREE.LatheGeometry(puntos, 32), material);
-    malla.scale.set(med.torsoX, 1, med.torsoZ);
+  function carne(radio, x, y, z, sx, sy, sz, nombre) {
+    const malla = new THREE.Mesh(new THREE.SphereGeometry(radio, 18, 14), piel);
+    malla.scale.set(sx, sy, sz);
+    malla.position.set(x, y, z);
     malla.castShadow = true;
+    if (nombre) malla.name = nombre;
     return malla;
   }
 
@@ -259,61 +256,67 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     medidas = medidasDe(sexo);
     figura.scale.set(1, medidas.alto, 1);
     const med = medidas;
-    cuerpo.add(casco(med, perfil(med)[0][0], perfil(med)[perfil(med).length - 1][0], 0, piel));
-    const cuello = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.1, 16), piel);
-    cuello.position.y = med.cuelloY;
+    const pielTorso = piel.clone();
+    pielTorso.side = THREE.DoubleSide;
+    const torso = concha(med, perfil(med)[0][0], perfil(med)[perfil(med).length - 1][0], 0, pielTorso, 1);
+    torso.name = "torso";
+    cuerpo.add(torso);
+    const cuello = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.07, 0.12, 20), piel);
+    cuello.position.y = med.cuelloY + 0.02;
     cuello.castShadow = true;
-    const cabeza = new THREE.Mesh(new THREE.SphereGeometry(med.cabezaR, 28, 20), piel);
-    cabeza.scale.set(0.86, 1.04, 0.9);
+    const cabeza = new THREE.Mesh(new THREE.SphereGeometry(med.cabezaR, 32, 24), piel);
+    cabeza.scale.set(0.9, 1.14, 0.96);
     cabeza.position.y = med.cabezaY;
     cabeza.castShadow = true;
+    const menton = carne(med.cabezaR * 0.42, 0, med.cabezaY - med.cabezaR * 0.62, med.cabezaR * 0.42, 1.15, 0.72, 0.85);
+    const nariz = carne(med.cabezaR * 0.11, 0, med.cabezaY - 0.012, med.cabezaR * 0.9, 0.8, 0.7, 1.2);
     [-1, 1].forEach((lado) => {
-      const oreja = new THREE.Mesh(new THREE.SphereGeometry(med.cabezaR * 0.16, 12, 10), piel);
-      oreja.scale.set(0.6, 1, 0.8);
-      oreja.position.set(lado * med.cabezaR * 0.9, med.cabezaY - 0.01, 0);
-      cuerpo.add(oreja);
+      cuerpo.add(carne(med.cabezaR * 0.16, lado * med.cabezaR * 0.92, med.cabezaY - 0.012, 0, 0.55, 1.05, 0.75));
     });
     if (med.mujer) {
-      const busto = new THREE.Mesh(new THREE.SphereGeometry(0.055, 16, 12), piel);
-      busto.position.set(0, 1.26, 0.1);
-      busto.scale.set(1.3, 0.8, 0.7);
-      cuerpo.add(busto);
+      [-1, 1].forEach((lado) => {
+        cuerpo.add(carne(0.05, lado * 0.045, 1.26, 0.11, 1.05, 0.85, 0.75));
+      });
     }
-    const hombroY = 1.4;
-    const codo = new THREE.Vector3(med.hombro + 0.02, 1.08, 0.03);
-    const muneca = new THREE.Vector3(med.hombro - 0.01, 0.8, 0.05);
-    const caderaY = 0.84;
-    const rodilla = new THREE.Vector3(med.cadera, 0.48, 0.02);
-    const tobillo = new THREE.Vector3(med.cadera * 0.92, 0.08, 0.02);
     [-1, 1].forEach((lado) => {
-      const signo = lado;
-      const hombro = new THREE.Vector3(signo * med.hombro, hombroY, 0);
+      const hombro = new THREE.Vector3(lado * med.hombro * 0.7, 1.34, 0.02);
+      const codo = new THREE.Vector3(lado * med.hombro * 0.92, 1.02, 0.035);
+      const muneca = new THREE.Vector3(lado * med.hombro * 0.8, 0.76, 0.045);
       const brazo = cadena([
         hombro,
-        new THREE.Vector3(signo * codo.x, codo.y, codo.z),
-        new THREE.Vector3(signo * muneca.x, muneca.y, muneca.z)
-      ], [med.brazo * 1.35, med.brazo, med.brazo * 0.72], piel);
-      brazo.name = signo < 0 ? "brazoI" : "brazoD";
+        new THREE.Vector3(lado * med.hombro * 0.96, 1.2, 0.03),
+        codo,
+        new THREE.Vector3(lado * med.hombro * 0.9, 0.9, 0.048),
+        muneca
+      ], [med.brazo * 1.45, med.brazo * 1.05, med.brazo * 0.9, med.brazo * 0.82, med.brazo * 0.62], piel);
+      brazo.name = lado < 0 ? "brazoI" : "brazoD";
       cuerpo.add(brazo);
-      const mano = new THREE.Mesh(new THREE.CapsuleGeometry(med.brazo * 0.55, 0.07, 4, 8), piel);
-      mano.position.set(signo * muneca.x, muneca.y - 0.06, muneca.z + 0.01);
-      mano.name = signo < 0 ? "manoI" : "manoD";
+      cuerpo.add(carne(med.brazo * 0.95, hombro.x, 1.32, 0.02, 1.35, 0.55, 0.8, lado < 0 ? "hombroCarneI" : "hombroCarneD"));
+      const mano = new THREE.Mesh(new THREE.CapsuleGeometry(med.brazo * 0.5, 0.08, 4, 8), piel);
+      mano.position.set(muneca.x, muneca.y - 0.07, muneca.z + 0.01);
+      mano.name = lado < 0 ? "manoI" : "manoD";
       mano.castShadow = true;
       cuerpo.add(mano);
+      const cadera = new THREE.Vector3(lado * med.cadera, 0.8, 0.015);
+      const rodilla = new THREE.Vector3(lado * med.cadera * 0.94, 0.44, 0.028);
+      const tobillo = new THREE.Vector3(lado * med.cadera * 0.86, 0.07, 0.01);
       const pierna = cadena([
-        new THREE.Vector3(signo * med.cadera, caderaY, 0),
-        new THREE.Vector3(signo * rodilla.x, rodilla.y, rodilla.z),
-        new THREE.Vector3(signo * tobillo.x, tobillo.y, tobillo.z)
-      ], [med.pierna * 1.35, med.pierna, med.pierna * 0.72], piel);
-      pierna.name = signo < 0 ? "piernaI" : "piernaD";
+        cadera,
+        new THREE.Vector3(lado * med.cadera * 0.98, 0.62, 0.02),
+        rodilla,
+        new THREE.Vector3(lado * med.cadera * 0.9, 0.26, 0.014),
+        tobillo
+      ], [med.pierna * 1.12, med.pierna * 0.92, med.pierna * 0.7, med.pierna * 0.78, med.pierna * 0.48], piel);
+      pierna.name = lado < 0 ? "piernaI" : "piernaD";
       cuerpo.add(pierna);
-      const pie = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, 0.22), piel);
-      pie.position.set(signo * tobillo.x, 0.03, 0.06);
-      pie.name = signo < 0 ? "pieI" : "pieD";
+      cuerpo.add(carne(0.062, lado * 0.055, 0.82, -0.055, 1.05, 0.85, 0.9, lado < 0 ? "nalgaI" : "nalgaD"));
+      const pie = new THREE.Mesh(new THREE.BoxGeometry(0.078, 0.045, 0.22), piel);
+      pie.position.set(tobillo.x, 0.028, 0.055);
+      pie.name = lado < 0 ? "pieI" : "pieD";
       pie.castShadow = true;
       cuerpo.add(pie);
     });
-    cuerpo.add(cuello, cabeza);
+    cuerpo.add(cuello, cabeza, menton, nariz);
   }
 
   function desechar(objeto) {
@@ -494,15 +497,15 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     const posiciones = [];
     const uvs = [];
     const indices = [];
-    const escalaX = med.torsoX * ancho;
-    const escalaZ = med.torsoZ * ancho;
     for (let j = 0; j <= anillos; j += 1) {
       const t = j / anillos;
       const y = y0 + (y1 - y0) * t;
-      const radio = radioEn(med, y) + holgura;
+      const seccion = seccionEn(med, y);
+      const radioX = (seccion.x + holgura) * ancho;
+      const radioZ = (seccion.z + holgura) * ancho;
       for (let i = 0; i <= segmentos; i += 1) {
         const angulo = (i / segmentos) * Math.PI * 2;
-        posiciones.push(Math.sin(angulo) * radio * escalaX, y, Math.cos(angulo) * radio * escalaZ);
+        posiciones.push(Math.sin(angulo) * radioX, y, Math.cos(angulo) * radioZ);
         const local = 0.1 + 0.8 * (0.5 + Math.sin(angulo) * 0.5);
         const u = Math.cos(angulo) >= 0 ? local * 0.5 : 0.5 + local * 0.5;
         uvs.push(u, t);
@@ -691,13 +694,13 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
 
   function sumarMangas(grupo, med, material, corta, alcance, radio) {
     const factor = Number.isFinite(alcance) ? alcance : 1;
-    const munecaY = corta ? 1.12 : 0.8 + (1 - factor) * 0.26;
+    const munecaY = corta ? 1.06 : 0.76 + (1 - factor) * 0.22;
     [-1, 1].forEach((lado) => {
-      const hombro = new THREE.Vector3(lado * med.hombro, 1.4, 0);
-      const codo = new THREE.Vector3(lado * (med.hombro + 0.02), 1.08, 0.03);
-      const muneca = new THREE.Vector3(lado * (med.hombro - 0.01), munecaY, 0.05);
+      const hombro = new THREE.Vector3(lado * med.hombro * 0.62, 1.32, 0.02);
+      const codo = new THREE.Vector3(lado * med.hombro * 0.92, 1.02, 0.035);
+      const muneca = new THREE.Vector3(lado * med.hombro * 0.8, munecaY, 0.045);
       const puntos = corta ? [hombro, codo] : [hombro, codo, muneca];
-      const radios = corta ? [radio * 1.25, radio * 0.95] : [radio * 1.3, radio, radio * 0.78];
+      const radios = corta ? [radio * 1.2, radio * 0.92] : [radio * 1.25, radio * 0.92, radio * 0.68];
       const u0 = lado < 0 ? 0.06 : 0.32;
       const u1 = lado < 0 ? 0.2 : 0.46;
       grupo.add(tuboTela(puntos, radios, material, u0, u1));
@@ -706,12 +709,16 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
 
   function sumarPiernas(grupo, med, material, y0, y1, radio) {
     [-1, 1].forEach((lado) => {
-      const puntos = [
-        new THREE.Vector3(lado * med.cadera, y0, 0.02),
-        new THREE.Vector3(lado * med.cadera, (y0 + y1) * 0.5, 0.03),
-        new THREE.Vector3(lado * med.cadera * 0.92, y1, 0.03)
-      ];
-      grupo.add(tuboTela(puntos, [radio * 1.15, radio, radio * 0.72], material, lado < 0 ? 0.04 : 0.28, lado < 0 ? 0.22 : 0.46));
+      const cadera = new THREE.Vector3(lado * med.cadera, y0, 0.02);
+      const rodilla = new THREE.Vector3(lado * med.cadera * 0.94, 0.44, 0.028);
+      const pantorrilla = new THREE.Vector3(lado * med.cadera * 0.9, 0.26, 0.014);
+      const tobillo = new THREE.Vector3(lado * med.cadera * 0.86, y1, 0.01);
+      const corta = y0 - y1 < 0.4;
+      const puntos = corta ? [cadera, tobillo] : [cadera, rodilla, pantorrilla, tobillo];
+      const radios = corta
+        ? [radio * 1.05, radio * 0.82]
+        : [radio * 1.12, radio * 0.74, radio * 0.82, radio * 0.5];
+      grupo.add(tuboTela(puntos, radios, material, lado < 0 ? 0.08 : 0.3, lado < 0 ? 0.22 : 0.44));
     });
   }
 
@@ -727,48 +734,50 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     const conPantalon = puesto.inferior && corte(puesto.inferior) === "largo";
     if (slot === "camisa" || slot === "chaqueta" || slot === "chaleco") {
       const porDentro = slot === "camisa" && tipo !== "fuera" && (conPantalon || puesto.completo);
-      const cuello = med.cuelloY - 0.01;
-      const bajoBase = slot === "chaqueta" ? med.caderaY - 0.1 : (porDentro ? 0.76 : med.caderaY - 0.02);
+      const cuello = med.cuelloY - 0.02;
+      const bajoBase = slot === "chaqueta" ? med.caderaY - 0.06 : (porDentro ? 0.96 : 0.84);
       const bajo = cuello - (cuello - bajoBase) * (slot === "camisa" ? ajuste.largo : 1);
-      const holgura = (slot === "chaqueta" ? 0.028 : slot === "chaleco" ? 0.02 : (tipo === "fuera" ? 0.018 : 0.01)) * ajuste.ancho;
-      grupo.add(concha(med, Math.min(bajo, cuello - 0.16), cuello, holgura, telaPrenda, 1));
+      const holgura = (slot === "chaqueta" ? 0.03 : slot === "chaleco" ? 0.022 : (tipo === "fuera" ? 0.02 : (porDentro ? 0.008 : 0.012))) * ajuste.ancho;
+      grupo.add(concha(med, Math.min(bajo, cuello - 0.18), cuello, holgura, telaPrenda, 1));
       if (slot !== "chaleco") {
         const corta = slot === "camisa" && tipo === "manga-corta";
-        const radio = med.brazo + (slot === "chaqueta" ? 0.03 : 0.012);
+        const radio = med.brazo + (slot === "chaqueta" ? 0.018 : 0.008);
         sumarMangas(grupo, med, telaPrenda, corta, ajuste.manga, radio);
-        if (!corta) ocultarCuerpo(/^brazo|^mano/);
+        if (!corta) ocultarCuerpo(/^brazo|^mano|^hombroCarne/);
       }
     } else if (slot === "completo") {
-      const superior = concha(med, med.cinturaY - 0.04, med.cuelloY - 0.01, 0.02 * ajuste.ancho, telaPrenda, 1);
-      const inferior = concha(med, 0.72, med.cinturaY + 0.06, 0.034 * ajuste.cintura, telaPrenda, 1);
+      const superior = concha(med, med.cinturaY - 0.02, med.cuelloY - 0.02, 0.016 * ajuste.ancho, telaPrenda, 1);
+      const inferior = concha(med, 0.74, med.cinturaY + 0.03, 0.02 * ajuste.cintura, telaPrenda, 1);
       grupo.add(superior, inferior);
-      sumarMangas(grupo, med, telaPrenda, false, ajuste.manga, med.brazo + 0.014);
-      sumarPiernas(grupo, med, telaPrenda, 0.78, 0.06, (med.pierna + 0.02) * ajuste.ancho);
+      sumarMangas(grupo, med, telaPrenda, false, ajuste.manga, med.brazo + 0.01);
+      sumarPiernas(grupo, med, telaPrenda, 0.8, 0.06, (med.pierna + 0.012) * ajuste.ancho);
       uvGrupo(grupo);
-      ocultarCuerpo(/^brazo|^mano|^pierna|^pie/);
+      ocultarCuerpo(/^brazo|^mano|^hombroCarne|^pierna|^pie|^nalga/);
     } else if (slot === "inferior" && tipo === "falda") {
       const falda = concha(med, 0.5, med.cinturaY + 0.04, 0.032 * ajuste.cintura, telaPrenda, ajuste.ancho);
       grupo.add(falda);
       uvGrupo(grupo);
     } else if (slot === "inferior") {
-      const yFin = tipo === "corto" ? 0.5 : 0.05;
-      const cadera = tipo === "corto" ? 0.62 : 0.72;
+      const yFin = tipo === "corto" ? 0.5 : 0.055;
+      const cadera = tipo === "corto" ? 0.64 : 0.74;
       const tobillo = cadera - (cadera - yFin) * ajuste.pierna;
-      const caderaMalla = concha(med, cadera, med.cinturaY + 0.05, 0.03 * ajuste.cintura, telaPrenda, ajuste.ancho);
+      const cubreCamisa = puesto.camisa && corte(puesto.camisa) !== "fuera";
+      const caderaMalla = concha(med, cadera, med.cinturaY + (cubreCamisa ? 0.045 : 0.012), 0.016 * ajuste.cintura, telaPrenda, ajuste.ancho);
       grupo.add(caderaMalla);
-      sumarPiernas(grupo, med, telaPrenda, cadera + 0.02, tobillo, (med.pierna + 0.018) * ajuste.ancho);
+      sumarPiernas(grupo, med, telaPrenda, 0.8, tobillo, (med.pierna + 0.01) * ajuste.ancho);
       uvGrupo(grupo);
-      if (tipo !== "corto") ocultarCuerpo(/^pierna|^pie/);
+      if (tipo !== "corto") ocultarCuerpo(/^pierna|^pie|^nalga/);
     } else if (slot === "cinturon") {
       const base = puesto.inferior || puesto.completo;
       if (base && admiteCinturon(base)) {
-        const aro = new THREE.Mesh(new THREE.TorusGeometry(0.178, 0.012, 10, 40), solido);
+        const cintura = seccionEn(med, med.cinturaY);
+        const aro = new THREE.Mesh(new THREE.TorusGeometry(1, 0.012, 10, 40), solido);
         aro.rotation.x = Math.PI / 2;
-        aro.position.y = med.cinturaY + 0.02;
-        aro.scale.set(med.torsoX, med.torsoZ, 1);
+        aro.position.y = med.cinturaY + 0.015;
+        aro.scale.set(cintura.x + 0.02, cintura.z + 0.02, 1);
         aro.castShadow = true;
         const hebilla = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, 0.018), solido);
-        hebilla.position.set(0, med.cinturaY + 0.02, 0.178 * med.torsoZ + 0.01);
+        hebilla.position.set(0, med.cinturaY + 0.015, cintura.z + 0.03);
         hebilla.castShadow = true;
         grupo.add(aro, hebilla);
       }
