@@ -10,7 +10,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/styles.css?v=real107" />
+    <link rel="stylesheet" href="css/styles.css?v=real108" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        }
+      }
+    </script>
     <script>document.documentElement.classList.add("js");</script>
   </head>
   <body data-wa="573227043082">
@@ -40,25 +48,41 @@
           <header class="page-hero">
             <p class="eyebrow">Probador</p>
             <h1>Prueba tu uniforme</h1>
-            <p class="lead">Sirve para vestir el maniquí con la ropa de la tienda, como un avatar. Empieza en blanco: elija una categoría, ponga la camisa y vaya sumando o quitando pantalón, chaqueta, gorra o botas.</p>
+            <p class="lead">Viste el maniquí con las prendas del catálogo. Cada pieza queda en su parte del cuerpo y se puede combinar con las demás.</p>
             <div class="hero-actions">
               <button class="btn btn-metal" type="button" data-fit-cart>Mira tu compra</button>
             </div>
           </header>
           <div class="fit-layout">
             <aside class="fit-room">
-              <p class="eyebrow">Avatar</p>
+              <div class="fit-toolbar">
+                <div class="fit-sexo" role="group" aria-label="Maniquí">
+                  <button class="filter is-active" type="button" data-fit-sexo="m">Hombre</button>
+                  <button class="filter" type="button" data-fit-sexo="f">Mujer</button>
+                </div>
+                <div class="fit-vistas" role="group" aria-label="Vista">
+                  <button class="is-active" type="button" data-fit-view="frente">Frente</button>
+                  <button type="button" data-fit-view="lado">Lado</button>
+                  <button type="button" data-fit-view="espalda">Espalda</button>
+                </div>
+              </div>
               <div class="giro-stage fit-stage" data-fit-stage></div>
               <p data-fit-name>Maniquí en blanco</p>
-              <p class="lead" data-fit-note>Toque una pieza para ponerla y otra vez para quitarla. Arrastre el maniquí para dar la vuelta.</p>
-              <div class="fit-picks" data-fit-picks></div>
-              <button class="btn btn-metal" type="button" data-fit-add hidden>Añadir lo puesto</button>
+              <p class="lead" data-fit-note>Arrastre para girar. La rueda acerca. Cada prenda ocupa su lugar.</p>
             </aside>
             <div>
               <div class="fit-tabs" data-fit-tabs></div>
               <div class="fit-grid" data-fit-grid></div>
             </div>
           </div>
+          <section class="fit-resumen" aria-label="Uniforme elegido">
+            <div class="fit-picks" data-fit-picks></div>
+            <div class="fit-acciones">
+              <button class="btn btn-metal" type="button" data-fit-clear>Limpiar</button>
+              <button class="btn btn-metal" type="button" data-fit-save>Guardar</button>
+              <button class="btn btn-metal" type="button" data-fit-add hidden>Solicitar uniforme</button>
+            </div>
+          </section>
         </div>
       </section>
     </main>
@@ -75,7 +99,8 @@
     </a>
     <script src="js/productos.js?v=real44" defer></script>
     <script src="js/store.js?v=real90" defer></script>
-    <script src="js/probar.js?v=42" defer></script>
+    <script src="js/modelos.js?v=1" defer></script>
+    <script type="module" src="js/probar.js?v=46"></script>
     <script src="js/main.js?v=real45" defer></script>
   </body>
 </html>

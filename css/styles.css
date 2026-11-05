@@ -963,7 +963,7 @@ button.consult {
 
 .fit-layout {
   display: grid;
-  grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
   gap: 18px;
   align-items: start;
 }
@@ -1148,13 +1148,33 @@ button.consult {
 }
 
 .fit-pick {
-  flex: 0 0 76px;
+  flex: 0 0 148px;
   display: grid;
   gap: 4px;
-  padding: 0;
+  padding: 0 0 8px;
   border: 1px solid var(--line);
   background: #101114;
   color: #f4f5f6;
+}
+
+.fit-pick small {
+  padding: 0 6px;
+  color: #b7b1a6;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.fit-pick button {
+  margin: 0 6px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: #f4f5f6;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
   cursor: pointer;
 }
 
@@ -1167,6 +1187,50 @@ button.consult {
   height: 72px;
   object-fit: contain;
   background: radial-gradient(ellipse at 50% 42%, #f7f4ee, #d8d1c6 74%);
+}
+
+.fit-toolbar,
+.fit-acciones,
+.fit-sexo,
+.fit-vistas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.fit-toolbar {
+  justify-content: space-between;
+}
+
+.fit-vistas button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  background: #101114;
+  color: #f4f5f6;
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.fit-vistas button.is-active {
+  background: linear-gradient(180deg, #8d9a52, #6f7d3a);
+  color: #fff;
+}
+
+.fit-resumen {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.giro-stage.fit-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .fit-pick span {
