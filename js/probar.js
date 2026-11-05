@@ -141,7 +141,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   function perfil(med) {
     return med.mujer
       ? [[0.72, 0.15, 0.112], [0.84, 0.184, 0.13], [1.0, 0.124, 0.096], [1.16, 0.148, 0.12], [1.28, 0.158, 0.128], [1.36, 0.168, 0.108], [1.42, 0.09, 0.072], [1.48, 0.06, 0.054]]
-      : [[0.74, 0.146, 0.108], [0.86, 0.17, 0.124], [1.0, 0.134, 0.1], [1.16, 0.158, 0.122], [1.28, 0.172, 0.128], [1.36, 0.188, 0.11], [1.42, 0.1, 0.078], [1.48, 0.066, 0.058]];
+      : [[0.74, 0.15, 0.112], [0.86, 0.172, 0.126], [1.0, 0.138, 0.104], [1.18, 0.164, 0.124], [1.32, 0.2, 0.12], [1.4, 0.15, 0.1], [1.46, 0.072, 0.064]];
   }
 
   function seccionEn(med, y) {
@@ -279,16 +279,10 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       });
     }
     [-1, 1].forEach((lado) => {
-      const hombro = new THREE.Vector3(lado * med.hombro * 0.7, 1.34, 0.02);
-      const codo = new THREE.Vector3(lado * med.hombro * 0.92, 1.02, 0.035);
-      const muneca = new THREE.Vector3(lado * med.hombro * 0.8, 0.76, 0.045);
-      const brazo = cadena([
-        hombro,
-        new THREE.Vector3(lado * med.hombro * 0.96, 1.2, 0.03),
-        codo,
-        new THREE.Vector3(lado * med.hombro * 0.9, 0.9, 0.048),
-        muneca
-      ], [med.brazo * 1.45, med.brazo * 1.05, med.brazo * 0.9, med.brazo * 0.82, med.brazo * 0.62], piel);
+      const puntos = puntosBrazo(med, lado, 0.76);
+      const hombro = puntos[0];
+      const muneca = puntos[puntos.length - 1];
+      const brazo = cadena(puntos, [med.brazo * 1.35, med.brazo * 1.05, med.brazo * 0.88, med.brazo * 0.62], piel);
       brazo.name = lado < 0 ? "brazoI" : "brazoD";
       cuerpo.add(brazo);
       cuerpo.add(carne(med.brazo * 0.95, hombro.x, 1.32, 0.02, 1.35, 0.55, 0.8, lado < 0 ? "hombroCarneI" : "hombroCarneD"));
@@ -463,6 +457,14 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
 
   const cacheAtlas = new Map();
 
+  function pintarCara(ctx, imagen, origen) {
+    const ancho = imagen.width;
+    const alto = imagen.height;
+    ctx.drawImage(imagen, ancho * 0.28, 0, ancho * 0.44, alto, origen + 96, 0, 320, 1024);
+    ctx.drawImage(imagen, 0, 0, ancho * 0.34, alto, origen, 0, 88, 1024);
+    ctx.drawImage(imagen, ancho * 0.66, 0, ancho * 0.34, alto, origen + 424, 0, 88, 1024);
+  }
+
   function atlasDe(frente, espalda) {
     const clave = `${frente.tex.uuid}:${espalda ? espalda.tex.uuid : ""}`;
     if (cacheAtlas.has(clave)) return cacheAtlas.get(clave);
@@ -470,10 +472,21 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     lienzo.width = 1024;
     lienzo.height = 1024;
     const ctx = lienzo.getContext("2d");
-    ctx.fillStyle = "#6d7464";
+    const muestra = frente.tex.image;
+    ctx.fillStyle = "#3a3a3a";
     ctx.fillRect(0, 0, 1024, 1024);
-    ctx.drawImage(frente.tex.image, 0, 0, 512, 1024);
-    ctx.drawImage((espalda || frente).tex.image, 512, 0, 512, 1024);
+    if (muestra) {
+      const mini = document.createElement("canvas");
+      mini.width = 8;
+      mini.height = 8;
+      const mctx = mini.getContext("2d");
+      mctx.drawImage(muestra, muestra.width * 0.4, muestra.height * 0.35, muestra.width * 0.2, muestra.height * 0.2, 0, 0, 8, 8);
+      const pixel = mctx.getImageData(4, 4, 1, 1).data;
+      ctx.fillStyle = `rgb(${pixel[0]},${pixel[1]},${pixel[2]})`;
+      ctx.fillRect(0, 0, 1024, 1024);
+    }
+    pintarCara(ctx, frente.tex.image, 0);
+    pintarCara(ctx, (espalda || frente).tex.image, 512);
     const tex = new THREE.CanvasTexture(lienzo);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = 8;
@@ -483,10 +496,14 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
 
   function materialTela(frente, espalda, solido) {
     if (!frente) return solido;
+    const mapa = atlasDe(frente, espalda);
     return new THREE.MeshStandardMaterial({
-      map: atlasDe(frente, espalda),
-      roughness: 0.78,
-      metalness: 0.02,
+      map: mapa,
+      emissive: new THREE.Color("#ffffff"),
+      emissiveMap: mapa,
+      emissiveIntensity: 0.42,
+      roughness: 0.7,
+      metalness: 0,
       side: THREE.DoubleSide
     });
   }
@@ -506,8 +523,8 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       for (let i = 0; i <= segmentos; i += 1) {
         const angulo = (i / segmentos) * Math.PI * 2;
         posiciones.push(Math.sin(angulo) * radioX, y, Math.cos(angulo) * radioZ);
-        const local = 0.1 + 0.8 * (0.5 + Math.sin(angulo) * 0.5);
-        const u = Math.cos(angulo) >= 0 ? local * 0.5 : 0.5 + local * 0.5;
+        const lateral = 0.5 + Math.sin(angulo) * 0.5;
+        const u = (Math.cos(angulo) >= 0 ? 0.105 : 0.605) + lateral * 0.29;
         uvs.push(u, t);
       }
     }
@@ -692,18 +709,26 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     });
   }
 
+  function puntosBrazo(med, lado, munecaY) {
+    const alcance = med.hombro;
+    return [
+      new THREE.Vector3(lado * alcance * 0.7, 1.38, 0.02),
+      new THREE.Vector3(lado * (alcance + 0.015), 1.22, 0.035),
+      new THREE.Vector3(lado * (alcance + 0.06), 1.02, 0.045),
+      new THREE.Vector3(lado * (alcance + 0.02), munecaY, 0.05)
+    ];
+  }
+
   function sumarMangas(grupo, med, material, corta, alcance, radio) {
     const factor = Number.isFinite(alcance) ? alcance : 1;
-    const munecaY = corta ? 1.06 : 0.76 + (1 - factor) * 0.22;
+    const munecaY = corta ? 1.05 : 0.76 + (1 - factor) * 0.2;
     [-1, 1].forEach((lado) => {
-      const hombro = new THREE.Vector3(lado * med.hombro * 0.62, 1.32, 0.02);
-      const codo = new THREE.Vector3(lado * med.hombro * 0.92, 1.02, 0.035);
-      const muneca = new THREE.Vector3(lado * med.hombro * 0.8, munecaY, 0.045);
-      const puntos = corta ? [hombro, codo] : [hombro, codo, muneca];
-      const radios = corta ? [radio * 1.2, radio * 0.92] : [radio * 1.25, radio * 0.92, radio * 0.68];
-      const u0 = lado < 0 ? 0.06 : 0.32;
-      const u1 = lado < 0 ? 0.2 : 0.46;
-      grupo.add(tuboTela(puntos, radios, material, u0, u1));
+      const puntos = puntosBrazo(med, lado, munecaY);
+      const usados = corta ? puntos.slice(0, 3) : puntos;
+      const radios = corta ? [radio * 1.45, radio * 1.05, radio * 0.9] : [radio * 1.7, radio * 1.15, radio * 0.92, radio * 0.68];
+      const u0 = lado < 0 ? 0.008 : 0.418;
+      const u1 = lado < 0 ? 0.08 : 0.492;
+      grupo.add(tuboTela(usados, radios, material, u0, u1));
     });
   }
 
@@ -735,7 +760,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     if (slot === "camisa" || slot === "chaqueta" || slot === "chaleco") {
       const porDentro = slot === "camisa" && tipo !== "fuera" && (conPantalon || puesto.completo);
       const cuello = med.cuelloY - 0.02;
-      const bajoBase = slot === "chaqueta" ? med.caderaY - 0.06 : (porDentro ? 0.96 : 0.84);
+      const bajoBase = slot === "chaqueta" ? med.caderaY - 0.06 : (porDentro ? 0.96 : 0.7);
       const bajo = cuello - (cuello - bajoBase) * (slot === "camisa" ? ajuste.largo : 1);
       const holgura = (slot === "chaqueta" ? 0.03 : slot === "chaleco" ? 0.022 : (tipo === "fuera" ? 0.02 : (porDentro ? 0.008 : 0.012))) * ajuste.ancho;
       grupo.add(concha(med, Math.min(bajo, cuello - 0.18), cuello, holgura, telaPrenda, 1));
@@ -762,7 +787,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       const cadera = tipo === "corto" ? 0.64 : 0.74;
       const tobillo = cadera - (cadera - yFin) * ajuste.pierna;
       const cubreCamisa = puesto.camisa && corte(puesto.camisa) !== "fuera";
-      const caderaMalla = concha(med, cadera, med.cinturaY + (cubreCamisa ? 0.045 : 0.012), 0.016 * ajuste.cintura, telaPrenda, ajuste.ancho);
+      const caderaMalla = concha(med, cadera, med.cinturaY + (cubreCamisa ? 0.045 : -0.03), 0.016 * ajuste.cintura, telaPrenda, ajuste.ancho);
       grupo.add(caderaMalla);
       sumarPiernas(grupo, med, telaPrenda, 0.8, tobillo, (med.pierna + 0.01) * ajuste.ancho);
       uvGrupo(grupo);
@@ -826,6 +851,10 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       frenteGorra.position.y = med.cabezaY + med.cabezaR * 0.42;
       frenteGorra.rotation.y = -Math.PI / 2;
       frenteGorra.castShadow = true;
+      const uvGorra = frenteGorra.geometry.attributes.uv;
+      for (let i = 0; i < uvGorra.count; i += 1) {
+        uvGorra.setXY(i, 0.14 + uvGorra.getX(i) * 0.22, 0.2 + uvGorra.getY(i) * 0.6);
+      }
       const visera = new THREE.Mesh(new THREE.BoxGeometry(med.cabezaR * 1.45, 0.014, med.cabezaR * 0.78), solido);
       visera.position.set(0, med.cabezaY + med.cabezaR * 0.05, med.cabezaR * 0.95);
       visera.castShadow = true;
@@ -872,7 +901,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     desechar(ropa);
     ropa.clear();
     cuerpo.traverse((nodo) => {
-      if (/^(pie|mano|brazo|pierna)/.test(nodo.name || "")) nodo.visible = true;
+      if (/^(pie|mano|brazo|pierna|hombroCarne|nalga)/.test(nodo.name || "")) nodo.visible = true;
     });
     const entradas = listaPuesta();
     await Promise.all(entradas.map(async (item) => {
