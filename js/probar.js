@@ -195,7 +195,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   }
 
   const escena = new THREE.Scene();
-  escena.background = new THREE.Color("#f4efe6");
+  escena.background = new THREE.Color("#070708");
   const camara = new THREE.PerspectiveCamera(32, 1, 0.08, 24);
   camara.position.set(0, 1.02, 4.15);
   const renderizador = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -204,7 +204,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   renderizador.shadowMap.enabled = true;
   renderizador.shadowMap.type = THREE.PCFSoftShadowMap;
   renderizador.toneMapping = THREE.ACESFilmicToneMapping;
-  renderizador.toneMappingExposure = 1.08;
+  renderizador.toneMappingExposure = 1.15;
   stage.replaceChildren(renderizador.domElement);
 
   const controles = new OrbitControls(camara, renderizador.domElement);
@@ -218,28 +218,19 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   controles.maxPolarAngle = 1.55;
   controles.update();
 
-  escena.add(new THREE.HemisphereLight("#fff6ee", "#b7aa98", 0.62));
-  const clave = new THREE.DirectionalLight("#fffdf8", 2.7);
-  clave.position.set(1.6, 3.4, 2.4);
-  clave.castShadow = true;
-  clave.shadow.mapSize.set(2048, 2048);
-  clave.shadow.camera.near = 0.4;
-  clave.shadow.camera.far = 8;
-  clave.shadow.camera.left = -1.4;
-  clave.shadow.camera.right = 1.4;
-  clave.shadow.camera.top = 1.8;
-  clave.shadow.camera.bottom = -0.2;
-  escena.add(clave);
-  const relleno = new THREE.DirectionalLight("#d9e2f2", 0.38);
-  relleno.position.set(-2.2, 1.6, -1.2);
-  escena.add(relleno);
-  const borde = new THREE.DirectionalLight("#ffffff", 0.18);
-  borde.position.set(-0.6, 1.8, -2.4);
-  escena.add(borde);
+  escena.add(new THREE.AmbientLight("#9aa0a8", 0.16));
+  const cenital = new THREE.SpotLight("#fff8f0", 18, 8, 1.05, 0.5, 1);
+  cenital.position.set(0, 2.75, 1.85);
+  cenital.target.position.set(0, 1.05, 0);
+  cenital.castShadow = true;
+  cenital.shadow.mapSize.set(2048, 2048);
+  cenital.shadow.bias = -0.0006;
+  escena.add(cenital);
+  escena.add(cenital.target);
 
   const suelo = new THREE.Mesh(
-    new THREE.CircleGeometry(1.15, 48),
-    new THREE.MeshStandardMaterial({ color: "#e7dfd3", roughness: 1, metalness: 0 })
+    new THREE.CircleGeometry(1.05, 48),
+    new THREE.ShadowMaterial({ opacity: 0.55 })
   );
   suelo.rotation.x = -Math.PI / 2;
   suelo.position.y = 0.001;
@@ -702,13 +693,18 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
 
   function materialTela(frente, espalda, solido) {
     if (!frente) return solido;
-    const mapa = atlasDe(frente, espalda);
+    const mapa = frente.tex;
+    mapa.colorSpace = THREE.SRGBColorSpace;
+    mapa.anisotropy = Math.min(16, renderizador.capabilities.getMaxAnisotropy());
+    mapa.magFilter = THREE.LinearFilter;
+    mapa.minFilter = THREE.LinearMipmapLinearFilter;
+    mapa.wrapS = THREE.ClampToEdgeWrapping;
+    mapa.wrapT = THREE.ClampToEdgeWrapping;
+    mapa.userData.prenda = true;
+    mapa.needsUpdate = true;
     return new THREE.MeshStandardMaterial({
       map: mapa,
-      emissive: new THREE.Color("#ffffff"),
-      emissiveMap: mapa,
-      emissiveIntensity: 0.16,
-      roughness: 0.7,
+      roughness: 0.42,
       metalness: 0,
       side: THREE.DoubleSide
     });
@@ -808,53 +804,80 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     return malla;
   }
 
+  function partePrenda(x, y) {
+    const med = medidas;
+    const ax = Math.abs(x);
+    if (y <= 0.2 && ax > 0.04) return x < 0 ? "pieI" : "pieD";
+    if (y >= med.cabezaY - 0.04) return "cabeza";
+    if (ax > (med.mujer ? 0.17 : 0.2) && y > med.caderaY - 0.06) return x < 0 ? "brazoI" : "brazoD";
+    if (y < med.cinturaY + 0.06 && ax > 0.035) return x < 0 ? "piernaI" : "piernaD";
+    return "torso";
+  }
+
   function uvFoto(grupo) {
     const mallas = [];
     grupo.traverse((nodo) => {
-      if (nodo.isMesh && nodo.geometry && nodo.material && nodo.material.map && nodo.material.map.userData && nodo.material.map.userData.frente) {
+      if (nodo.isMesh && nodo.geometry && nodo.material && nodo.material.map && nodo.material.map.userData && nodo.material.map.userData.prenda) {
         mallas.push(nodo);
       }
     });
     if (!mallas.length) return;
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minY = Infinity;
-    let maxY = -Infinity;
+    const cajas = new Map();
+    const asegurar = (nombre) => {
+      let caja = cajas.get(nombre);
+      if (!caja) {
+        caja = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, minZ: Infinity, maxZ: -Infinity };
+        cajas.set(nombre, caja);
+      }
+      return caja;
+    };
     mallas.forEach((nodo) => {
       const pos = nodo.geometry.attributes.position;
       for (let i = 0; i < pos.count; i += 1) {
-        minX = Math.min(minX, pos.getX(i));
-        maxX = Math.max(maxX, pos.getX(i));
-        minY = Math.min(minY, pos.getY(i));
-        maxY = Math.max(maxY, pos.getY(i));
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        const caja = asegurar(partePrenda(x, y));
+        caja.minX = Math.min(caja.minX, x);
+        caja.maxX = Math.max(caja.maxX, x);
+        caja.minY = Math.min(caja.minY, y);
+        caja.maxY = Math.max(caja.maxY, y);
+        caja.minZ = Math.min(caja.minZ, z);
+        caja.maxZ = Math.max(caja.maxZ, z);
       }
     });
-    const ancho = Math.max(0.001, maxX - minX);
-    const alto = Math.max(0.001, maxY - minY);
-    const conMangas = ancho > 0.7;
-    const cara = mallas[0].material.map.userData;
-    const limitar = (valor) => Math.min(0.96, Math.max(0.04, valor));
+    const nombres = Array.from(cajas.keys());
+    const soloPies = nombres.every((nombre) => nombre.startsWith("pie"));
+    const soloCabeza = nombres.every((nombre) => nombre === "cabeza");
+    const superior = nombres.some((nombre) => nombre === "torso" || nombre.startsWith("brazo"));
+    const limitar = (valor) => Math.min(0.98, Math.max(0.02, valor));
+    const columna = (nombre, avance) => {
+      const s = Math.min(1, Math.max(0, avance));
+      if (soloPies || soloCabeza) return 0.08 + s * 0.84;
+      if (superior) {
+        if (nombre === "brazoI") return 0.03 + s * 0.24;
+        if (nombre === "brazoD") return 0.73 + s * 0.24;
+        return 0.28 + s * 0.44;
+      }
+      if (nombre === "piernaI" || nombre === "pieI") return 0.12 + s * 0.34;
+      if (nombre === "piernaD" || nombre === "pieD") return 0.54 + s * 0.34;
+      return 0.2 + s * 0.6;
+    };
     mallas.forEach((nodo) => {
       const pos = nodo.geometry.attributes.position;
       const uv = nodo.geometry.attributes.uv;
       for (let i = 0; i < pos.count; i += 1) {
         const x = pos.getX(i);
-        const ax = Math.abs(x);
-        const signo = x < 0 ? -1 : 1;
-        let nx;
-        if (conMangas && ax > 0.15) {
-          const avance = Math.min(1, (ax - 0.15) / 0.42);
-          nx = 0.5 + signo * (0.18 + avance * 0.3);
-        } else if (conMangas) {
-          nx = 0.5 + (x / 0.15) * 0.18;
-        } else {
-          nx = (x - minX) / ancho;
-        }
-        const ny = (pos.getY(i) - minY) / alto;
-        const rect = pos.getZ(i) >= (medidas.adelante || 0) ? cara.frente : cara.espalda;
-        const u = limitar(nx);
-        const v = limitar(ny);
-        uv.setXY(i, rect.u0 + u * (rect.u1 - rect.u0), rect.v0 + v * (rect.v1 - rect.v0));
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        const nombre = partePrenda(x, y);
+        const caja = cajas.get(nombre);
+        const ancho = Math.max(0.001, caja.maxX - caja.minX);
+        const alto = Math.max(0.001, caja.maxY - caja.minY);
+        const profundo = Math.max(0.001, caja.maxZ - caja.minZ);
+        const recorrido = alto < profundo * 0.65 ? (z - caja.minZ) / profundo : (y - caja.minY) / alto;
+        const vertical = 0.14 + recorrido * 0.74;
+        uv.setXY(i, limitar(columna(nombre, (x - caja.minX) / ancho)), limitar(vertical));
       }
       uv.needsUpdate = true;
     });
