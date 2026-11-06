@@ -254,6 +254,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   const piel = new THREE.MeshStandardMaterial({ color: "#cfc8be", roughness: 0.62, metalness: 0.02 });
   let medidas = medidasDe("m");
   let cuerpoPromesa = Promise.resolve();
+  let superficie = null;
 
   function tubo(desde, hasta, radioDesde, radioHasta, material) {
     const dir = new THREE.Vector3().subVectors(hasta, desde);
@@ -336,6 +337,136 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       nodo.receiveShadow = true;
     });
     cuerpo.add(gltf.scene);
+    hornearCuerpo();
+  }
+
+  function hornearCuerpo() {
+    let mejor = null;
+    let cuenta = 0;
+    cuerpo.updateMatrixWorld(true);
+    cuerpo.traverse((nodo) => {
+      if (!nodo.isMesh || nodo.visible === false) return;
+      const total = nodo.geometry && nodo.geometry.attributes.position ? nodo.geometry.attributes.position.count : 0;
+      if (total > cuenta) {
+        cuenta = total;
+        mejor = nodo;
+      }
+    });
+    if (!mejor) {
+      superficie = null;
+      return;
+    }
+    const geo = mejor.geometry;
+    const pos = geo.attributes.position;
+    const index = geo.index;
+    const matriz = mejor.matrixWorld;
+    const conPiel = !!(mejor.isSkinnedMesh && mejor.skeleton && geo.attributes.skinIndex && geo.attributes.skinWeight);
+    const posiciones = new Float32Array(pos.count * 3);
+    const v = new THREE.Vector3();
+    const v4 = new THREE.Vector4();
+    const acc = new THREE.Vector4();
+    const tmp = new THREE.Vector4();
+    let huesos = null;
+    if (conPiel) {
+      mejor.skeleton.update();
+      huesos = mejor.skeleton.bones.map((hueso, i) => {
+        const m = new THREE.Matrix4();
+        m.multiplyMatrices(hueso.matrixWorld, mejor.skeleton.boneInverses[i]);
+        return m;
+      });
+    }
+    for (let i = 0; i < pos.count; i += 1) {
+      if (conPiel) {
+        v4.fromBufferAttribute(pos, i);
+        v4.w = 1;
+        v4.applyMatrix4(mejor.bindMatrix);
+        acc.set(0, 0, 0, 0);
+        const pesos = geo.attributes.skinWeight;
+        const indicesPiel = geo.attributes.skinIndex;
+        for (let k = 0; k < pesos.itemSize; k += 1) {
+          const peso = pesos.getComponent(i, k);
+          if (!peso) continue;
+          const hueso = indicesPiel.getComponent(i, k);
+          tmp.copy(v4).applyMatrix4(huesos[hueso]);
+          acc.addScaledVector(tmp, peso);
+        }
+        acc.applyMatrix4(mejor.bindMatrixInverse);
+        v.set(acc.x, acc.y, acc.z).applyMatrix4(matriz);
+      } else {
+        v.fromBufferAttribute(pos, i).applyMatrix4(matriz);
+      }
+      posiciones[i * 3] = v.x;
+      posiciones[i * 3 + 1] = v.y;
+      posiciones[i * 3 + 2] = v.z;
+    }
+    const indices = index ? index.array : null;
+    const apoyo = new THREE.BufferGeometry();
+    apoyo.setAttribute("position", new THREE.BufferAttribute(posiciones, 3));
+    if (indices) apoyo.setIndex(Array.from(indices));
+    apoyo.computeVertexNormals();
+    const normales = new Float32Array(apoyo.attributes.normal.array);
+    apoyo.dispose();
+    superficie = { posiciones, normales, indices, total: pos.count };
+  }
+
+  function mallaDeCuerpo(filtro, holgura, material) {
+    if (!superficie) return null;
+    const { posiciones, normales, indices, total } = superficie;
+    const mapa = new Map();
+    const pos = [];
+    const nrm = [];
+    const uv = [];
+    const idx = [];
+    const tomar = (vi) => {
+      const previo = mapa.get(vi);
+      if (previo !== undefined) return previo;
+      const id = mapa.size;
+      mapa.set(vi, id);
+      const o = vi * 3;
+      pos.push(posiciones[o] + normales[o] * holgura, posiciones[o + 1] + normales[o + 1] * holgura, posiciones[o + 2] + normales[o + 2] * holgura);
+      nrm.push(normales[o], normales[o + 1], normales[o + 2]);
+      uv.push(0, 0);
+      return id;
+    };
+    const pasa = (vi) => filtro({ x: posiciones[vi * 3], y: posiciones[vi * 3 + 1], z: posiciones[vi * 3 + 2] });
+    const recorrer = (a, b, c) => {
+      const incluidos = (pasa(a) ? 1 : 0) + (pasa(b) ? 1 : 0) + (pasa(c) ? 1 : 0);
+      if (incluidos < 2) return;
+      idx.push(tomar(a), tomar(b), tomar(c));
+    };
+    if (indices) {
+      for (let i = 0; i < indices.length; i += 3) recorrer(indices[i], indices[i + 1], indices[i + 2]);
+    } else {
+      for (let i = 0; i < total; i += 3) recorrer(i, i + 1, i + 2);
+    }
+    if (idx.length < 24) return null;
+    material.polygonOffset = true;
+    material.polygonOffsetFactor = -2;
+    material.polygonOffsetUnits = -8;
+    const geometria = new THREE.BufferGeometry();
+    geometria.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    geometria.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3));
+    geometria.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+    geometria.setIndex(idx);
+    const malla = new THREE.Mesh(geometria, material);
+    malla.castShadow = true;
+    malla.receiveShadow = true;
+    return malla;
+  }
+
+  function esCabeza(p, med) {
+    return p.y > med.cuelloY - 0.015 && Math.abs(p.x) < 0.11;
+  }
+
+  function esMano(p, med) {
+    const dx = Math.abs(p.x) - med.mano[0];
+    const dy = p.y - med.mano[1];
+    const dz = p.z - med.mano[2];
+    return dx * dx + dy * dy + dz * dz < 0.007;
+  }
+
+  function esBrazo(p, med) {
+    return Math.abs(p.x) > (med.mujer ? 0.19 : 0.23) && p.y > med.caderaY - 0.08;
   }
 
   function desechar(objeto) {
@@ -357,6 +488,51 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   }
 
   const cacheTelas = new Map();
+
+  function rellenarFondo(datos, w, h) {
+    const total = w * h;
+    const fondo = new Uint8Array(total);
+    for (let p = 0, i = 0; p < total; p += 1, i += 4) {
+      const mayor = Math.max(datos[i], datos[i + 1], datos[i + 2]);
+      const menor = Math.min(datos[i], datos[i + 1], datos[i + 2]);
+      if (datos[i + 3] < 24 || (mayor > 198 && mayor - menor < 30)) fondo[p] = 1;
+    }
+    const origen = new Int32Array(total);
+    origen.fill(-1);
+    const cola = new Int32Array(total);
+    let fin = 0;
+    for (let p = 0; p < total; p += 1) {
+      if (fondo[p]) continue;
+      origen[p] = p;
+      cola[fin] = p;
+      fin += 1;
+    }
+    let inicio = 0;
+    while (inicio < fin) {
+      const p = cola[inicio];
+      inicio += 1;
+      const x = p % w;
+      const vecinos = [p - 1, p + 1, p - w, p + w];
+      for (let k = 0; k < 4; k += 1) {
+        const n = vecinos[k];
+        if (n < 0 || n >= total || origen[n] !== -1) continue;
+        if (k === 0 && x === 0) continue;
+        if (k === 1 && x === w - 1) continue;
+        origen[n] = origen[p];
+        cola[fin] = n;
+        fin += 1;
+      }
+    }
+    for (let p = 0; p < total; p += 1) {
+      if (!fondo[p] || origen[p] < 0) continue;
+      const i = p * 4;
+      const j = origen[p] * 4;
+      datos[i] = datos[j];
+      datos[i + 1] = datos[j + 1];
+      datos[i + 2] = datos[j + 2];
+      datos[i + 3] = 255;
+    }
+  }
 
   function texturaDe(imagen, x, y, w, h) {
     const lienzo = document.createElement("canvas");
@@ -384,14 +560,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       const verde = Math.round(sumaG / cuenta);
       const azul = Math.round(sumaB / cuenta);
       const prendaClara = (rojo + verde + azul) / 3 > 200;
-      for (let i = 0; i < datos.length; i += 4) {
-        const claro = datos[i + 3] < 24 || (!prendaClara && Math.max(datos[i], datos[i + 1], datos[i + 2]) > 236 && Math.max(datos[i], datos[i + 1], datos[i + 2]) - Math.min(datos[i], datos[i + 1], datos[i + 2]) < 18);
-        if (!claro) continue;
-        datos[i] = rojo;
-        datos[i + 1] = verde;
-        datos[i + 2] = azul;
-        datos[i + 3] = 255;
-      }
+      if (!prendaClara) rellenarFondo(datos, ancho, alto);
       ctx.putImageData(pixeles, 0, 0);
     }
     const tex = new THREE.CanvasTexture(lienzo);
@@ -658,15 +827,30 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     });
     const ancho = Math.max(0.001, maxX - minX);
     const alto = Math.max(0.001, maxY - minY);
+    const conMangas = ancho > 0.7;
     const cara = mallas[0].material.map.userData;
+    const limitar = (valor) => Math.min(0.96, Math.max(0.04, valor));
     mallas.forEach((nodo) => {
       const pos = nodo.geometry.attributes.position;
       const uv = nodo.geometry.attributes.uv;
       for (let i = 0; i < pos.count; i += 1) {
-        const nx = (pos.getX(i) - minX) / ancho;
+        const x = pos.getX(i);
+        const ax = Math.abs(x);
+        const signo = x < 0 ? -1 : 1;
+        let nx;
+        if (conMangas && ax > 0.15) {
+          const avance = Math.min(1, (ax - 0.15) / 0.42);
+          nx = 0.5 + signo * (0.18 + avance * 0.3);
+        } else if (conMangas) {
+          nx = 0.5 + (x / 0.15) * 0.18;
+        } else {
+          nx = (x - minX) / ancho;
+        }
         const ny = (pos.getY(i) - minY) / alto;
         const rect = pos.getZ(i) >= (medidas.adelante || 0) ? cara.frente : cara.espalda;
-        uv.setXY(i, rect.u0 + nx * (rect.u1 - rect.u0), rect.v0 + ny * (rect.v1 - rect.v0));
+        const u = limitar(nx);
+        const v = limitar(ny);
+        uv.setXY(i, rect.u0 + u * (rect.u1 - rect.u0), rect.v0 + v * (rect.v1 - rect.v0));
       }
       uv.needsUpdate = true;
     });
@@ -950,115 +1134,44 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     const ajuste = ajusteDe(item.id);
     const telaPrenda = materialTela(telas && telas.frente, telas && telas.espalda, solido);
     const conPantalon = puesto.inferior && corte(puesto.inferior) === "largo";
+    const ponerCuerpo = (filtro, holgura, material) => {
+      const malla = mallaDeCuerpo(filtro, holgura * (ajuste.ancho || 1), material || telaPrenda);
+      if (malla) grupo.add(malla);
+      return !!malla;
+    };
     if (slot === "camisa" || slot === "chaqueta" || slot === "chaleco") {
-      const porDentro = slot === "camisa" && tipo !== "fuera" && (conPantalon || puesto.completo);
-      const cuello = med.cuelloY - 0.012;
-      let bajoBase = med.cinturaY - 0.02;
-      let vuelo = 0.008;
-      let caida = tipo === "fuera" ? 0.22 : 0.18;
-      if (slot === "chaqueta") {
-        bajoBase = med.caderaY - 0.02;
-        vuelo = 0.016;
-        caida = 0.82;
-      } else if (slot === "chaleco") {
-        bajoBase = med.caderaY - 0.08;
-        vuelo = 0.012;
-        caida = 0.28;
-      } else if (porDentro) {
-        bajoBase = med.cinturaY - 0.1;
-        vuelo = 0;
-        caida = 0.15;
-      }
-      const bajo = cuello - (cuello - bajoBase) * (slot === "camisa" ? ajuste.largo : 1);
-      const holgura = (slot === "chaqueta" ? 0.032 : slot === "chaleco" ? 0.024 : (tipo === "fuera" ? 0.02 : (porDentro ? 0.01 : 0.016))) * ajuste.ancho;
-      grupo.add(concha(med, Math.min(bajo, cuello - 0.18), cuello, holgura, telaPrenda, 1, vuelo, caida));
-        if (slot === "chaleco") ocultarCuerpo(/^hombroCarne/);
-        if (slot !== "chaleco") {
-        const corta = slot === "camisa" && tipo === "manga-corta";
-        const radio = med.brazo + (slot === "chaqueta" ? 0.016 : 0.01);
-        sumarMangas(grupo, med, telaPrenda, corta, ajuste.manga, radio);
-        if (!corta) ocultarCuerpo(/^brazo|^mano|^hombroCarne/);
-      }
+      const corta = slot === "camisa" && tipo === "manga-corta";
+      const bajo = slot === "chaleco" ? med.caderaY - 0.08 : (slot === "chaqueta" ? med.caderaY - 0.04 : med.cinturaY - 0.03);
+      const holgura = slot === "chaqueta" ? 0.032 : (slot === "chaleco" ? 0.028 : 0.024);
+      ponerCuerpo((p) => {
+        if (esCabeza(p, med) || esMano(p, med) || p.y < bajo || p.y > med.cuelloY + 0.02) return false;
+        if (slot === "chaleco" && esBrazo(p, med)) return false;
+        if (corta && esBrazo(p, med) && p.y < med.pechoY - 0.08) return false;
+        return true;
+      }, holgura);
     } else if (slot === "completo") {
-      const superior = concha(med, med.cinturaY - 0.08, med.cuelloY - 0.012, 0.016 * ajuste.ancho, telaPrenda, 1, 0.02);
-      const inferior = concha(med, med.caderaY - 0.22, med.cinturaY + 0.02, 0.018 * ajuste.cintura, telaPrenda, 1, 0.02);
-      grupo.add(superior, inferior);
-      sumarMangas(grupo, med, telaPrenda, false, ajuste.manga, med.brazo + 0.01);
-      sumarPiernas(grupo, med, telaPrenda, med.caderaY - 0.12, 0.06, (med.pierna + 0.012) * ajuste.ancho);
-      ocultarCuerpo(/^brazo|^mano|^hombroCarne|^pierna|^pie|^nalga/);
-    } else if (slot === "inferior" && tipo === "falda") {
-      const falda = concha(med, med.caderaY - 0.4, med.cinturaY + 0.04, 0.02 * ajuste.cintura, telaPrenda, ajuste.ancho, 0.06);
-      grupo.add(falda);
+      ponerCuerpo((p) => {
+        if (esCabeza(p, med) || esMano(p, med)) return false;
+        return p.y >= 0.1 && p.y <= med.cuelloY + 0.02;
+      }, 0.022);
     } else if (slot === "inferior") {
-      const yFin = tipo === "corto" ? med.caderaY - 0.42 : 0.12;
-      const cadera = med.caderaY - (tipo === "corto" ? 0.3 : 0.28);
-      const tobillo = cadera - (cadera - yFin) * ajuste.pierna;
-      const buzoEncima = puesto.camisa && corte(puesto.camisa) === "fuera";
-      const camisaDentro = puesto.camisa && corte(puesto.camisa) !== "fuera";
-      const encima = buzoEncima || !!puesto.chaqueta || !!puesto.chaleco;
-      const cima = camisaDentro ? med.cinturaY + 0.04 : (encima ? med.cinturaY + 0.02 : med.cinturaY + 0.015);
-      const caderaMalla = concha(med, cadera, Math.max(cima, cadera + 0.22), 0.042 * ajuste.cintura, telaPrenda, ajuste.ancho, 0.004, 0.08);
-      grupo.add(caderaMalla);
-      sumarPiernas(grupo, med, telaPrenda, med.caderaY + 0.02, tobillo, (med.pierna + 0.02) * ajuste.ancho);
-      if (tipo !== "corto") ocultarCuerpo(/^pierna|^pie|^nalga|^caderaCuerpo/);
+      const bajo = tipo === "falda" ? med.caderaY - 0.42 : (tipo === "corto" ? med.caderaY - 0.4 : 0.1);
+      ponerCuerpo((p) => {
+        if (esBrazo(p, med) || esMano(p, med) || esCabeza(p, med)) return false;
+        if (tipo === "falda" && p.y < med.caderaY - 0.02 && Math.abs(p.x) > 0.16) return false;
+        return p.y <= med.cinturaY + 0.03 && p.y >= bajo;
+      }, 0.02);
     } else if (slot === "cinturon") {
       const base = puesto.inferior || puesto.completo;
       if (base && admiteCinturon(base)) {
-        const yReata = med.cinturaY + 0.01;
-        grupo.add(bandaCintura(med, yReata, solido));
-        const foto = fotoSuelta(telas && telas.frente);
-        if (foto) {
-          const cintura = seccionEn(med, med.cinturaY);
-          const hebilla = mallaCurva(0.045, 0.04, 0.7, foto);
-          hebilla.position.set(0, yReata, med.adelante + cintura.z + 0.02);
-          grupo.add(hebilla);
-        }
+        ponerCuerpo((p) => Math.abs(p.y - med.cinturaY) < 0.018 && !esBrazo(p, med) && !esCabeza(p, med), 0.034, telaPrenda);
       }
     } else if (slot === "calzado") {
       const alta = tipo === "bota";
-      const foto = fotoSuelta(telas && telas.frente);
-      [-1, 1].forEach((lado) => {
-        const x = lado * med.pie[0];
-        const z = med.pie[1];
-        const suela = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.045, 0.36), solido);
-        suela.position.set(x, 0.028, z + 0.07);
-        suela.castShadow = true;
-        const empeine = new THREE.Mesh(new THREE.BoxGeometry(0.13, alta ? 0.12 : 0.13, 0.24), solido);
-        empeine.position.set(x, alta ? 0.1 : 0.09, z + 0.06);
-        empeine.castShadow = true;
-        grupo.add(suela, empeine);
-        if (alta) {
-          const cana = new THREE.Mesh(new THREE.BoxGeometry(0.092, 0.11, 0.11), solido);
-          cana.position.set(x, 0.12, z - 0.02);
-          cana.castShadow = true;
-          grupo.add(cana);
-        }
-        if (foto) {
-          const cara = mallaCurva(0.055, alta ? 0.15 : 0.08, 0.4, foto);
-          cara.position.set(x + lado * 0.05, alta ? 0.09 : 0.05, z + 0.01);
-          grupo.add(cara);
-        }
-      });
-      ocultarCuerpo(/^pie/);
+      const cima = alta ? 0.28 : 0.17;
+      ponerCuerpo((p) => p.y <= cima && p.y >= 0 && Math.abs(p.x) > 0.05, alta ? 0.014 : 0.012);
     } else if (slot === "guantes") {
-      const foto = fotoSuelta(telas && telas.frente);
-      [-1, 1].forEach((lado) => {
-        const mano = new THREE.Vector3(lado * med.mano[0], med.mano[1], med.mano[2]);
-        const volumen = new THREE.Mesh(new THREE.SphereGeometry(0.045, 16, 12), solido);
-        volumen.scale.set(1.15, 0.7, 0.85);
-        volumen.position.copy(mano);
-        volumen.castShadow = true;
-        grupo.add(volumen);
-        if (foto) {
-          const aspecto = telas.frente.aspect || 1.2;
-          const ancho = 0.11;
-          const alto = Math.min(0.14, Math.max(0.08, ancho / aspecto));
-          const cara = mallaCurva(ancho * 0.45, alto, 0.6, foto);
-          cara.position.set(mano.x, mano.y, mano.z + 0.03);
-          grupo.add(cara);
-        }
-      });
-      ocultarCuerpo(/^mano/);
+      ponerCuerpo((p) => esMano(p, med), 0.008);
     } else if (slot === "gafas") {
       const foto = fotoSuelta(telas && telas.frente);
       const material = foto || solido;
@@ -1069,21 +1182,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       lentes.position.set(0, med.cabezaY - 0.02, med.cabezaZ + med.cabezaR * 0.8);
       grupo.add(lentes);
     } else if (slot === "gorra") {
-      const r = med.cabezaR;
-      const copa = new THREE.Mesh(new THREE.SphereGeometry(r * 1.2, 32, 18, 0, Math.PI * 2, 0, Math.PI * 0.52), solido);
-      copa.scale.set(1.02, 0.78, 1.08);
-      copa.position.set(0, med.cabezaY + r * 0.55, med.cabezaZ);
-      copa.castShadow = true;
-      const visera = viseraGorra(r * 0.95, r * 0.7, solido);
-      visera.position.set(0, med.cabezaY + r * 0.22, med.cabezaZ + r * 0.7);
-      visera.rotation.x = 0.28;
-      grupo.add(copa, visera);
-      const foto = fotoSuelta(telas && telas.frente);
-      if (foto) {
-        const frenteGorra = mallaCurva(r * 0.62, r * 0.48, 0.65, foto);
-        frenteGorra.position.set(0, med.cabezaY + r * 0.55, med.cabezaZ + r * 0.95);
-        grupo.add(frenteGorra);
-      }
+      ponerCuerpo((p) => p.y >= med.cabezaY + med.cabezaR * 0.2 && Math.abs(p.x) < 0.11 && p.z > med.cabezaZ - 0.04, 0.01);
     }
     uvFoto(grupo);
     ropa.add(grupo);
