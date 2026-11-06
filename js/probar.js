@@ -428,10 +428,14 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       uv.push(0, 0);
       return id;
     };
-    const pasa = (vi) => filtro({ x: posiciones[vi * 3], y: posiciones[vi * 3 + 1], z: posiciones[vi * 3 + 2] });
+    const punto = (vi) => ({ x: posiciones[vi * 3], y: posiciones[vi * 3 + 1], z: posiciones[vi * 3 + 2] });
     const recorrer = (a, b, c) => {
-      const incluidos = (pasa(a) ? 1 : 0) + (pasa(b) ? 1 : 0) + (pasa(c) ? 1 : 0);
-      if (incluidos < 2) return;
+      const pa = punto(a);
+      const pb = punto(b);
+      const pc = punto(c);
+      const incluidos = (filtro(pa) ? 1 : 0) + (filtro(pb) ? 1 : 0) + (filtro(pc) ? 1 : 0);
+      const centro = { x: (pa.x + pb.x + pc.x) / 3, y: (pa.y + pb.y + pc.y) / 3, z: (pa.z + pb.z + pc.z) / 3 };
+      if (incluidos < 2 && !filtro(centro)) return;
       idx.push(tomar(a), tomar(b), tomar(c));
     };
     if (indices) {
@@ -1142,7 +1146,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     if (slot === "camisa" || slot === "chaqueta" || slot === "chaleco") {
       const corta = slot === "camisa" && tipo === "manga-corta";
       const bajo = slot === "chaleco" ? med.caderaY - 0.08 : (slot === "chaqueta" ? med.caderaY - 0.04 : med.cinturaY - 0.03);
-      const holgura = slot === "chaqueta" ? 0.032 : (slot === "chaleco" ? 0.028 : 0.024);
+      const holgura = slot === "chaqueta" ? 0.04 : (slot === "chaleco" ? 0.036 : 0.032);
       ponerCuerpo((p) => {
         if (esCabeza(p, med) || esMano(p, med) || p.y < bajo || p.y > med.cuelloY + 0.02) return false;
         if (slot === "chaleco" && esBrazo(p, med)) return false;
@@ -1153,14 +1157,14 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       ponerCuerpo((p) => {
         if (esCabeza(p, med) || esMano(p, med)) return false;
         return p.y >= 0.1 && p.y <= med.cuelloY + 0.02;
-      }, 0.022);
+      }, 0.03);
     } else if (slot === "inferior") {
       const bajo = tipo === "falda" ? med.caderaY - 0.42 : (tipo === "corto" ? med.caderaY - 0.4 : 0.1);
       ponerCuerpo((p) => {
         if (esBrazo(p, med) || esMano(p, med) || esCabeza(p, med)) return false;
         if (tipo === "falda" && p.y < med.caderaY - 0.02 && Math.abs(p.x) > 0.16) return false;
         return p.y <= med.cinturaY + 0.03 && p.y >= bajo;
-      }, 0.02);
+      }, 0.028);
     } else if (slot === "cinturon") {
       const base = puesto.inferior || puesto.completo;
       if (base && admiteCinturon(base)) {
