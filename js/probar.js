@@ -218,9 +218,9 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   controles.maxPolarAngle = 1.55;
   controles.update();
 
-  escena.add(new THREE.AmbientLight("#ffffff", 0.42));
-  const frenteLuz = new THREE.DirectionalLight("#ffffff", 1.15);
-  frenteLuz.position.set(0.15, 2.1, 3.1);
+  escena.add(new THREE.AmbientLight("#ffffff", 0.72));
+  const frenteLuz = new THREE.DirectionalLight("#ffffff", 1.45);
+  frenteLuz.position.set(0.1, 2.4, 3.2);
   frenteLuz.castShadow = true;
   frenteLuz.shadow.mapSize.set(2048, 2048);
   frenteLuz.shadow.camera.near = 0.4;
@@ -230,15 +230,18 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   frenteLuz.shadow.camera.top = 2;
   frenteLuz.shadow.camera.bottom = -0.3;
   escena.add(frenteLuz);
-  const izquierdaLuz = new THREE.DirectionalLight("#ffffff", 0.9);
-  izquierdaLuz.position.set(-2.8, 1.7, 0.35);
+  const izquierdaLuz = new THREE.DirectionalLight("#ffffff", 1.25);
+  izquierdaLuz.position.set(-3.1, 1.9, 0.2);
   escena.add(izquierdaLuz);
-  const derechaLuz = new THREE.DirectionalLight("#ffffff", 0.9);
-  derechaLuz.position.set(2.8, 1.7, 0.35);
+  const derechaLuz = new THREE.DirectionalLight("#ffffff", 1.25);
+  derechaLuz.position.set(3.1, 1.9, 0.2);
   escena.add(derechaLuz);
-  const atrasLuz = new THREE.DirectionalLight("#ffffff", 1);
-  atrasLuz.position.set(0, 1.8, -3.1);
+  const atrasLuz = new THREE.DirectionalLight("#ffffff", 1.35);
+  atrasLuz.position.set(0, 2.1, -3.2);
   escena.add(atrasLuz);
+  const cenital = new THREE.DirectionalLight("#fff8f2", 0.85);
+  cenital.position.set(0, 4.2, 0.4);
+  escena.add(cenital);
 
   const suelo = new THREE.Mesh(
     new THREE.CircleGeometry(1.05, 48),
@@ -407,7 +410,31 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     apoyo.setAttribute("position", new THREE.BufferAttribute(posiciones, 3));
     if (indices) apoyo.setIndex(Array.from(indices));
     apoyo.computeVertexNormals();
-    const normales = new Float32Array(apoyo.attributes.normal.array);
+    const crudas = apoyo.attributes.normal.array;
+    const normales = new Float32Array(crudas.length);
+    const cubo = 0.02;
+    const celdas = new Map();
+    for (let i = 0; i < pos.count; i += 1) {
+      const o = i * 3;
+      const clave = `${Math.round(posiciones[o] / cubo)}|${Math.round(posiciones[o + 1] / cubo)}|${Math.round(posiciones[o + 2] / cubo)}`;
+      let celda = celdas.get(clave);
+      if (!celda) {
+        celda = [0, 0, 0];
+        celdas.set(clave, celda);
+      }
+      celda[0] += crudas[o];
+      celda[1] += crudas[o + 1];
+      celda[2] += crudas[o + 2];
+    }
+    for (let i = 0; i < pos.count; i += 1) {
+      const o = i * 3;
+      const clave = `${Math.round(posiciones[o] / cubo)}|${Math.round(posiciones[o + 1] / cubo)}|${Math.round(posiciones[o + 2] / cubo)}`;
+      const celda = celdas.get(clave);
+      const largo = Math.hypot(celda[0], celda[1], celda[2]) || 1;
+      normales[o] = celda[0] / largo;
+      normales[o + 1] = celda[1] / largo;
+      normales[o + 2] = celda[2] / largo;
+    }
     apoyo.dispose();
     superficie = { posiciones, normales, indices, total: pos.count };
   }
@@ -426,8 +453,28 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       const id = mapa.size;
       mapa.set(vi, id);
       const o = vi * 3;
-      pos.push(posiciones[o] + normales[o] * holgura, posiciones[o + 1] + normales[o + 1] * holgura, posiciones[o + 2] + normales[o + 2] * holgura);
-      nrm.push(normales[o], normales[o + 1], normales[o + 2]);
+      const x = posiciones[o];
+      const y = posiciones[o + 1];
+      const z = posiciones[o + 2];
+      let nx = normales[o];
+      let ny = normales[o + 1];
+      let nz = normales[o + 2];
+      let cx = 0;
+      let cz = medidas.adelante || 0;
+      const ax = Math.abs(x);
+      if (ax > (medidas.mujer ? 0.18 : 0.22) && y > medidas.caderaY - 0.05) {
+        cx = Math.sign(x) * Math.min(ax * 0.92, medidas.mujer ? 0.34 : 0.42);
+        cz = 0.03;
+      } else if (y < medidas.cinturaY + 0.02 && ax > 0.04) {
+        cx = Math.sign(x) * Math.min(Math.max(ax, 0.09), medidas.mujer ? 0.14 : 0.16);
+      }
+      if (nx * (x - cx) + nz * (z - cz) < 0) {
+        nx = -nx;
+        ny = -ny;
+        nz = -nz;
+      }
+      pos.push(x + nx * holgura, y + ny * holgura, z + nz * holgura);
+      nrm.push(nx, ny, nz);
       uv.push(0, 0);
       return id;
     };
@@ -448,17 +495,22 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     }
     if (idx.length < 24) return null;
     material.polygonOffset = true;
-    material.polygonOffsetFactor = -2;
-    material.polygonOffsetUnits = -8;
+    material.polygonOffsetFactor = -4;
+    material.polygonOffsetUnits = -12;
     const geometria = new THREE.BufferGeometry();
     geometria.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
     geometria.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3));
     geometria.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
     geometria.setIndex(idx);
+    suavizarTela(geometria);
     const malla = new THREE.Mesh(geometria, material);
     malla.castShadow = true;
     malla.receiveShadow = true;
     return malla;
+  }
+
+  function suavizarTela(geometria) {
+    geometria.computeVertexNormals();
   }
 
   function esCabeza(p, med) {
@@ -741,11 +793,9 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   function materialTela(telas, solido) {
     if (!telas || !telas.frente) return solido;
     const mapa = atlasDe([telas.frente, telas.derecha, telas.espalda, telas.izquierda]);
-    return new THREE.MeshStandardMaterial({
+    return new THREE.MeshBasicMaterial({
       map: mapa,
       color: "#ffffff",
-      roughness: 0.72,
-      metalness: 0,
       side: THREE.DoubleSide
     });
   }
@@ -862,111 +912,46 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       }
     });
     if (!mallas.length) return;
+    let minX = Infinity;
+    let maxX = -Infinity;
     let minY = Infinity;
     let maxY = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
     mallas.forEach((nodo) => {
       const pos = nodo.geometry.attributes.position;
       for (let i = 0; i < pos.count; i += 1) {
+        minX = Math.min(minX, pos.getX(i));
+        maxX = Math.max(maxX, pos.getX(i));
         minY = Math.min(minY, pos.getY(i));
         maxY = Math.max(maxY, pos.getY(i));
+        minZ = Math.min(minZ, pos.getZ(i));
+        maxZ = Math.max(maxZ, pos.getZ(i));
       }
     });
-    const esPantalon = (minY + maxY) / 2 < medidas.cinturaY && maxY - minY > 0.35;
-    const region = (x, y) => {
-      if (esPantalon) return x < 0 ? "piernaI" : "piernaD";
-      const nombre = partePrenda(x, y);
-      return nombre.startsWith("pierna") ? "torso" : nombre;
-    };
-    const cajas = new Map();
-    const asegurar = (nombre) => {
-      let caja = cajas.get(nombre);
-      if (!caja) {
-        caja = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity, minZ: Infinity, maxZ: -Infinity };
-        cajas.set(nombre, caja);
-      }
-      return caja;
-    };
-    mallas.forEach((nodo) => {
-      const pos = nodo.geometry.attributes.position;
-      for (let i = 0; i < pos.count; i += 1) {
-        const x = pos.getX(i);
-        const y = pos.getY(i);
-        const z = pos.getZ(i);
-        const caja = asegurar(region(x, y));
-        caja.minX = Math.min(caja.minX, x);
-        caja.maxX = Math.max(caja.maxX, x);
-        caja.minY = Math.min(caja.minY, y);
-        caja.maxY = Math.max(caja.maxY, y);
-        caja.minZ = Math.min(caja.minZ, z);
-        caja.maxZ = Math.max(caja.maxZ, z);
-      }
-    });
-    const nombres = Array.from(cajas.keys());
-    const soloPies = nombres.every((nombre) => nombre.startsWith("pie"));
-    const soloCabeza = nombres.every((nombre) => nombre === "cabeza");
     const cara = mallas[0].material.map.userData;
-    const limitar = (valor) => Math.min(0.97, Math.max(0.03, valor));
+    const limitar = (valor) => Math.min(0.98, Math.max(0.02, valor));
     const fraccion = (valor, minimo, maximo) => (valor - minimo) / Math.max(0.001, maximo - minimo);
+    const piezaBaja = maxY - minY < 0.22 && maxZ - minZ > maxY - minY;
+    const dosPiernas = !piezaBaja && maxY - minY > 0.35 && (minY + maxY) / 2 < medidas.cinturaY + 0.08;
     mallas.forEach((nodo) => {
       const pos = nodo.geometry.attributes.position;
-      const nrm = nodo.geometry.attributes.normal;
       const uv = nodo.geometry.attributes.uv;
       for (let i = 0; i < pos.count; i += 1) {
         const x = pos.getX(i);
         const y = pos.getY(i);
         const z = pos.getZ(i);
-        const nombre = region(x, y);
-        const caja = cajas.get(nombre);
-        const sx = fraccion(x, caja.minX, caja.maxX);
-        const sy = fraccion(y, caja.minY, caja.maxY);
-        const sz = fraccion(z, caja.minZ, caja.maxZ);
-        const nx = nrm ? nrm.getX(i) : 0;
-        const nz = nrm ? nrm.getZ(i) : 1;
-        let vista = nz >= -0.45 ? "frente" : "espalda";
-        if (cara.varias && nombre.startsWith("brazo")) {
-          const haciaAfuera = nombre.endsWith("I") ? nx < -0.72 : nx > 0.72;
-          if (haciaAfuera) vista = nombre.endsWith("I") ? "derecha" : "izquierda";
+        const vista = "frente";
+        let u = 0.06 + fraccion(x, minX, maxX) * 0.88;
+        const v = piezaBaja ? fraccion(z, minZ, maxZ) : 0.04 + fraccion(y, minY, maxY) * 0.92;
+        if (dosPiernas) {
+          const izquierda = x < 0;
+          const eje = izquierda ? -0.14 : 0.14;
+          const angulo = Math.atan2(x - eje, z - (medidas.adelante || 0));
+          const local = Math.min(0.82, Math.max(0.18, 0.5 + angulo / 4));
+          u = izquierda ? 0.04 + local * 0.42 : 0.54 + local * 0.42;
         }
-        if (!cara.varias) vista = "frente";
         const rect = cara[vista] || cara.frente;
-        let u = 0.5;
-        let v = 0.08 + sy * 0.84;
-        const izquierda = nombre.endsWith("I");
-        if (soloPies || soloCabeza) {
-          u = 0.08 + sx * 0.84;
-          v = 0.08 + (soloPies && caja.maxY - caja.minY < caja.maxZ - caja.minZ ? sz : sy) * 0.84;
-        } else if (nombre.startsWith("pierna") || nombre.startsWith("pie")) {
-          if (vista === "frente" || vista === "espalda") {
-            const otra = cajas.get(izquierda ? "piernaD" : "piernaI");
-            if (y > medidas.caderaY - 0.12 && otra) {
-              const x0 = Math.min(caja.minX, otra.minX);
-              const x1 = Math.max(caja.maxX, otra.maxX);
-              const tope = Math.max(caja.maxY, otra.maxY);
-              u = 0.12 + fraccion(x, x0, x1) * 0.76;
-              v = 0.78 + fraccion(y, medidas.caderaY - 0.12, tope) * 0.19;
-            } else {
-              u = izquierda ? 0.08 + sx * 0.26 : 0.66 + sx * 0.26;
-              v = 0.22 + sy * 0.62;
-            }
-          } else {
-            u = 0.16 + sz * 0.68;
-            v = 0.1 + sy * 0.76;
-          }
-        } else if (nombre.startsWith("brazo")) {
-          if (vista === "frente" || vista === "espalda") {
-            u = izquierda ? 0.03 + sy * 0.24 : 0.73 + sy * 0.24;
-            v = izquierda ? 0.06 + sx * 0.88 : 0.06 + (1 - sx) * 0.88;
-          } else {
-            u = 0.18 + sz * 0.5;
-            v = 0.1 + (1 - sx) * 0.78;
-          }
-        } else if (vista === "frente" || vista === "espalda") {
-          u = 0.24 + sx * 0.52;
-          v = 0.06 + sy * 0.88;
-        } else {
-          u = 0.22 + sz * 0.56;
-          v = 0.06 + sy * 0.88;
-        }
         uv.setXY(i, rect.u0 + limitar(u) * (rect.u1 - rect.u0), rect.v0 + limitar(v) * (rect.v1 - rect.v0));
       }
       uv.needsUpdate = true;
@@ -1262,7 +1247,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     if (slot === "camisa" || slot === "chaqueta" || slot === "chaleco") {
       const corta = slot === "camisa" && tipo === "manga-corta";
       const bajo = slot === "chaleco" ? med.caderaY - 0.08 : (slot === "chaqueta" ? med.caderaY - 0.06 : (tipo === "fuera" ? med.caderaY - 0.04 : med.cinturaY - 0.02));
-      const holgura = slot === "chaqueta" ? 0.048 : (slot === "chaleco" ? 0.044 : 0.046);
+      const holgura = slot === "chaqueta" ? 0.03 : (slot === "chaleco" ? 0.026 : 0.022);
       ponerCuerpo((p) => {
         if (esCabeza(p, med) || esMano(p, med) || p.y < bajo || p.y > med.cuelloY + 0.02) return false;
         if (slot === "chaleco" && esBrazo(p, med)) return false;
@@ -1280,7 +1265,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
         if (esBrazo(p, med) || esMano(p, med) || esCabeza(p, med)) return false;
         if (tipo === "falda" && p.y < med.caderaY - 0.02 && Math.abs(p.x) > 0.16) return false;
         return p.y <= med.cinturaY + 0.03 && p.y >= bajo;
-      }, 0.05);
+      }, 0.032);
     } else if (slot === "cinturon") {
       const base = puesto.inferior || puesto.completo;
       if (base && admiteCinturon(base)) {
@@ -1289,7 +1274,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     } else if (slot === "calzado") {
       const alta = tipo === "bota";
       const cima = alta ? 0.28 : 0.17;
-      ponerCuerpo((p) => p.y <= cima && p.y >= 0 && Math.abs(p.x) > 0.05, alta ? 0.014 : 0.012);
+      ponerCuerpo((p) => p.y <= cima && p.y >= 0 && Math.abs(p.x) > 0.05, alta ? 0.02 : 0.018);
     } else if (slot === "guantes") {
       ponerCuerpo((p) => esMano(p, med), 0.008);
     } else if (slot === "gafas") {
