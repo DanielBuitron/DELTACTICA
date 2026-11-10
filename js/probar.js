@@ -674,12 +674,15 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
         }
         if (n < 12) resolve(texturaDe(imagen, 0, 0, w, h));
         else {
-          const margen = Math.round(Math.min(w, h) * 0.012);
+          const margen = Math.round(Math.min(w, h) * 0.004);
           const x0 = Math.max(0, minX - margen);
           const y0 = Math.max(0, minY - margen);
-          const x1 = Math.min(w, maxX + margen);
-          const y1 = Math.min(h, maxY + margen);
-          resolve(texturaDe(imagen, x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0)));
+          let x1 = Math.min(w, maxX + margen);
+          let y1 = Math.min(h, maxY + margen);
+          y1 = quitarPiel(data, w, x0, y0, x1, y1);
+          const tela = texturaDe(imagen, x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0));
+          tela.zonas = zonasDe(data, w, h, x0, y0, x1, y1);
+          resolve(tela);
         }
       };
       imagen.onerror = () => resolve(null);
@@ -687,6 +690,81 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     });
     cacheTelas.set(url, promesa);
     return promesa;
+  }
+
+  function quitarPiel(data, w, x0, y0, x1, y1) {
+    const alto = y1 - y0;
+    if (alto < 48) return y1;
+    let suma = 0;
+    let cuenta = 0;
+    const yA = y0 + Math.round(alto * 0.35);
+    const yB = y0 + Math.round(alto * 0.7);
+    for (let y = yA; y <= yB; y += 4) {
+      for (let x = x0; x <= x1; x += 6) {
+        const i = (y * w + x) * 4;
+        if (data[i + 3] < 28) continue;
+        suma += (data[i] + data[i + 1] + data[i + 2]) / 3;
+        cuenta += 1;
+      }
+    }
+    const base = cuenta ? suma / cuenta : 40;
+    const piel = (i) => {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      return data[i + 3] > 28 && r > 140 && g > 100 && b > 80 && r > b + 12 && r - g < 55;
+    };
+    let corte = y1;
+    const limite = y0 + Math.round(alto * 0.62);
+    for (let y = y1 - 1; y >= limite; y -= 2) {
+      let cuerpo = 0;
+      let tela = 0;
+      let luz = 0;
+      let n = 0;
+      for (let x = x0; x <= x1; x += 3) {
+        const i = (y * w + x) * 4;
+        if (data[i + 3] < 28) continue;
+        n += 1;
+        luz += (data[i] + data[i + 1] + data[i + 2]) / 3;
+        if (piel(i)) cuerpo += 1;
+        else tela += 1;
+      }
+      const media = n ? luz / n : base;
+      if ((cuerpo > 8 && cuerpo > tela * 0.45) || (n > 8 && media > base + 32)) corte = y;
+      else if (tela > 12) break;
+    }
+    return corte;
+  }
+
+  function zonasDe(data, w, h, x0, y0, x1, y1) {
+    const filas = [];
+    const paso = Math.max(1, Math.round((y1 - y0) / 90));
+    for (let y = y0; y <= y1; y += paso) {
+      let a = -1;
+      let b = -1;
+      for (let x = x0; x <= x1; x += 2) {
+        const i = (y * w + x) * 4;
+        if (data[i + 3] < 20) continue;
+        if (Math.max(data[i], data[i + 1], data[i + 2]) < 8) continue;
+        if (a < 0) a = x;
+        b = x;
+      }
+      if (a >= 0) filas.push({ y, a, b, ancho: b - a });
+    }
+    if (filas.length < 6) return null;
+    const alto = filas[filas.length - 1].y - filas[0].y;
+    if (alto < 8) return null;
+    const arriba = filas.filter((fila) => fila.y < filas[0].y + alto * 0.14).map((fila) => fila.ancho).sort((p, q) => p - q);
+    const cuello = arriba.length ? arriba[Math.floor(arriba.length / 2)] : filas[0].ancho;
+    const centro = filas.filter((fila) => fila.y > filas[0].y + alto * 0.28 && fila.y < filas[0].y + alto * 0.58);
+    const anchoMedio = centro.length ? centro.reduce((suma, fila) => suma + fila.ancho, 0) / centro.length : cuello;
+    const eje = centro.length ? centro.reduce((suma, fila) => suma + (fila.a + fila.b) / 2, 0) / centro.length : (x0 + x1) / 2;
+    const torso = cuello > anchoMedio * 0.82 ? anchoMedio * 0.42 : cuello;
+    const ancho = Math.max(1, x1 - x0);
+    const izquierda = Math.max(0.16, Math.min(0.4, (eje - torso / 2 - x0) / ancho));
+    const derecha = Math.max(0.6, Math.min(0.84, (eje + torso / 2 - x0) / ancho));
+    if (derecha - izquierda < 0.18) return null;
+    return { izquierda: [0.01, izquierda], torso: [izquierda, derecha], derecha: [derecha, 0.99] };
   }
 
   function ajusteDe(id) {
@@ -783,7 +861,8 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       frente: colocarVista(ctx, imagen(vistas[0]), 0, 0, mitad, mitad, lado),
       derecha: colocarVista(ctx, imagen(vistas[1]), mitad, 0, mitad, mitad, lado),
       espalda: colocarVista(ctx, imagen(vistas[2]), 0, mitad, mitad, mitad, lado),
-      izquierda: colocarVista(ctx, imagen(vistas[3]), mitad, mitad, mitad, mitad, lado)
+      izquierda: colocarVista(ctx, imagen(vistas[3]), mitad, mitad, mitad, mitad, lado),
+      zonas: (vistas[0] && vistas[0].zonas) || null
     };
     tex.needsUpdate = true;
     cacheAtlas.set(clave, tex);
@@ -930,7 +1009,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       }
     });
     const cara = mallas[0].material.map.userData;
-    const limitar = (valor) => Math.min(0.98, Math.max(0.02, valor));
+    const limitar = (valor) => Math.min(0.995, Math.max(0.005, valor));
     const fraccion = (valor, minimo, maximo) => (valor - minimo) / Math.max(0.001, maximo - minimo);
     const piezaBaja = maxY - minY < 0.22 && maxZ - minZ > maxY - minY;
     const dosPiernas = !piezaBaja && maxY - minY > 0.35 && (minY + maxY) / 2 < medidas.cinturaY + 0.08;
@@ -942,14 +1021,40 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
         const y = pos.getY(i);
         const z = pos.getZ(i);
         const vista = "frente";
-        let u = 0.06 + fraccion(x, minX, maxX) * 0.88;
-        const v = piezaBaja ? fraccion(z, minZ, maxZ) : 0.04 + fraccion(y, minY, maxY) * 0.92;
+        const zonas = cara.zonas;
+        const enBrazo = Math.abs(x) > (medidas.mujer ? 0.18 : 0.22) && y > medidas.caderaY - 0.02;
+        let u = fraccion(x, minX, maxX);
+        let v = piezaBaja ? fraccion(z, minZ, maxZ) : fraccion(y, minY, maxY);
         if (dosPiernas) {
-          const izquierda = x < 0;
-          const eje = izquierda ? -0.14 : 0.14;
-          const angulo = Math.atan2(x - eje, z - (medidas.adelante || 0));
-          const local = Math.min(0.82, Math.max(0.18, 0.5 + angulo / 4));
-          u = izquierda ? 0.04 + local * 0.42 : 0.54 + local * 0.42;
+          const lado = x < 0 ? -1 : 1;
+          const salida = Math.min(1, Math.max(0, (Math.abs(x) - 0.045) / 0.13));
+          const junto = lado < 0 ? 0.44 : 0.56;
+          const fuera = lado < 0 ? 0.24 : 0.76;
+          u = junto + salida * (fuera - junto);
+          v = fraccion(y, minY, maxY);
+        } else if (zonas && enBrazo && maxY - minY > 0.45) {
+          const signo = x < 0 ? -1 : 1;
+          const zona = x < 0 ? zonas.izquierda : zonas.derecha;
+          const sx = signo * medidas.hombro;
+          const sy = medidas.pechoY + (medidas.mujer ? 0.12 : 0.16);
+          const sz = medidas.adelante || 0;
+          const dx = signo * medidas.mano[0] - sx;
+          const dy = medidas.mano[1] - sy;
+          const dz = medidas.mano[2] - sz;
+          const largo = dx * dx + dy * dy + dz * dz || 1;
+          const recorrido = Math.min(1, Math.max(0, ((x - sx) * dx + (y - sy) * dy + (z - sz) * dz) / largo));
+          const ejeX = sx + recorrido * dx;
+          const haciaCuerpo = (Math.abs(ejeX) - Math.abs(x)) / 0.07;
+          const localBrazo = Math.min(0.92, Math.max(0.08, 0.42 + haciaCuerpo * 0.5));
+          const une = recorrido < 0.28 ? 1 - recorrido / 0.28 : 0;
+          const local = localBrazo + (0.96 - localBrazo) * une;
+          u = zona[0] + local * (zona[1] - zona[0]);
+          v = 0.98 - recorrido * 0.94;
+        } else if (zonas) {
+          const zona = zonas.torso;
+          const mitad = medidas.hombro * 0.9;
+          u = zona[0] + fraccion(x, -mitad, mitad) * (zona[1] - zona[0]);
+          v = fraccion(y, minY, maxY);
         }
         const rect = cara[vista] || cara.frente;
         uv.setXY(i, rect.u0 + limitar(u) * (rect.u1 - rect.u0), rect.v0 + limitar(v) * (rect.v1 - rect.v0));
