@@ -166,33 +166,682 @@ const I18N = {
   "Cargada": "Uploaded",
   "Quitar": "Remove",
   "Página": "Page",
-  "de": "of"
+  "de": "of",
+  "La comunicación queda abierta. Aún no hay dirección.": "The link stays open. There is no address yet.",
+  "Abrir menú": "Open menu",
+  "Cerrar menú": "Close menu",
+  "Secciones": "Sections",
+  "Pie de página": "Footer",
+  "Fabricante de uniformes y artículos tácticos.": "Maker of uniforms and tactical gear.",
+  "Escribir al asesor comercial por WhatsApp": "Message the sales advisor on WhatsApp",
+  "Hola, quiero hablar con el asesor comercial de Deltactica sobre artículos tácticos y militares.": "Hello, I want to talk with the Deltactica sales advisor about tactical and military gear.",
+  "Administración": "Administration",
+  "Deltactica | Artículos tácticos y militares": "Deltactica | Tactical and military gear",
+  "Fabricante de uniformes": "Uniform maker",
+  "El uniforme sale de esta casa.": "The uniform comes from this house.",
+  "Deltactica fabrica los uniformes y completa el equipo táctico y militar. Antes de pedir, la pieza se ve. El asesor confirma talla, cantidad y precio.": "Deltactica makes the uniforms and completes the tactical and military kit. The piece is shown before you order. The advisor confirms size, quantity, and price.",
+  "Hablar con el asesor": "Talk to the advisor",
+  "Ir al catálogo": "Go to the catalog",
+  "Lo que importa": "What matters",
+  "Tres datos. El catálogo va después.": "Three facts. The catalog comes after.",
+  "Fabricación propia": "Made in house",
+  "Los uniformes los hace Deltactica. El equipo táctico y militar sigue en la misma línea.": "Deltactica makes the uniforms. The tactical and military kit follows the same line.",
+  "La pieza, a la vista": "The piece, in view",
+  "Cada pieza se abre en foto, con su referencia.": "Each piece opens in a photo, with its reference.",
+  "Un asesor en el pedido": "An advisor on the order",
+  "Talla, cantidad y precio los cierra quien atiende, por WhatsApp, con la referencia delante.": "Size, quantity, and price are closed by the person who answers, on WhatsApp, with the reference in front.",
+  "Cómo seguir": "How to continue",
+  "Probar": "Try on",
+  "Vestir el maniquí con el uniforme.": "Dress the mannequin with the uniform.",
+  "Escribir": "Write",
+  "Dejar institución, ciudad y referencia.": "Leave the institution, city, and reference.",
+  "Catálogo | Deltactica": "Catalog | Deltactica",
+  "Pantalla de catálogo": "Catalog screen",
+  "Catálogo Deltactica": "Deltactica catalog",
+  "Las referencias del catálogo, separadas por categoría. Abra una pieza para girarla en 360 y añadirla al carrito. El precio lo confirma el asesor.": "The catalog references, split by category. Open a piece to turn it and add it to the cart. The advisor confirms the price.",
+  "Todas las líneas": "All lines",
+  "Elegir línea": "Choose a line",
+  "Ver líneas anteriores": "See previous lines",
+  "Filtrar catálogo": "Filter catalog",
+  "Ver más líneas": "See more lines",
+  "Ver foto": "See photo",
+  "Ver en 360": "See in 360",
+  "Añadir al carrito": "Add to cart",
+  "Consultar referencia": "Ask about this reference",
+  "Foto por reemplazar": "Photo to replace",
+  "1 referencia": "1 reference",
+  "Varias líneas": "Several lines",
+  "Buscar en el catálogo": "Search the catalog",
+  "Buscar por palabra": "Search by word",
+  "Contacto | Deltactica": "Contact | Deltactica",
+  "Pantalla de contacto": "Contact screen",
+  "Asesor comercial.": "Sales advisor.",
+  "Deje la institución, la ciudad y la referencia. El mensaje sale armado hacia WhatsApp.": "Leave the institution, the city, and the reference. The message is sent ready to WhatsApp.",
+  "Canal": "Channel",
+  "WhatsApp con el asesor comercial.": "WhatsApp with the sales advisor.",
+  "Cotización": "Quote",
+  "Según referencia, cantidad y marcación.": "According to reference, quantity, and marking.",
+  "Tallas": "Sizes",
+  "El asesor ayuda a cerrar la distribución.": "The advisor helps close the size split.",
+  "Nombre": "Name",
+  "Nombre y apellido": "First and last name",
+  "Institución": "Institution",
+  "Unidad o empresa": "Unit or company",
+  "Interés": "Interest",
+  "Seleccione una línea": "Select a line",
+  "Conjunto de campaña": "Field uniform",
+  "Faena": "Work uniform",
+  "Abrigo y calzado": "Outerwear and footwear",
+  "Equipo": "Kit",
+  "Dotación completa": "Full issue",
+  "Otra consulta": "Another question",
+  "Detalle": "Detail",
+  "Cantidad, tallas o referencia": "Quantity, sizes, or reference",
+  "Enviar por WhatsApp": "Send on WhatsApp",
+  "Abrir WhatsApp con el mensaje para el asesor": "Open WhatsApp with the message for the advisor",
+  "Se abrió WhatsApp con su mensaje para el asesor comercial.": "WhatsApp opened with your message for the sales advisor.",
+  "Carrito | Deltactica": "Cart | Deltactica",
+  "Compra": "Checkout",
+  "Datos del cliente": "Customer details",
+  "Recibo": "Receipt",
+  "El carrito está vacío.": "The cart is empty.",
+  "Vaciar carrito": "Empty cart",
+  "Restar una unidad": "Remove one",
+  "Sumar una unidad": "Add one",
+  "Compra | Deltactica": "Checkout | Deltactica",
+  "Quién pide": "Who is ordering",
+  "Teléfono de contacto": "Contact phone",
+  "Datos de envío": "Shipping details",
+  "Hacen falta para despachar. Sin estos datos el pedido no sigue.": "These are required to ship. Without them the order does not continue.",
+  "Quién recibe": "Who receives it",
+  "Teléfono de entrega": "Delivery phone",
+  "Departamento": "Department",
+  "Seleccione el departamento": "Select the department",
+  "Calle, carrera, número": "Street and number",
+  "Barrio": "Neighborhood",
+  "Indicaciones para la entrega": "Delivery notes",
+  "Portería, horario o punto de referencia": "Gate, hours, or a landmark",
+  "Pago": "Payment",
+  "Forma de pago": "Payment method",
+  "Transferencia": "Transfer",
+  "Pago contraentrega": "Pay on delivery",
+  "Pago en línea Wompi": "Online payment with Wompi",
+  "Confirmar y generar recibo": "Confirm and build the receipt",
+  "Resumen": "Summary",
+  "Cantidad": "Quantity",
+  "Producto": "Product",
+  "Producto | Deltactica": "Product | Deltactica",
+  "Probador": "Fitting room",
+  "Prueba tu uniforme | Deltactica": "Try your uniform | Deltactica",
+  "Viste el maniquí con las prendas del catálogo. Cada pieza queda en su parte del cuerpo y se puede combinar con las demás.": "Dress the mannequin with catalog clothes. Each piece sits on its part of the body and can be combined with the others.",
+  "Mira tu compra": "See your purchase",
+  "Maniquí": "Mannequin",
+  "Hombre": "Man",
+  "Mujer": "Woman",
+  "Vista": "View",
+  "Frente": "Front",
+  "Lado": "Side",
+  "Espalda": "Back",
+  "Maniquí en blanco": "Empty mannequin",
+  "Arrastre para girar. La rueda acerca. Cada prenda ocupa su lugar.": "Drag to turn. The wheel zooms. Each garment takes its place.",
+  "Uniforme elegido": "Chosen uniform",
+  "Limpiar": "Clear",
+  "Guardar": "Save",
+  "Exportar GLB": "Export GLB",
+  "Solicitar uniforme": "Request the uniform",
+  "Cambiar": "Change",
+  "Poner": "Put on",
+  "Camisas": "Shirts",
+  "Chaquetas": "Jackets",
+  "Chalecos": "Vests",
+  "Pantalones": "Trousers",
+  "Uniformes": "Uniforms",
+  "Gorras": "Caps",
+  "Botas": "Boots",
+  "Reatas": "Belts",
+  "Accesorios": "Accessories",
+  "Modelo 3D": "3D model",
+  "Pendiente": "Pending",
+  "En este maniquí no hay prendas de esta categoría.": "This mannequin has no garments in this category.",
+  "Maniquí femenino. Aquí salen las prendas de mujer y las que sirven para los dos.": "Female mannequin. Women's clothes and unisex pieces are shown here.",
+  "Maniquí masculino. Aquí salen las prendas de hombre y las que sirven para los dos.": "Male mannequin. Men's clothes and unisex pieces are shown here.",
+  "Esa prenda de abajo no lleva reata en las trabillas.": "Those trousers do not take a belt in the loops.",
+  "La reata queda en la cintura, sobre el pantalón.": "The belt sits at the waist, over the trousers.",
+  "La reata espera un pantalón para sujetarse en la cintura.": "The belt waits for trousers so it can sit at the waist.",
+  "El uniforme cubre torso y piernas. Encima puede ir chaqueta, chaleco, gorra o botas.": "The uniform covers torso and legs. A jacket, vest, cap, or boots can go on top.",
+  "La camisa queda en el torso. Con pantalón, la camisa entra; el buzo queda por fuera.": "The shirt sits on the torso. With trousers, the shirt tucks in; a fleece stays outside.",
+  "La prenda de abajo sale de la cintura y sigue las piernas.": "The lower garment starts at the waist and follows the legs.",
+  "La chaqueta va sobre la camisa, con las mangas en los brazos.": "The jacket goes over the shirt, with the sleeves on the arms.",
+  "El chaleco va sobre el torso, sin cubrir los brazos.": "The vest goes over the torso and does not cover the arms.",
+  "El calzado queda en los dos pies, apoyado en el suelo.": "The footwear sits on both feet, on the ground.",
+  "La gorra queda en la cabeza, con la visera al frente.": "The cap sits on the head, with the brim to the front.",
+  "Las gafas quedan en los ojos.": "The glasses sit on the eyes.",
+  "Los guantes cubren las dos manos.": "The gloves cover both hands.",
+  "La prenda quedó en su lugar.": "The garment is in its place.",
+  "Guardado": "Saved",
+  "Añadido al carrito": "Added to the cart",
+  "Pantalla de dotación": "Issue screen",
+  "Cómo se pide.": "How to order.",
+  "Cuatro pasos con el asesor. No hay que recorrer el catálogo otra vez: se parte de la referencia.": "Four steps with the advisor. There is no need to walk the catalog again: start from the reference.",
+  "Consulta": "Inquiry",
+  "Escriba al asesor. Diga qué referencia, cuántas piezas y para qué plazo.": "Write to the advisor. Say which reference, how many pieces, and for when.",
+  "Definición": "Definition",
+  "Se cierran línea, tallas y marcación. El bordado, si lo hay, lo define quien encarga.": "Line, sizes, and marking are closed. Embroidery, if any, is defined by the buyer.",
+  "Confección": "Making",
+  "La pieza sale con el corte y la terminación de esa referencia.": "The piece comes out with the cut and finish of that reference.",
+  "Entrega": "Delivery",
+  "La dotación queda separada por talla, lista para repartir.": "The issue is split by size, ready to hand out.",
+  "Pantalla institucional": "Company screen",
+  "Hecho en casa.": "Made in house.",
+  "Deltactica confecciona artículos tácticos y militares con criterio propio: corte para moverse, refuerzo en el roce y una referencia que no cambia cuando la unidad repone tallas.": "Deltactica makes tactical and military gear its own way: a cut made for movement, reinforcement where it rubs, and a reference that stays the same when a unit reorders sizes.",
+  "Cada pieza lleva referencia DT y sale con la terminación de la casa.": "Each piece carries a DT reference and leaves with the house finish.",
+  "Uso": "Use",
+  "Prendas, calzado, morrales y accesorios. Cada pieza lleva su referencia DT.": "Garments, footwear, packs, and accessories. Each piece carries its DT reference.",
+  "Reposición": "Reorder",
+  "La misma referencia se retoma cuando hace falta otra talla o otra unidad.": "The same reference is used again when another size or another unit is needed.",
+  "Pantalla de líneas": "Lines screen",
+  "Las líneas del catálogo.": "The catalog lines.",
+  "Cada carpeta del catálogo es una línea. Abra la familia para ver sus referencias.": "Each catalog folder is a line. Open the family to see its references.",
+  "Abrir línea": "Open line",
+  "Catálogo de lectura": "Reading catalog",
+  "Imprimir o guardar PDF": "Print or save PDF",
+  "Artículos tácticos y militares": "Tactical and military gear",
+  "El catálogo de lectura sale desde el panel, en Descargar catálogo, con las referencias reales.": "The reading catalog comes from the panel, in Download catalog, with the real references.",
+  "Abrir el catálogo": "Open the catalog",
+  "Cómo se cotiza": "How a quote is made",
+  "Indique la referencia DT, la cantidad, las tallas y si lleva marcación. El asesor comercial responde por WhatsApp.": "Give the DT reference, the quantity, the sizes, and whether it is marked. The sales advisor answers on WhatsApp.",
+  "Esa referencia no está en el catálogo": "That reference is not in the catalog",
+  "Vuelva al catálogo y elija otra pieza.": "Go back to the catalog and choose another piece.",
+  "La prenda se ve completa, en vitrina clara. Arrastre para dar la vuelta.": "The garment is shown whole, on a clear stand. Drag to turn it.",
+  "La pieza se ve completa, en vitrina clara. Arrastre para dar la vuelta.": "The piece is shown whole, on a clear stand. Drag to turn it.",
+  "El calzado está en vitrina clara. Arrastre para dar la vuelta.": "The footwear is on a clear stand. Drag to turn it.",
+  "La pieza está en vitrina clara. Arrastre para dar la vuelta.": "The piece is on a clear stand. Drag to turn it.",
+  "Foto del producto.": "Product photo.",
+  "Prenda sobre maniquí, con giro.": "Garment on a mannequin, with a turn.",
+  "Administración | Deltactica": "Administration | Deltactica",
+  "Dotación | Deltactica": "Issue | Deltactica",
+  "Institucional | Deltactica": "Company | Deltactica",
+  "Líneas | Deltactica": "Lines | Deltactica",
+  "Catálogo de lectura | Deltactica": "Reading catalog | Deltactica"
+};
+const ZH = {
+  "Saltar al contenido": "跳到内容",
+  "Volver al sitio": "返回网站",
+  "Sitio": "网站",
+  "Iniciar sesión": "登录",
+  "Acceso": "进入",
+  "Ingreso administrativo del panel.": "管理面板登录。",
+  "Usuario": "用户",
+  "Contraseña": "密码",
+  "Entrar": "进入",
+  "El usuario o la contraseña no coinciden.": "用户名或密码不正确。",
+  "Panel de control": "控制面板",
+  "Operación": "运营",
+  "Los ejemplos y los pedidos de este navegador se leen juntos.": "这个浏览器里的示例和订单一起读取。",
+  "Salir": "退出",
+  "Sesión abierta": "已登录",
+  "Abrir panel": "打开面板",
+  "General": "总览",
+  "Ventas": "销售",
+  "Bodega": "仓库",
+  "Trazabilidad": "追踪",
+  "Descargar catálogo": "下载目录",
+  "Configuración": "设置",
+  "Referencias": "货号",
+  "Unidades": "件数",
+  "Pedidos": "订单",
+  "Por despachar": "待发货",
+  "Por reponer": "待补货",
+  "Ventas por mes": "按月销售",
+  "Seis meses, con los ejemplos y los pedidos de este navegador.": "六个月，含这个浏览器里的示例和订单。",
+  "Ventas de los últimos seis meses": "近六个月销售",
+  "Ventas por línea": "按品类销售",
+  "Ver todas": "查看全部",
+  "Ver menos": "收起",
+  "Otras líneas": "其他品类",
+  "Estado de pedidos": "订单状态",
+  "Ninguna referencia está en el mínimo.": "没有货号处于最低库存。",
+  "Reponer": "补货",
+  "y": "和",
+  "más": "更多",
+  "Recibido": "已接收",
+  "En preparación": "备货中",
+  "Despachado": "已发出",
+  "Entregado": "已交付",
+  "Por cobrar y despachar": "待收款并发货",
+  "siguen abiertos.": "仍未完成。",
+  "Una compra confirmada entra en esta tabla. El precio queda a consultar hasta que el asesor lo cierre.": "确认的购买会进入这张表。在顾问确定之前，价格仍为待询。",
+  "Pedido": "订单",
+  "Fecha": "日期",
+  "Cliente": "客户",
+  "Ciudad": "城市",
+  "Total": "合计",
+  "Estado": "状态",
+  "Ejemplo": "示例",
+  "Todavía no hay pedidos.": "还没有订单。",
+  "Anterior": "上一页",
+  "Siguiente": "下一页",
+  "Imágenes del catálogo": "目录图片",
+  "Suba la carpeta, un zip o la foto de una referencia. Al entrar, la imagen se recorta al tamaño de ficha, se aclara si viene oscura y queda lista para el celular.": "上传文件夹、压缩包或一张货号照片。图片会按产品页调整大小，偏暗时会提亮，并适合手机查看。",
+  "Suelte aquí la carpeta o las imágenes.": "把文件夹或图片拖到这里。",
+  "Subir carpeta": "上传文件夹",
+  "Elegir imágenes o zip": "选择图片或压缩包",
+  "Quitar cargadas": "清除已上传",
+  "Buscar": "搜索",
+  "Línea": "品类",
+  "Todas": "全部",
+  "Referencia o nombre": "货号或名称",
+  "Artículo": "物品",
+  "Existencia": "库存",
+  "Disponible": "有货",
+  "Sin coincidencias.": "没有匹配。",
+  "Ficha": "产品页",
+  "Volver a la lista": "返回列表",
+  "Precio": "价格",
+  "Precio COP": "哥伦比亚比索价格",
+  "Precio USD": "美元价格",
+  "TRM Banco de la República": "哥伦比亚央行汇率",
+  "Última TRM publicada": "最近公布的汇率",
+  "Sin TRM por ahora. El dólar se calcula cuando llegue la tasa del Banco de la República.": "暂时没有汇率。美元会在央行汇率到达后计算。",
+  "A consultar": "待询",
+  "Ubicación": "位置",
+  "Nota": "备注",
+  "Mínimo": "最低库存",
+  "Guardar ficha": "保存资料",
+  "Cambiar imagen": "更换图片",
+  "La foto se ajusta sola: tamaño, resolución e iluminación.": "照片会自动调整大小、清晰度和亮度。",
+  "Ficha guardada.": "资料已保存。",
+  "Entradas": "进入",
+  "Salidas": "离开",
+  "Visitantes": "访客",
+  "Páginas vistas": "浏览页数",
+  "Búsquedas": "搜索",
+  "Permanencia": "停留时间",
+  "Más buscado": "搜索最多",
+  "Más vendido": "销量最高",
+  "Menos vendido": "销量最低",
+  "Sin datos todavía": "还没有数据",
+  "Todavía no hay compras confirmadas.": "还没有确认的购买。",
+  "Del ingreso al pedido": "从进站到下单",
+  "Pantallas": "页面",
+  "Todavía no hay páginas vistas.": "还没有浏览记录。",
+  "Últimas visitas": "最近访问",
+  "La primera visita queda registrada al abrir el sitio.": "打开网站时记下第一次访问。",
+  "Lo más movido": "最活跃",
+  "Vistas": "浏览",
+  "Carrito": "购物车",
+  "Vendidas": "已售",
+  "Entraron": "进入",
+  "Catálogo": "目录",
+  "Compra": "结账",
+  "Inicio": "首页",
+  "Prueba tu uniforme": "试穿制服",
+  "Contacto": "联系",
+  "Salió": "离开",
+  "En el sitio": "在站内",
+  "Entrada": "进入",
+  "uds.": "件",
+  "También sin vender:": "也未售出：",
+  "referencias.": "个货号。",
+  "Asesor comercial": "销售顾问",
+  "Este WhatsApp recibe los pedidos y atiende el botón del sitio.": "这个 WhatsApp 接收订单并回复网站上的按钮。",
+  "Número": "号码",
+  "Guardar número": "保存号码",
+  "Pasarela Wompi": "Wompi 支付",
+  "Cuando el comercio tenga las llaves, péguelas aquí. El pago en línea del pedido usa esa pasarela.": "商店有密钥后贴在这里。订单的在线付款使用这个通道。",
+  "Llave pública": "公钥",
+  "Secreto de integridad": "完整性密钥",
+  "Guardar Wompi": "保存 Wompi",
+  "Wompi está listo para cobrar en el pedido.": "Wompi 已可在订单中收款。",
+  "Wompi queda abierto hasta tener las llaves.": "在有密钥之前，Wompi 保持待用。",
+  "Escriba el celular del asesor. Ejemplo: 3227043082.": "填写顾问手机。例如：3227043082。",
+  "El asesor atiende en": "顾问的号码是",
+  "Escriba una dirección http o https. Ejemplo: https://api.deltactica.com": "填写 http 或 https 地址。例如：https://api.deltactica.com",
+  "No se pudo leer la carpeta en este navegador.": "这个浏览器无法读取该文件夹。",
+  "Aplicación interna": "内部应用",
+  "A partir de diciembre o enero este sitio le enviará pedidos, existencia, el WhatsApp del asesor, el aviso de pago y la trazabilidad. Pegue la dirección cuando el software exista. Vacía, la compra sigue en este navegador.": "从十二月或一月起，本站会发送订单、库存、顾问 WhatsApp、付款通知和追踪。软件就绪后贴上地址。留空时，购买仍留在这个浏览器里。",
+  "Dirección": "地址",
+  "Guardar dirección": "保存地址",
+  "La comunicación apunta a": "通信指向",
+  "La comunicación queda abierta. Aún no hay dirección.": "通信仍开着。还没有地址。",
+  "Combine líneas o busque una referencia. Descargue el catálogo completo o solo lo que dejó filtrado.": "组合品类或搜索货号。下载完整目录，或只下载筛选后的部分。",
+  "Líneas del PDF": "PDF 品类",
+  "Descargar filtrado": "下载筛选结果",
+  "Descargar completo": "下载完整目录",
+  "Catálogo completo": "完整目录",
+  "Elija al menos una línea.": "至少选择一个品类。",
+  "Se está armando el PDF.": "正在生成 PDF。",
+  "Se descargó": "已下载",
+  "No se pudo armar el PDF.": "无法生成 PDF。",
+  "referencia": "个货号",
+  "referencias": "个货号",
+  "y más en el PDF.": "以及更多，见 PDF。",
+  "mil": "千",
+  "Página": "第",
+  "de": "共",
+  "Abrir menú": "打开菜单",
+  "Cerrar menú": "关闭菜单",
+  "Secciones": "栏目",
+  "Pie de página": "页脚",
+  "Fabricante de uniformes y artículos tácticos.": "制服与战术用品制造商。",
+  "Escribir al asesor comercial por WhatsApp": "通过 WhatsApp 联系销售顾问",
+  "Hola, quiero hablar con el asesor comercial de Deltactica sobre artículos tácticos y militares.": "你好，我想和 Deltactica 的销售顾问谈谈战术和军用物品。",
+  "Administración": "管理",
+  "Administración | Deltactica": "管理 | Deltactica",
+  "Deltactica | Artículos tácticos y militares": "Deltactica | 战术与军用物品",
+  "Fabricante de uniformes": "制服制造商",
+  "El uniforme sale de esta casa.": "制服从这里做出。",
+  "Deltactica fabrica los uniformes y completa el equipo táctico y militar. Antes de pedir, la pieza se ve. El asesor confirma talla, cantidad y precio.": "Deltactica 制作制服并配齐战术与军用装备。下单前可以先看实物。顾问确认尺码、数量和价格。",
+  "Hablar con el asesor": "联系顾问",
+  "Ir al catálogo": "查看目录",
+  "Lo que importa": "重要的事",
+  "Tres datos. El catálogo va después.": "三件事。目录在后面。",
+  "Fabricación propia": "自己生产",
+  "Los uniformes los hace Deltactica. El equipo táctico y militar sigue en la misma línea.": "制服由 Deltactica 制作。战术与军用装备沿同一条线。",
+  "La pieza, a la vista": "物品看得见",
+  "Cada pieza se abre en foto, con su referencia.": "每件物品都有照片和货号。",
+  "Un asesor en el pedido": "订单有顾问",
+  "Talla, cantidad y precio los cierra quien atiende, por WhatsApp, con la referencia delante.": "尺码、数量和价格由接待的人在 WhatsApp 上确认，货号就在眼前。",
+  "Cómo seguir": "接下来",
+  "Probar": "试穿",
+  "Vestir el maniquí con el uniforme.": "给模特穿上制服。",
+  "Escribir": "留言",
+  "Dejar institución, ciudad y referencia.": "留下单位、城市和货号。",
+  "Catálogo | Deltactica": "目录 | Deltactica",
+  "Pantalla de catálogo": "目录页",
+  "Catálogo Deltactica": "Deltactica 目录",
+  "Las referencias del catálogo, separadas por categoría. Abra una pieza para girarla en 360 y añadirla al carrito. El precio lo confirma el asesor.": "目录货号按类别分开。打开一件可以旋转并加入购物车。价格由顾问确认。",
+  "Todas las líneas": "全部品类",
+  "Elegir línea": "选择品类",
+  "Ver líneas anteriores": "查看前面的品类",
+  "Filtrar catálogo": "筛选目录",
+  "Ver más líneas": "查看更多品类",
+  "Ver foto": "看照片",
+  "Ver en 360": "360 度查看",
+  "Añadir al carrito": "加入购物车",
+  "Consultar referencia": "咨询这个货号",
+  "Foto por reemplazar": "照片待更换",
+  "1 referencia": "1 个货号",
+  "Varias líneas": "多个品类",
+  "Buscar en el catálogo": "在目录中搜索",
+  "Buscar por palabra": "按词语搜索",
+  "Contacto | Deltactica": "联系 | Deltactica",
+  "Pantalla de contacto": "联系页",
+  "Asesor comercial.": "销售顾问。",
+  "Deje la institución, la ciudad y la referencia. El mensaje sale armado hacia WhatsApp.": "留下单位、城市和货号。消息会整理好发到 WhatsApp。",
+  "Canal": "渠道",
+  "WhatsApp con el asesor comercial.": "通过 WhatsApp 联系销售顾问。",
+  "Cotización": "报价",
+  "Según referencia, cantidad y marcación.": "按货号、数量和标记。",
+  "Tallas": "尺码",
+  "El asesor ayuda a cerrar la distribución.": "顾问协助确定尺码分配。",
+  "Nombre": "姓名",
+  "Nombre y apellido": "姓名",
+  "Institución": "单位",
+  "Unidad o empresa": "单位或公司",
+  "Interés": "需求",
+  "Seleccione una línea": "选择一个品类",
+  "Conjunto de campaña": "野战套装",
+  "Faena": "作业服",
+  "Abrigo y calzado": "外套和鞋",
+  "Equipo": "装备",
+  "Dotación completa": "全套配发",
+  "Otra consulta": "其他咨询",
+  "Detalle": "详情",
+  "Cantidad, tallas o referencia": "数量、尺码或货号",
+  "Enviar por WhatsApp": "通过 WhatsApp 发送",
+  "Abrir WhatsApp con el mensaje para el asesor": "打开 WhatsApp 并把消息发给顾问",
+  "Se abrió WhatsApp con su mensaje para el asesor comercial.": "WhatsApp 已打开，消息发给销售顾问。",
+  "Carrito | Deltactica": "购物车 | Deltactica",
+  "Datos del cliente": "客户资料",
+  "Recibo": "收据",
+  "El carrito está vacío.": "购物车是空的。",
+  "Vaciar carrito": "清空购物车",
+  "Restar una unidad": "减一件",
+  "Sumar una unidad": "加一件",
+  "Compra | Deltactica": "结账 | Deltactica",
+  "Quién pide": "谁在订",
+  "Teléfono de contacto": "联系电话",
+  "Datos de envío": "收货资料",
+  "Hacen falta para despachar. Sin estos datos el pedido no sigue.": "发货需要这些资料。没有它们，订单无法继续。",
+  "Quién recibe": "收货人",
+  "Teléfono de entrega": "收货电话",
+  "Departamento": "省",
+  "Seleccione el departamento": "选择省份",
+  "Calle, carrera, número": "街道和门牌",
+  "Barrio": "街区",
+  "Indicaciones para la entrega": "送货说明",
+  "Portería, horario o punto de referencia": "门岗、时间或参照地点",
+  "Pago": "付款",
+  "Forma de pago": "付款方式",
+  "Transferencia": "转账",
+  "Pago contraentrega": "货到付款",
+  "Pago en línea Wompi": "Wompi 在线支付",
+  "Confirmar y generar recibo": "确认并生成收据",
+  "Resumen": "摘要",
+  "Cantidad": "数量",
+  "Producto": "产品",
+  "Producto | Deltactica": "产品 | Deltactica",
+  "Probador": "试衣间",
+  "Prueba tu uniforme | Deltactica": "试穿制服 | Deltactica",
+  "Viste el maniquí con las prendas del catálogo. Cada pieza queda en su parte del cuerpo y se puede combinar con las demás.": "用目录里的衣服给模特穿上。每件衣服落在身体对应的位置，并且可以互相搭配。",
+  "Mira tu compra": "查看你的购买",
+  "Maniquí": "模特",
+  "Hombre": "男",
+  "Mujer": "女",
+  "Vista": "视角",
+  "Frente": "正面",
+  "Lado": "侧面",
+  "Espalda": "背面",
+  "Maniquí en blanco": "空模特",
+  "Arrastre para girar. La rueda acerca. Cada prenda ocupa su lugar.": "拖动可旋转。滚轮可放大。每件衣服都有自己的位置。",
+  "Uniforme elegido": "已选制服",
+  "Limpiar": "清空",
+  "Guardar": "保存",
+  "Exportar GLB": "导出 GLB",
+  "Solicitar uniforme": "申请这套制服",
+  "Cambiar": "更换",
+  "Poner": "穿上",
+  "Quitar": "取下",
+  "Camisas": "衬衫",
+  "Chaquetas": "夹克",
+  "Chalecos": "背心",
+  "Pantalones": "裤子",
+  "Uniformes": "制服",
+  "Gorras": "帽子",
+  "Botas": "靴子",
+  "Reatas": "腰带",
+  "Accesorios": "配件",
+  "Modelo 3D": "三维模型",
+  "Pendiente": "待完成",
+  "En este maniquí no hay prendas de esta categoría.": "这个模特没有这一类衣服。",
+  "Maniquí femenino. Aquí salen las prendas de mujer y las que sirven para los dos.": "女模特。这里显示女装和男女都可穿的衣服。",
+  "Maniquí masculino. Aquí salen las prendas de hombre y las que sirven para los dos.": "男模特。这里显示男装和男女都可穿的衣服。",
+  "Esa prenda de abajo no lleva reata en las trabillas.": "这条裤子没有腰带袢，不能系腰带。",
+  "La reata queda en la cintura, sobre el pantalón.": "腰带系在腰上，压在裤子外面。",
+  "La reata espera un pantalón para sujetarse en la cintura.": "腰带要等裤子就位，才能系在腰上。",
+  "El uniforme cubre torso y piernas. Encima puede ir chaqueta, chaleco, gorra o botas.": "制服覆盖上身和腿。外面可以加夹克、背心、帽子或靴子。",
+  "La camisa queda en el torso. Con pantalón, la camisa entra; el buzo queda por fuera.": "衬衫贴在上身。配裤子时衬衫塞进裤腰；抓绒衣留在外面。",
+  "La prenda de abajo sale de la cintura y sigue las piernas.": "下装从腰部开始，顺着腿往下。",
+  "La chaqueta va sobre la camisa, con las mangas en los brazos.": "夹克穿在衬衫外面，袖子套在手臂上。",
+  "El chaleco va sobre el torso, sin cubrir los brazos.": "背心穿在上身，不盖住手臂。",
+  "El calzado queda en los dos pies, apoyado en el suelo.": "鞋穿在两只脚上，落在地面。",
+  "La gorra queda en la cabeza, con la visera al frente.": "帽子戴在头上，帽檐朝前。",
+  "Las gafas quedan en los ojos.": "眼镜戴在眼前。",
+  "Los guantes cubren las dos manos.": "手套盖住两只手。",
+  "La prenda quedó en su lugar.": "衣服已经穿在该在的位置。",
+  "Guardado": "已保存",
+  "Añadido al carrito": "已加入购物车",
+  "Pantalla de dotación": "配发页",
+  "Cómo se pide.": "如何下单。",
+  "Cuatro pasos con el asesor. No hay que recorrer el catálogo otra vez: se parte de la referencia.": "和顾问一起走四步。不必再翻一遍目录：从货号开始。",
+  "Consulta": "咨询",
+  "Escriba al asesor. Diga qué referencia, cuántas piezas y para qué plazo.": "写信给顾问。说明货号、件数和期限。",
+  "Definición": "确定",
+  "Se cierran línea, tallas y marcación. El bordado, si lo hay, lo define quien encarga.": "确定品类、尺码和标记。如有刺绣，由订购方决定。",
+  "Confección": "制作",
+  "La pieza sale con el corte y la terminación de esa referencia.": "成品按该货号的剪裁和做工完成。",
+  "Entrega": "交付",
+  "La dotación queda separada por talla, lista para repartir.": "配发按尺码分开，可以分发。",
+  "Pantalla institucional": "公司页",
+  "Hecho en casa.": "自己做的。",
+  "Deltactica confecciona artículos tácticos y militares con criterio propio: corte para moverse, refuerzo en el roce y una referencia que no cambia cuando la unidad repone tallas.": "Deltactica 按自己的标准制作战术和军用物品：剪裁便于活动，易磨处有加固，单位补尺码时货号不变。",
+  "Cada pieza lleva referencia DT y sale con la terminación de la casa.": "每件物品都有 DT 货号，并按本厂工艺完成。",
+  "Uso": "用途",
+  "Prendas, calzado, morrales y accesorios. Cada pieza lleva su referencia DT.": "服装、鞋、背包和配件。每件都有自己的 DT 货号。",
+  "Reposición": "补订",
+  "La misma referencia se retoma cuando hace falta otra talla o otra unidad.": "需要另一个尺码或另一个单位时，仍用同一个货号。",
+  "Pantalla de líneas": "品类页",
+  "Las líneas del catálogo.": "目录里的品类。",
+  "Cada carpeta del catálogo es una línea. Abra la familia para ver sus referencias.": "目录里的每个文件夹是一个品类。打开这一组即可看货号。",
+  "Abrir línea": "打开品类",
+  "Catálogo de lectura": "阅读版目录",
+  "Imprimir o guardar PDF": "打印或保存 PDF",
+  "Artículos tácticos y militares": "战术与军用物品",
+  "El catálogo de lectura sale desde el panel, en Descargar catálogo, con las referencias reales.": "阅读版目录从面板的“下载目录”生成，使用真实货号。",
+  "Abrir el catálogo": "打开目录",
+  "Pedido": "订单",
+  "Cómo se cotiza": "如何报价",
+  "Indique la referencia DT, la cantidad, las tallas y si lleva marcación. El asesor comercial responde por WhatsApp.": "请写明 DT 货号、数量、尺码以及是否需要标记。销售顾问通过 WhatsApp 回复。",
+  "Esa referencia no está en el catálogo": "这个货号不在目录里",
+  "Vuelva al catálogo y elija otra pieza.": "返回目录，另选一件。",
+  "La prenda se ve completa, en vitrina clara. Arrastre para dar la vuelta.": "衣服完整展示在干净的展台上。拖动即可翻转。",
+  "La pieza se ve completa, en vitrina clara. Arrastre para dar la vuelta.": "物品完整展示在干净的展台上。拖动即可翻转。",
+  "El calzado está en vitrina clara. Arrastre para dar la vuelta.": "鞋展示在干净的展台上。拖动即可翻转。",
+  "La pieza está en vitrina clara. Arrastre para dar la vuelta.": "物品在干净的展台上。拖动即可翻转。",
+  "Foto del producto.": "产品照片。",
+  "Prenda sobre maniquí, con giro.": "衣服穿在模特上，可以旋转。",
+  "Dotación | Deltactica": "配发 | Deltactica",
+  "Institucional | Deltactica": "公司 | Deltactica",
+  "Líneas | Deltactica": "品类 | Deltactica",
+  "Catálogo de lectura | Deltactica": "阅读版目录 | Deltactica",
+  "Faltan datos de envío. Complete quién recibe, teléfonos, departamento, ciudad, dirección y barrio.": "收货资料不完整。请填写收货人、电话、省份、城市、地址和街区。",
+  "La bodega ya no alcanza para este pedido. Revise el carrito.": "仓库库存不够这个订单。请检查购物车。",
+  "Se está armando el recibo en PDF.": "正在生成 PDF 收据。",
+  "Transferencia y contraentrega las confirma el asesor por WhatsApp.": "转账和货到付款由顾问在 WhatsApp 上确认。"
 };
 const desk = { bodegaPage: 1, bodegaLine: "todas", bodegaQuery: "", bodegaId: "", ventasPage: 1, linesOpen: false, fichaNote: "" };
 
 function lang() {
-  return localStorage.getItem(KEYS.lang) === "en" ? "en" : "es";
+  const value = localStorage.getItem(KEYS.lang);
+  return value === "en" || value === "zh" ? value : "es";
 }
 
 function t(text) {
-  if (lang() !== "en") return text;
-  return Object.prototype.hasOwnProperty.call(I18N, text) ? I18N[text] : text;
+  if (lang() === "es" || text == null) return text;
+  const table = lang() === "zh" ? ZH : I18N;
+  return Object.prototype.hasOwnProperty.call(table, text) ? table[text] : text;
+}
+
+function knownPhrase(text) {
+  const trimmed = String(text || "").trim();
+  if (!trimmed) return "";
+  if (Object.prototype.hasOwnProperty.call(I18N, trimmed) || Object.prototype.hasOwnProperty.call(ZH, trimmed)) return trimmed;
+  return "";
+}
+
+function ensureLangSwitch() {
+  const tools = document.querySelector(".header-tools");
+  if (!tools) return;
+  let box = tools.querySelector(".lang-switch");
+  if (!box) {
+    box = document.createElement("div");
+    box.className = "lang-switch";
+    box.setAttribute("role", "group");
+    box.setAttribute("aria-label", "Idioma");
+    box.innerHTML = '<button type="button" data-lang="es">ES</button><button type="button" data-lang="en">EN</button><button type="button" data-lang="zh">中文</button>';
+    tools.prepend(box);
+  } else if (!box.querySelector('[data-lang="zh"]')) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.lang = "zh";
+    button.textContent = "中文";
+    box.appendChild(button);
+  }
+  box.querySelectorAll("button").forEach((button) => {
+    button.style.whiteSpace = "nowrap";
+    button.style.letterSpacing = "0";
+  });
+}
+
+function paintZhFont() {
+  if (lang() !== "zh") {
+    document.documentElement.style.removeProperty("--font-body");
+    document.documentElement.style.removeProperty("--font-display");
+    return;
+  }
+  if (!document.getElementById("zh-font")) {
+    const link = document.createElement("link");
+    link.id = "zh-font";
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap";
+    document.head.appendChild(link);
+  }
+  document.documentElement.style.setProperty("--font-body", '"Noto Sans SC", "Outfit", sans-serif');
+  document.documentElement.style.setProperty("--font-display", '"Noto Sans SC", "Big Shoulders Display", sans-serif');
+}
+
+function paintPhraseNode(node) {
+  if (!node || !node.parentElement || node.parentElement.closest("[data-i18n], .lang-switch, script, style")) return;
+  if (!node.__key) {
+    const key = knownPhrase(node.textContent);
+    if (!key) return;
+    const at = node.textContent.indexOf(key);
+    node.__key = key;
+    node.__lead = node.textContent.slice(0, at);
+    node.__tail = node.textContent.slice(at + key.length);
+  }
+  node.textContent = node.__lead + t(node.__key) + node.__tail;
 }
 
 function paintLang() {
-  document.documentElement.lang = lang();
-  if (document.querySelector("[data-admin-login]")) {
-    document.title = lang() === "en" ? "Administration | Deltactica" : "Administración | Deltactica";
-  }
+  ensureLangSwitch();
+  paintZhFont();
+  const code = lang();
+  document.documentElement.lang = code === "zh" ? "zh-Hans" : code;
+  if (!document.documentElement.__title) document.documentElement.__title = document.title;
+  if (knownPhrase(document.documentElement.__title)) document.title = t(document.documentElement.__title);
   document.querySelectorAll("[data-i18n]").forEach((node) => {
     node.textContent = t(node.dataset.i18n);
   });
+  const attrs = ["placeholder", "aria-label", "alt", "title"];
+  document.querySelectorAll("body *").forEach((el) => {
+    if (el.closest(".lang-switch")) return;
+    attrs.forEach((attr) => {
+      const current = el.getAttribute(attr);
+      if (!current && !(el.__attrs && el.__attrs[attr])) return;
+      if (!el.__attrs) el.__attrs = {};
+      if (!el.__attrs[attr]) {
+        const key = knownPhrase(current);
+        if (!key) return;
+        el.__attrs[attr] = key;
+      }
+      el.setAttribute(attr, t(el.__attrs[attr]));
+    });
+  });
+  document.querySelectorAll("[data-wa-text]").forEach((link) => {
+    if (!link.__wa) link.__wa = link.dataset.waText;
+    if (!knownPhrase(link.__wa)) return;
+    link.dataset.waText = t(link.__wa);
+    const phone = document.body.dataset.wa;
+    if (phone && link.tagName === "A") {
+      link.href = `https://wa.me/${phone}?text=${encodeURIComponent(link.dataset.waText)}`;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+    }
+  });
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(paintPhraseNode);
   document.querySelectorAll("[data-lang]").forEach((button) => {
-    const on = button.dataset.lang === lang();
+    const on = button.dataset.lang === code;
     button.classList.toggle("is-on", on);
     button.setAttribute("aria-pressed", on ? "true" : "false");
   });
 }
+window.t = t;
+window.dtPaintLang = paintLang;
 const ADMIN = { user: "delta", password: "admin123", name: "Admin" };
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const LINE_PALETTE = ["#f4f5f6", "#c5c8cc", "#8d939a", "#d7c4a3", "#6d737a", "#b7bcc2", "#9aa0a6", "#e4e6e8"];
@@ -1815,9 +2464,16 @@ function renderAdmin() {
 document.addEventListener("click", (event) => {
   const langButton = event.target.closest("[data-lang]");
   if (langButton) {
-    localStorage.setItem(KEYS.lang, langButton.dataset.lang === "en" ? "en" : "es");
+    const choice = langButton.dataset.lang;
+    localStorage.setItem(KEYS.lang, choice === "en" || choice === "zh" ? choice : "es");
+    if (document.querySelector("[data-admin-login]")) renderAdmin();
+    renderCart();
+    renderCheckout();
+    paintAccount();
+    if (window.dtRepintarProbador) window.dtRepintarProbador();
     paintLang();
-    renderAdmin();
+    if (window.dtApplyCatalog) window.dtApplyCatalog();
+    if (window.dtNavLabel) window.dtNavLabel();
     return;
   }
   if (event.target.closest("[data-lines-toggle]")) {

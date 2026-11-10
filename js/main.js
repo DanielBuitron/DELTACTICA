@@ -25,7 +25,8 @@ function setNav(open) {
   const show = desktopNav.matches ? false : open;
   nav.classList.toggle("is-open", show);
   toggle.setAttribute("aria-expanded", show ? "true" : "false");
-  toggle.querySelector(".sr-only").textContent = show ? "Cerrar menú" : "Abrir menú";
+  const say = window.t || ((text) => text);
+  toggle.querySelector(".sr-only").textContent = show ? say("Cerrar menú") : say("Abrir menú");
   document.body.classList.toggle("nav-open", show);
   nav.inert = desktopNav.matches ? false : !show;
 }
@@ -76,13 +77,16 @@ function applyCatalogFilter() {
     card.hidden = !show;
     if (show) visible += 1;
   });
-  count.textContent = visible === 1 ? "1 referencia" : `${visible} referencias`;
+  const say = window.t || ((text) => text);
+  count.textContent = visible === 1 ? say("1 referencia") : `${visible} ${say("referencias")}`;
   const current = document.querySelector("[data-filter-current]");
   const names = lineFilters().filter((button) => button.getAttribute("aria-pressed") === "true").map((button) => button.dataset.label || "");
   const todasOn = allFilter()?.getAttribute("aria-pressed") === "true";
-  if (current) current.textContent = todasOn || !names.length ? "Todas las líneas" : names.join(" · ");
+  if (current) current.textContent = todasOn || !names.length ? say("Todas las líneas") : names.join(" · ");
   const jump = document.querySelector("[data-filter-jump]");
   if (jump) {
+    const varias = [...jump.options].find((option) => option.value === "varias");
+    if (varias) varias.textContent = say("Varias líneas");
     const active = lineFilters().filter((button) => button.getAttribute("aria-pressed") === "true");
     jump.value = active.length === 1 ? active[0].dataset.filter : active.length > 1 ? "varias" : "todos";
   }
@@ -117,7 +121,7 @@ const jump = document.querySelector("[data-filter-jump]");
 if (jump && count) {
   const several = document.createElement("option");
   several.value = "varias";
-  several.textContent = "Varias líneas";
+  several.textContent = (window.t || ((text) => text))("Varias líneas");
   several.hidden = true;
   jump.appendChild(several);
   lineFilters().forEach((button) => {
@@ -190,5 +194,11 @@ if (form && status) form.addEventListener("submit", (event) => {
     return;
   }
 
-  status.textContent = "Se abrió WhatsApp con su mensaje para el asesor comercial.";
+  status.textContent = (window.t || ((text) => text))("Se abrió WhatsApp con su mensaje para el asesor comercial.");
 });
+
+window.dtApplyCatalog = applyCatalogFilter;
+window.dtNavLabel = () => {
+  if (nav && toggle) setNav(nav.classList.contains("is-open"));
+};
+if (window.dtPaintLang) window.dtPaintLang();

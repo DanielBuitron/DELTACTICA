@@ -1731,6 +1731,11 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     poner(preset);
     pintarGrid();
   } else {
+    window.dtRepintarProbador = () => {
+      pintarTabs();
+      pintarGrid();
+      texto();
+    };
     try {
       const guardado = JSON.parse(localStorage.getItem("dt-uniforme") || "null");
       if (guardado && Array.isArray(guardado.ids) && guardado.ids.length) {
