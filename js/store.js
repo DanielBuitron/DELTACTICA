@@ -2,7 +2,197 @@ const PRODUCTS = (window.DT_CATALOG || []).map((item) => ({ ...item }));
 const NOTES = Object.fromEntries(PRODUCTS.map((item) => [item.id, item.stage === "ropa" ? "Prenda sobre maniquí, con giro." : "Pieza con giro para consultar."]));
 const LINES = [...new Set(PRODUCTS.map((item) => item.line))];
 
-const KEYS = { cart: "dt-cart", orders: "dt-orders", stock: "dt-stock", admin: "dt-admin", examples: "dt-examples-v1", wa: "dt-wa", wompi: "dt-wompi", internal: "dt-internal", trace: "dt-trace" };
+const KEYS = { cart: "dt-cart", orders: "dt-orders", stock: "dt-stock", admin: "dt-admin", examples: "dt-examples-v1", wa: "dt-wa", wompi: "dt-wompi", internal: "dt-internal", trace: "dt-trace", lang: "dt-lang", ficha: "dt-ficha", trm: "dt-trm" };
+const I18N = {
+  "Saltar al contenido": "Skip to content",
+  "Volver al sitio": "Back to the site",
+  "Sitio": "Site",
+  "Iniciar sesión": "Sign in",
+  "Acceso": "Access",
+  "Ingreso administrativo del panel.": "Administrative sign-in.",
+  "Usuario": "User",
+  "Contraseña": "Password",
+  "Entrar": "Enter",
+  "El usuario o la contraseña no coinciden.": "The user or password does not match.",
+  "Panel de control": "Control panel",
+  "Operación": "Operation",
+  "Los ejemplos y los pedidos de este navegador se leen juntos.": "Examples and orders from this browser are read together.",
+  "Salir": "Sign out",
+  "Sesión abierta": "Signed in",
+  "Abrir panel": "Open panel",
+  "General": "Overview",
+  "Ventas": "Sales",
+  "Bodega": "Warehouse",
+  "Trazabilidad": "Trace",
+  "Descargar catálogo": "Download catalog",
+  "Configuración": "Settings",
+  "Referencias": "References",
+  "Unidades": "Units",
+  "Pedidos": "Orders",
+  "Por despachar": "To ship",
+  "Por reponer": "To restock",
+  "Ventas por mes": "Sales by month",
+  "Seis meses, con los ejemplos y los pedidos de este navegador.": "Six months, with the examples and the orders from this browser.",
+  "Ventas de los últimos seis meses": "Sales for the last six months",
+  "Ventas por línea": "Sales by line",
+  "Ver todas": "Show all",
+  "Ver menos": "Show less",
+  "Otras líneas": "Other lines",
+  "Estado de pedidos": "Order status",
+  "Ninguna referencia está en el mínimo.": "No reference is at the minimum.",
+  "Reponer": "Restock",
+  "y": "and",
+  "más": "more",
+  "Recibido": "Received",
+  "En preparación": "In preparation",
+  "Despachado": "Shipped",
+  "Entregado": "Delivered",
+  "Por cobrar y despachar": "To collect and ship",
+  "siguen abiertos.": "are still open.",
+  "Una compra confirmada entra en esta tabla. El precio queda a consultar hasta que el asesor lo cierre.": "A confirmed purchase lands in this table. The price stays on request until the advisor closes it.",
+  "Pedido": "Order",
+  "Fecha": "Date",
+  "Cliente": "Customer",
+  "Ciudad": "City",
+  "Total": "Total",
+  "Estado": "Status",
+  "Ejemplo": "Example",
+  "Todavía no hay pedidos.": "There are no orders yet.",
+  "Anterior": "Previous",
+  "Siguiente": "Next",
+  "Imágenes del catálogo": "Catalog images",
+  "Suba la carpeta, un zip o la foto de una referencia. Al entrar, la imagen se recorta al tamaño de ficha, se aclara si viene oscura y queda lista para el celular.": "Upload a folder, a zip, or one reference photo. On the way in, the image is sized for the product sheet, lifted if it is dark, and ready for a phone.",
+  "Suelte aquí la carpeta o las imágenes.": "Drop the folder or the images here.",
+  "Subir carpeta": "Upload folder",
+  "Elegir imágenes o zip": "Choose images or zip",
+  "Quitar cargadas": "Remove uploads",
+  "Buscar": "Search",
+  "Línea": "Line",
+  "Todas": "All",
+  "Referencia o nombre": "Reference or name",
+  "Artículo": "Item",
+  "Existencia": "Stock",
+  "Disponible": "Available",
+  "Sin coincidencias.": "No matches.",
+  "Ficha": "Sheet",
+  "Volver a la lista": "Back to the list",
+  "Precio": "Price",
+  "Precio COP": "Price COP",
+  "Precio USD": "Price USD",
+  "TRM Banco de la República": "Central Bank rate",
+  "Última TRM publicada": "Last published rate",
+  "Sin TRM por ahora. El dólar se calcula cuando llegue la tasa del Banco de la República.": "No rate yet. The dollar is calculated when the Central Bank rate arrives.",
+  "A consultar": "On request",
+  "Ubicación": "Location",
+  "Nota": "Note",
+  "Mínimo": "Minimum",
+  "Guardar ficha": "Save sheet",
+  "Cambiar imagen": "Change image",
+  "La foto se ajusta sola: tamaño, resolución e iluminación.": "The photo adjusts itself: size, resolution, and light.",
+  "Ficha guardada.": "Sheet saved.",
+  "Entradas": "Entries",
+  "Salidas": "Exits",
+  "Visitantes": "Visitors",
+  "Páginas vistas": "Page views",
+  "Búsquedas": "Searches",
+  "Permanencia": "Time on site",
+  "Más buscado": "Most searched",
+  "Más vendido": "Best seller",
+  "Menos vendido": "Least sold",
+  "Sin datos todavía": "No data yet",
+  "Todavía no hay compras confirmadas.": "There are no confirmed purchases yet.",
+  "Del ingreso al pedido": "From visit to order",
+  "Pantallas": "Screens",
+  "Todavía no hay páginas vistas.": "There are no page views yet.",
+  "Últimas visitas": "Latest visits",
+  "La primera visita queda registrada al abrir el sitio.": "The first visit is recorded when the site opens.",
+  "Lo más movido": "Most active",
+  "Vistas": "Views",
+  "Carrito": "Cart",
+  "Vendidas": "Sold",
+  "Entraron": "Entered",
+  "Catálogo": "Catalog",
+  "Compra": "Checkout",
+  "Inicio": "Home",
+  "Prueba tu uniforme": "Try your uniform",
+  "Contacto": "Contact",
+  "Salió": "Left",
+  "En el sitio": "On the site",
+  "Entrada": "Entry",
+  "uds.": "units",
+  "También sin vender:": "Also unsold:",
+  "referencias.": "references.",
+  "Asesor comercial": "Sales advisor",
+  "Este WhatsApp recibe los pedidos y atiende el botón del sitio.": "This WhatsApp receives the orders and answers the site button.",
+  "Número": "Number",
+  "Guardar número": "Save number",
+  "Pasarela Wompi": "Wompi checkout",
+  "Cuando el comercio tenga las llaves, péguelas aquí. El pago en línea del pedido usa esa pasarela.": "When the store has the keys, paste them here. The order checkout uses that gateway.",
+  "Llave pública": "Public key",
+  "Secreto de integridad": "Integrity secret",
+  "Guardar Wompi": "Save Wompi",
+  "Wompi está listo para cobrar en el pedido.": "Wompi is ready to charge on the order.",
+  "Wompi queda abierto hasta tener las llaves.": "Wompi stays open until the keys are in.",
+  "Wompi está listo para cobrar en el pedido.": "Wompi is ready to charge on the order.",
+  "Escriba el celular del asesor. Ejemplo: 3227043082.": "Type the advisor phone. Example: 3227043082.",
+  "El asesor atiende en": "The advisor answers at",
+  "Escriba una dirección http o https. Ejemplo: https://api.deltactica.com": "Type an http or https address. Example: https://api.deltactica.com",
+  "No se pudo leer la carpeta en este navegador.": "This browser could not read the folder.",
+  "Aplicación interna": "Internal application",
+  "A partir de diciembre o enero este sitio le enviará pedidos, existencia, el WhatsApp del asesor, el aviso de pago y la trazabilidad. Pegue la dirección cuando el software exista. Vacía, la compra sigue en este navegador.": "From December or January this site will send orders, stock, the advisor WhatsApp, the payment notice, and the trace. Paste the address when the software exists. Empty, the purchase stays in this browser.",
+  "Dirección": "Address",
+  "Guardar dirección": "Save address",
+  "La comunicación apunta a": "The link points to",
+  "Combine líneas o busque una referencia. Descargue el catálogo completo o solo lo que dejó filtrado.": "Combine lines or search a reference. Download the full catalog or only what you filtered.",
+  "Líneas del PDF": "PDF lines",
+  "Descargar filtrado": "Download filtered",
+  "Descargar completo": "Download full catalog",
+  "Catálogo completo": "Full catalog",
+  "Elija al menos una línea.": "Choose at least one line.",
+  "Se descargó": "Downloaded",
+  "No se pudo armar el PDF.": "The PDF could not be built.",
+  "referencia": "reference",
+  "referencias": "references",
+  "y más en el PDF.": "more in the PDF.",
+  "mil": "k",
+  "1 imagen quedó en su referencia": "1 image landed on its reference",
+  "imágenes quedaron en su referencia": "images landed on their references",
+  "archivo no coincidió": "file did not match",
+  "archivos no coincidieron": "files did not match",
+  "con una referencia del catálogo": "a catalog reference",
+  "Ningún archivo coincidió con una referencia.": "No file matched a reference.",
+  "Se quitaron las imágenes cargadas. El catálogo volvió a las fotos del sitio.": "Uploaded images were removed. The catalog went back to the site photos.",
+  "No se pudo leer esa carpeta. Use el botón Subir carpeta.": "That folder could not be read. Use Upload folder.",
+  "Cargada": "Uploaded",
+  "Quitar": "Remove",
+  "Página": "Page",
+  "de": "of"
+};
+const desk = { bodegaPage: 1, bodegaLine: "todas", bodegaQuery: "", bodegaId: "", ventasPage: 1, linesOpen: false, fichaNote: "" };
+
+function lang() {
+  return localStorage.getItem(KEYS.lang) === "en" ? "en" : "es";
+}
+
+function t(text) {
+  if (lang() !== "en") return text;
+  return Object.prototype.hasOwnProperty.call(I18N, text) ? I18N[text] : text;
+}
+
+function paintLang() {
+  document.documentElement.lang = lang();
+  if (document.querySelector("[data-admin-login]")) {
+    document.title = lang() === "en" ? "Administration | Deltactica" : "Administración | Deltactica";
+  }
+  document.querySelectorAll("[data-i18n]").forEach((node) => {
+    node.textContent = t(node.dataset.i18n);
+  });
+  document.querySelectorAll("[data-lang]").forEach((button) => {
+    const on = button.dataset.lang === lang();
+    button.classList.toggle("is-on", on);
+    button.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+}
 const ADMIN = { user: "delta", password: "admin123", name: "Admin" };
 const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const LINE_PALETTE = ["#f4f5f6", "#c5c8cc", "#8d939a", "#d7c4a3", "#6d737a", "#b7bcc2", "#9aa0a6", "#e4e6e8"];
@@ -15,6 +205,125 @@ function money(value) {
     currency: "COP",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function readAmount(raw) {
+  const text = String(raw || "").trim().replace(/\s/g, "").replace(/[^\d.,]/g, "");
+  if (!text) return 0;
+  const lastComma = text.lastIndexOf(",");
+  const lastDot = text.lastIndexOf(".");
+  let normalized = text;
+  if (lastComma >= 0 && lastDot >= 0) {
+    normalized = lastComma > lastDot ? text.replace(/\./g, "").replace(",", ".") : text.replace(/,/g, "");
+  } else if (lastComma >= 0) {
+    const decimals = text.length - lastComma - 1;
+    normalized = decimals === 3 ? text.replace(/,/g, "") : text.replace(",", ".");
+  } else if (lastDot >= 0) {
+    const decimals = text.length - lastDot - 1;
+    normalized = decimals === 3 ? text.replace(/\./g, "") : text;
+  }
+  const number = Number(normalized);
+  return Number.isFinite(number) && number > 0 ? number : 0;
+}
+
+function formatCop(value) {
+  return new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 }).format(value);
+}
+
+function formatUsd(value) {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function priceText(cop, usd) {
+  const parts = [];
+  if (cop) parts.push(`COP ${formatCop(cop)}`);
+  if (usd) parts.push(`USD ${formatUsd(usd)}`);
+  return parts.join(" · ") || "A consultar";
+}
+
+const TRM_URL = "https://www.datos.gov.co/resource/32sa-8pi3.json?$select=valor,vigenciadesde,vigenciahasta&$order=vigenciadesde%20DESC&$limit=1";
+let trmState = read(KEYS.trm, null);
+
+function bogotaToday() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
+}
+
+function trmRate() {
+  const value = Number(trmState && trmState.valor);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+function trmFresh(state) {
+  if (!state || !state.hasta) return false;
+  return String(state.hasta).slice(0, 10) >= bogotaToday();
+}
+
+function trmNote() {
+  const rate = trmRate();
+  if (!rate) return t("Sin TRM por ahora. El dólar se calcula cuando llegue la tasa del Banco de la República.");
+  const day = String((trmState && (trmState.hasta || trmState.desde)) || "").slice(0, 10);
+  const date = day ? new Date(`${day}T12:00:00`).toLocaleDateString(lang() === "en" ? "en-US" : "es-CO", { day: "numeric", month: "short", year: "numeric" }) : "";
+  const rateText = new Intl.NumberFormat(lang() === "en" ? "en-US" : "es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(rate);
+  const label = trmFresh(trmState) ? t("TRM Banco de la República") : t("Última TRM publicada");
+  return `${label}: 1 USD = ${rateText} COP${date ? ` · ${date}` : ""}`;
+}
+
+function copToUsd(cop) {
+  const rate = trmRate();
+  if (!cop || !rate) return 0;
+  return Math.round((cop / rate) * 100) / 100;
+}
+
+function usdToCop(usd) {
+  const rate = trmRate();
+  if (!usd || !rate) return 0;
+  return Math.round(usd * rate);
+}
+
+function paintTrm() {
+  document.querySelectorAll("[data-trm-note]").forEach((node) => {
+    node.textContent = trmNote();
+  });
+  const copInput = document.querySelector("[data-price-cop]");
+  const usdInput = document.querySelector("[data-price-usd]");
+  const rate = trmRate();
+  if (copInput && usdInput && rate && document.activeElement !== copInput && document.activeElement !== usdInput) {
+    const cop = readAmount(copInput.value);
+    const usd = readAmount(usdInput.value);
+    if (cop) usdInput.value = String(copToUsd(cop));
+    else if (usd) copInput.value = String(usdToCop(usd));
+  }
+  paintPrices();
+  const shown = document.querySelector("[data-product-price]");
+  if (shown) {
+    const item = product(new URLSearchParams(location.search).get("id"));
+    if (item) shown.textContent = priceLabel(item);
+  }
+}
+
+function loadTrm() {
+  if (trmFresh(trmState)) {
+    paintTrm();
+    return Promise.resolve(trmState);
+  }
+  return fetch(TRM_URL, { headers: { Accept: "application/json" } }).then((response) => {
+    if (!response.ok) throw new Error("trm");
+    return response.json();
+  }).then((rows) => {
+    const row = Array.isArray(rows) ? rows[0] : null;
+    const valor = Number(row && row.valor);
+    if (!valor) throw new Error("trm");
+    trmState = { valor, desde: row.vigenciadesde || "", hasta: row.vigenciahasta || "" };
+    write(KEYS.trm, trmState);
+    paintTrm();
+    return trmState;
+  }).catch(() => {
+    paintTrm();
+    return trmState;
+  });
 }
 
 function read(key, fallback) {
@@ -253,9 +562,34 @@ function product(id) {
   return PRODUCTS.find((item) => item.id === String(id || "").toUpperCase());
 }
 
-function priceLabel(item) {
-  return item && item.price ? money(item.price) : "A consultar";
+function fichaDe(id) {
+  return read(KEYS.ficha, {})[id] || {};
 }
+
+function savedPrice(item) {
+  if (!item) return 0;
+  const saved = fichaDe(item.id).price;
+  if (saved != null && saved !== "") {
+    const number = Number(saved);
+    if (Number.isFinite(number) && number >= 0) return number;
+  }
+  return Number(item.price) || 0;
+}
+
+function savedUsd(item) {
+  if (!item) return 0;
+  const cop = savedPrice(item);
+  if (cop && trmRate()) return copToUsd(cop);
+  const saved = Number(fichaDe(item.id).usd);
+  return Number.isFinite(saved) && saved > 0 ? saved : 0;
+}
+
+function priceLabel(item) {
+  return priceText(savedPrice(item), savedUsd(item));
+}
+
+window.dtSavedPrice = savedPrice;
+window.dtPriceLabel = priceLabel;
 
 window.DT_VISTAS = window.DT_VISTAS || {
   "DT-1079": 4, "DT-1080": 4, "DT-1188": 4, "DT-1299": 4,
@@ -308,7 +642,7 @@ function monthsBack(n, day) {
 
 function orderLine(id, qty) {
   const item = product(id);
-  return { id: item.id, name: item.name, price: item.price, qty };
+  return { id: item.id, name: item.name, price: savedPrice(item), usd: savedUsd(item), qty };
 }
 
 function buildExample(id, date, status, customer, lines) {
@@ -385,7 +719,7 @@ function cartCount() {
 }
 
 function cartTotal() {
-  return cart().reduce((sum, line) => sum + line.qty * (product(line.id)?.price || 0), 0);
+  return cart().reduce((sum, line) => sum + line.qty * (savedPrice(product(line.id)) || 0), 0);
 }
 
 function paintCount() {
@@ -407,7 +741,7 @@ function placeOrder(customer) {
   const lines = cart().map((line) => {
     const item = product(line.id);
     if (!item) return null;
-    return { id: line.id, name: item.name, price: item.price, qty: line.qty };
+    return { id: line.id, name: item.name, price: savedPrice(item), usd: savedUsd(item), qty: line.qty };
   }).filter(Boolean);
   if (!lines.length) return null;
   for (const line of lines) {
@@ -465,13 +799,19 @@ function renderCart() {
       <td><div class="cart-product"><img src="${productImage(item)}" alt="" data-product="${item.id}"><div><strong>${escapeHtml(item.name)}</strong><span>${item.id} · ${escapeHtml(item.line)}</span></div></div></td>
       <td>${priceLabel(item)}</td>
       <td><div class="qty"><button type="button" data-qty-change="${item.id}" data-dir="-1" aria-label="Restar una unidad">−</button><span>${line.qty}</span><button type="button" data-qty-change="${item.id}" data-dir="1" aria-label="Sumar una unidad">+</button></div></td>
-      <td>${item.price ? money(item.price * line.qty) : "A consultar"}</td>
+      <td>${priceText(savedPrice(item) * line.qty, savedUsd(item) * line.qty)}</td>
       <td><button class="linkish" type="button" data-remove="${item.id}">Quitar</button></td>
     </tr>`;
   }).join("");
-  const total = cartTotal();
+  const totals = cart().reduce((sum, line) => {
+    const item = product(line.id);
+    return {
+      cop: sum.cop + line.qty * (savedPrice(item) || 0),
+      usd: sum.usd + line.qty * (savedUsd(item) || 0),
+    };
+  }, { cop: 0, usd: 0 });
   rootNode.innerHTML = `<table class="cart-table"><thead><tr><th>Artículo</th><th>Precio</th><th>Cantidad</th><th>Total</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="cart-foot"><button class="linkish" type="button" data-clear-cart>Vaciar carrito</button><div><p class="eyebrow">Total</p><p class="cart-total">${total ? money(total) : "A consultar"}</p></div></div>
+    <div class="cart-foot"><button class="linkish" type="button" data-clear-cart>Vaciar carrito</button><div><p class="eyebrow">Total</p><p class="cart-total">${priceText(totals.cop, totals.usd)}</p></div></div>
     <div class="hero-actions"><a class="btn btn-metal" href="${root}compra.html">Continuar con los datos del cliente</a></div>
     <p class="admin-note">El siguiente paso pide quién pide, quién recibe y la dirección. Sin esos datos el pedido no sigue.</p>
     <p class="admin-note" data-cart-msg></p>`;
@@ -511,10 +851,16 @@ function renderCheckout() {
   const rows = cart().map((line) => {
     const item = product(line.id);
     if (!item) return "";
-    return `<tr><td>${escapeHtml(item.name)}</td><td>${line.qty}</td><td>${item.price ? money(item.price * line.qty) : "A consultar"}</td></tr>`;
+    return `<tr><td>${escapeHtml(item.name)}</td><td>${line.qty}</td><td>${priceText(savedPrice(item) * line.qty, savedUsd(item) * line.qty)}</td></tr>`;
   }).join("");
-  const total = cartTotal();
-  summary.innerHTML = `<p class="eyebrow">Resumen</p><table class="summary-line"><tbody>${rows}</tbody></table><p class="cart-total">${total ? money(total) : "A consultar"}</p>`;
+  const totals = cart().reduce((sum, line) => {
+    const item = product(line.id);
+    return {
+      cop: sum.cop + line.qty * (savedPrice(item) || 0),
+      usd: sum.usd + line.qty * (savedUsd(item) || 0),
+    };
+  }, { cop: 0, usd: 0 });
+  summary.innerHTML = `<p class="eyebrow">Resumen</p><table class="summary-line"><tbody>${rows}</tbody></table><p class="cart-total">${priceText(totals.cop, totals.usd)}</p>`;
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     const data = new FormData(form);
@@ -574,13 +920,14 @@ function waLink(text) {
 
 function receiptText(order) {
   const customer = order.customer;
-  const lines = order.lines.map((line) => `${line.id} ${line.name} x${line.qty} · ${line.price ? money(line.price * line.qty) : "A consultar"}`).join("\n");
+  const lines = order.lines.map((line) => `${line.id} ${line.name} x${line.qty} · ${priceText((line.price || 0) * line.qty, (line.usd || 0) * line.qty)}`).join("\n");
+  const usdTotal = order.lines.reduce((sum, line) => sum + (line.usd || 0) * line.qty, 0);
   return [
     `Recibo Deltactica ${order.id}`,
     new Date(order.date).toLocaleString("es-CO"),
     "",
     lines,
-    `Total: ${order.total ? money(order.total) : "A consultar"}`,
+    `Total: ${priceText(order.total, usdTotal)}`,
     `Pago: ${customer.metodo || ""}`,
     "",
     "Envío",
@@ -600,12 +947,13 @@ function receiptText(order) {
 
 function receiptView(order) {
   const customer = order.customer;
-  const rows = order.lines.map((line) => `<tr><td>${escapeHtml(line.id)}</td><td>${escapeHtml(line.name)}</td><td>${line.qty}</td><td>${line.price ? money(line.price) : "A consultar"}</td><td>${line.price ? money(line.price * line.qty) : "A consultar"}</td></tr>`).join("");
+  const usdTotal = order.lines.reduce((sum, line) => sum + (line.usd || 0) * line.qty, 0);
+  const rows = order.lines.map((line) => `<tr><td>${escapeHtml(line.id)}</td><td>${escapeHtml(line.name)}</td><td>${line.qty}</td><td>${priceText(line.price, line.usd)}</td><td>${priceText((line.price || 0) * line.qty, (line.usd || 0) * line.qty)}</td></tr>`).join("");
   const link = waLink(receiptText(order));
   return `<article class="receipt">
     <header class="receipt-banner"><img class="receipt-logo" src="${root}img/logo.png" alt="Deltactica"><div><p class="eyebrow">Recibo</p><h2>${escapeHtml(order.id)}</h2><p>${new Date(order.date).toLocaleString("es-CO")}</p></div></header>
     <table class="summary-line"><thead><tr><th>Ref.</th><th>Artículo</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="cart-total">${order.total ? money(order.total) : "A consultar"}</p>
+    <p class="cart-total">${priceText(order.total, usdTotal)}</p>
     <p>Pago: ${escapeHtml(customer.metodo || "")}</p>
     ${customer.pago ? `<p>${escapeHtml(customer.pago)}</p>` : ""}
     <div class="receipt-ship">
@@ -671,7 +1019,7 @@ function ensurePdf() {
   if (window.DTPDF) return Promise.resolve();
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = `${root}js/pdf.js?v=catalogo`;
+    script.src = `${root}js/pdf.js?v=catalogo2`;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error("pdf"));
     document.head.appendChild(script);
@@ -748,7 +1096,7 @@ function shortMoney(value) {
     return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(value / 1000000)} M`;
   }
   if (value >= 1000) {
-    return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 }).format(value / 1000)} mil`;
+    return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 }).format(value / 1000)} ${t("mil")}`;
   }
   return money(value);
 }
@@ -758,7 +1106,8 @@ function recentMonths(count = 6) {
   const months = [];
   for (let i = count - 1; i >= 0; i -= 1) {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push({ key: `${date.getFullYear()}-${date.getMonth()}`, label: MONTHS[date.getMonth()] });
+    const names = lang() === "en" ? ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] : MONTHS;
+    months.push({ key: `${date.getFullYear()}-${date.getMonth()}`, label: names[date.getMonth()] });
   }
   return months;
 }
@@ -839,6 +1188,11 @@ function legend(parts) {
   return `<ul class="legend">${parts.map((part) => `<li><i style="background:${part.color}"></i><span>${escapeHtml(part.label)}</span><b>${money(part.value)}</b></li>`).join("")}</ul>`;
 }
 
+function lineMeters(parts) {
+  const max = Math.max(...parts.map((part) => part.value), 1);
+  return `<ul class="meters line-meters">${parts.map((part) => `<li><span>${escapeHtml(part.label)}</span><em>${money(part.value)}</em><div class="meter" aria-hidden="true"><i style="width:${part.value ? Math.max(2, Math.round((part.value / max) * 100)) : 0}%"></i></div></li>`).join("")}</ul>`;
+}
+
 function meterList(parts) {
   const max = Math.max(...parts.map((part) => part.value), 1);
   return `<ul class="meters">${parts.map((part) => `<li><span>${escapeHtml(part.label)}</span><div class="meter" aria-hidden="true"><i class="${part.warn ? "is-low" : ""}" style="width:${Math.max(2, Math.round((part.value / max) * 100))}%"></i></div><em>${escapeHtml(part.display)}</em></li>`).join("")}</ul>`;
@@ -863,7 +1217,7 @@ function paintAccount() {
     if (!session) button.setAttribute("aria-expanded", "false");
   });
   document.querySelectorAll("[data-account-label]").forEach((node) => {
-    node.textContent = session ? session.name : "Iniciar sesión";
+    node.textContent = session ? session.name : t("Iniciar sesión");
   });
   document.querySelectorAll("[data-account-menu]").forEach((menu) => {
     if (!session) {
@@ -871,7 +1225,7 @@ function paintAccount() {
       menu.innerHTML = "";
       return;
     }
-    menu.innerHTML = `<p class="account-kicker">Sesión abierta</p><p class="account-role">Admin</p><a href="${root}admin.html">Abrir panel</a><button type="button" data-logout>Salir</button>`;
+    menu.innerHTML = `<p class="account-kicker">${t("Sesión abierta")}</p><p class="account-role">Admin</p><a href="${root}admin.html">${t("Abrir panel")}</a><button type="button" data-logout>${t("Salir")}</button>`;
   });
   const userField = document.querySelector("[data-admin-login] [name=usuario]");
   if (userField && !session) {
@@ -880,7 +1234,7 @@ function paintAccount() {
   }
   const who = document.querySelector("[data-admin-who]");
   if (who && session) {
-    who.textContent = "Los ejemplos y los pedidos de este navegador se leen juntos.";
+    who.textContent = t("Los ejemplos y los pedidos de este navegador se leen juntos.");
   }
 }
 
@@ -939,25 +1293,86 @@ async function loadPhotos() {
   });
 }
 
+async function preparePhoto(file) {
+  if (!(file.type || "").startsWith("image/") && !/\.(jpe?g|png|webp)$/i.test(file.name || "")) return file;
+  const url = URL.createObjectURL(file);
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const picture = new Image();
+      picture.onload = () => resolve(picture);
+      picture.onerror = () => reject(new Error("foto"));
+      picture.src = url;
+    });
+    const max = 1400;
+    const scale = Math.min(1, max / Math.max(image.width, image.height));
+    const width = Math.max(1, Math.round(image.width * scale));
+    const height = Math.max(1, Math.round(image.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(image, 0, 0, width, height);
+    const frame = ctx.getImageData(0, 0, width, height);
+    const data = frame.data;
+    let sum = 0;
+    let count = 0;
+    for (let i = 0; i < data.length; i += 64) {
+      sum += data[i] * 0.2126 + data[i + 1] * 0.7152 + data[i + 2] * 0.0722;
+      count += 1;
+    }
+    const mean = count ? sum / count : 128;
+    if (mean < 58) {
+      const gain = Math.min(1.4, 88 / Math.max(mean, 12));
+      for (let i = 0; i < data.length; i += 4) {
+        data[i] = Math.min(255, data[i] * gain);
+        data[i + 1] = Math.min(255, data[i + 1] * gain);
+        data[i + 2] = Math.min(255, data[i + 2] * gain);
+      }
+      ctx.putImageData(frame, 0, 0);
+    }
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.86));
+    return blob || file;
+  } catch {
+    return file;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function savePhotoBlob(id, blob) {
+  const db = await photoDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction("photos", "readwrite");
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+    tx.objectStore("photos").put(blob, id);
+  });
+  rememberPhoto(id, blob);
+}
+
 async function savePhotoFiles(files) {
   const db = await photoDb();
   const matched = [];
   const skipped = [];
+  const ready = [];
+  for (const file of files) {
+    const image = file.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(file.name);
+    const id = image ? idFromFileName(file.name) : "";
+    if (!id) {
+      if (file.name) skipped.push(file.name);
+      continue;
+    }
+    ready.push({ id, blob: await preparePhoto(file) });
+  }
   await new Promise((resolve, reject) => {
     const tx = db.transaction("photos", "readwrite");
     const store = tx.objectStore("photos");
     tx.oncomplete = resolve;
     tx.onerror = () => reject(tx.error);
-    [...files].forEach((file) => {
-      const image = file.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(file.name);
-      const id = image ? idFromFileName(file.name) : "";
-      if (!id) {
-        if (file.name) skipped.push(file.name);
-        return;
-      }
-      store.put(file, id);
-      rememberPhoto(id, file);
-      matched.push(id);
+    ready.forEach((entry) => {
+      store.put(entry.blob, entry.id);
+      rememberPhoto(entry.id, entry.blob);
+      matched.push(entry.id);
     });
   });
   return { matched: [...new Set(matched)], skipped };
@@ -1007,12 +1422,12 @@ function paintPhotoDesk() {
 function photoStatus(matched, skipped) {
   const status = document.querySelector("[data-photo-status]");
   if (!status) return;
-  const ready = matched.length === 1 ? "1 imagen quedó en su referencia" : `${matched.length} imágenes quedaron en su referencia`;
+  const ready = matched.length === 1 ? t("1 imagen quedó en su referencia") : `${matched.length} ${t("imágenes quedaron en su referencia")}`;
   const names = matched.length ? `: ${matched.join(", ")}.` : ".";
   const ignored = skipped.length
-    ? ` ${skipped.length} ${skipped.length === 1 ? "archivo no coincidió" : "archivos no coincidieron"} con una referencia del catálogo`
+    ? ` ${skipped.length} ${skipped.length === 1 ? t("archivo no coincidió") : t("archivos no coincidieron")} ${t("con una referencia del catálogo")}`
     : "";
-  status.textContent = matched.length ? `${ready}${names}${ignored}` : `Ningún archivo coincidió con una referencia.${ignored}`;
+  status.textContent = matched.length ? `${ready}${names}${ignored}` : `${t("Ningún archivo coincidió con una referencia.")}${ignored}`;
 }
 
 async function filesFromZip(file) {
@@ -1110,18 +1525,19 @@ function traceBoard() {
   const sessionHas = (names) => sessions.filter((id) => events.some((event) => event.s === id && names.includes(event.p))).length;
   const sessionAction = (action) => sessions.filter((id) => events.some((event) => event.s === id && event.a === action)).length;
   const funnel = [
-    { label: "Entraron", value: entries.length, display: String(entries.length) },
-    { label: "Catálogo", value: sessionHas(["Catálogo"]), display: String(sessionHas(["Catálogo"])) },
-    { label: "Ficha", value: sessionAction("ficha"), display: String(sessionAction("ficha")) },
-    { label: "Carrito", value: sessionHas(["Carrito"]), display: String(sessionHas(["Carrito"])) },
-    { label: "Compra", value: sessionHas(["Compra"]), display: String(sessionHas(["Compra"])) },
-    { label: "Pedidos", value: realOrders.length, display: String(realOrders.length) },
+    { label: t("Entraron"), value: entries.length, display: String(entries.length) },
+    { label: t("Catálogo"), value: sessionHas(["Catálogo"]), display: String(sessionHas(["Catálogo"])) },
+    { label: t("Ficha"), value: sessionAction("ficha"), display: String(sessionAction("ficha")) },
+    { label: t("Carrito"), value: sessionHas(["Carrito"]), display: String(sessionHas(["Carrito"])) },
+    { label: t("Compra"), value: sessionHas(["Compra"]), display: String(sessionHas(["Compra"])) },
+    { label: t("Pedidos"), value: realOrders.length, display: String(realOrders.length) },
   ];
   const pageCounts = new Map();
   pages.forEach((event) => pageCounts.set(event.p, (pageCounts.get(event.p) || 0) + 1));
   const pageMeters = [...pageCounts.entries()]
     .sort((a, b) => b[1] - a[1])
-    .map(([label, value]) => ({ label, value, display: String(value) }));
+    .slice(0, 6)
+    .map(([label, value]) => ({ label: t(label), value, display: String(value) }));
   const steps = new Map();
   events.filter((event) => event.a === "paso").forEach((event) => {
     const key = `${event.p} → ${event.d}`;
@@ -1164,21 +1580,20 @@ function traceBoard() {
   const best = topProduct(rows, (row) => row.sold);
   const unsold = rows.filter((row) => row.sold === 0);
   const lowest = rows.filter((row) => row.sold > 0).sort((a, b) => a.sold - b.sold || a.id.localeCompare(b.id))[0];
-  const productName = (row) => row ? `${row.id} · ${row.name}` : "Sin datos todavía";
+  const productName = (row) => row ? `${row.id} · ${row.name}` : t("Sin datos todavía");
   const leastStrong = !best ? "—" : unsold[0] ? unsold[0].id : (lowest ? lowest.id : "—");
   const leastNote = !best
-    ? "Todavía no hay compras confirmadas."
+    ? t("Todavía no hay compras confirmadas.")
     : unsold.length > 1
-      ? `También sin vender: ${unsold.length - 1} referencias.`
+      ? `${t("También sin vender:")} ${unsold.length - 1} ${t("referencias.")}`
       : productName(unsold[0] || lowest);
-  const table = rows
-    .slice()
-    .sort((a, b) => b.sold - a.sold || (b.found + b.views) - (a.found + a.views) || a.id.localeCompare(b.id))
-    .map((row) => `<tr><td>${row.id}</td><td>${escapeHtml(row.name)}</td><td>${row.views}</td><td>${row.found}</td><td>${row.carts}</td><td>${row.sold}</td></tr>`)
-    .join("");
-  const flow = stepRows.length
-    ? `<table class="admin-table"><thead><tr><th>Recorrido</th><th>Veces</th></tr></thead><tbody>${stepRows.map(([label, value]) => `<tr><td>${escapeHtml(label)}</td><td>${value}</td></tr>`).join("")}</tbody></table>`
-    : "<p class=\"admin-note\">Cuando alguien pase de una pantalla a otra, el recorrido aparece aquí.</p>";
+  const active = rows
+    .filter((row) => row.sold || row.views || row.found || row.carts)
+    .sort((a, b) => (b.sold + b.views + b.found) - (a.sold + a.views + a.found))
+    .slice(0, 5);
+  const activeTable = active.length
+    ? `<table class="admin-table"><thead><tr><th>Ref.</th><th>${t("Artículo")}</th><th>${t("Vistas")}</th><th>${t("Vendidas")}</th></tr></thead><tbody>${active.map((row) => `<tr><td>${row.id}</td><td>${escapeHtml(row.name)}</td><td>${row.views}</td><td>${row.sold}</td></tr>`).join("")}</tbody></table>`
+    : `<p class="admin-note">${t("Sin datos todavía")}</p>`;
   const groups = new Map();
   events.forEach((event) => {
     if (!groups.has(event.s)) groups.set(event.s, []);
@@ -1191,33 +1606,31 @@ function traceBoard() {
     });
     const gone = group.some((event) => event.a === "salida");
     const stamp = new Date(group[0].t).toLocaleString("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-    return `<li><span>${escapeHtml(stamp)}</span><b>${escapeHtml(path.join(" → ") || "Entrada")}</b><em>${gone ? "Salió" : "En el sitio"}</em></li>`;
+    return `<li><span>${escapeHtml(stamp)}</span><b>${escapeHtml(path.map((name) => t(name)).join(" → ") || t("Entrada"))}</b><em>${gone ? t("Salió") : t("En el sitio")}</em></li>`;
   }).join("");
   const stayed = events.filter((event) => (event.a === "salida" || event.a === "paso") && event.n > 0);
   const average = stayed.length ? Math.round(stayed.reduce((sum, event) => sum + event.n, 0) / stayed.length) : 0;
-  return `<p class="admin-note">Entradas, salidas, búsquedas y ventas de este navegador. Con la dirección de la aplicación, el mismo aviso sale hacia el software interno.</p>
-    <div class="stats">
-      <article class="stat"><span>Entradas</span><strong>${entries.length}</strong></article>
-      <article class="stat"><span>Salidas</span><strong>${exits.length}</strong></article>
-      <article class="stat"><span>Visitantes</span><strong>${visitors.length}</strong></article>
-      <article class="stat"><span>Páginas vistas</span><strong>${pages.length}</strong></article>
-      <article class="stat"><span>Búsquedas</span><strong>${searches.length}</strong></article>
-      <article class="stat"><span>Permanencia</span><strong>${stayText(average)}</strong></article>
+  return `<div class="stats">
+      <article class="stat"><span>${t("Entradas")}</span><strong>${entries.length}</strong></article>
+      <article class="stat"><span>${t("Salidas")}</span><strong>${exits.length}</strong></article>
+      <article class="stat"><span>${t("Visitantes")}</span><strong>${visitors.length}</strong></article>
+      <article class="stat"><span>${t("Páginas vistas")}</span><strong>${pages.length}</strong></article>
+      <article class="stat"><span>${t("Búsquedas")}</span><strong>${searches.length}</strong></article>
+      <article class="stat"><span>${t("Permanencia")}</span><strong>${stayText(average)}</strong></article>
     </div>
     <div class="stats">
-      <article class="stat"><span>Más buscado</span><strong>${wanted ? wanted.id : "—"}</strong><p class="admin-note">${escapeHtml(productName(wanted))}</p></article>
-      <article class="stat"><span>Más vendido</span><strong>${best ? best.id : "—"}</strong><p class="admin-note">${escapeHtml(productName(best))}${best ? `. ${best.sold} uds.` : ""}</p></article>
-      <article class="stat"><span>Menos vendido</span><strong>${escapeHtml(leastStrong)}</strong><p class="admin-note">${escapeHtml(leastNote)}</p></article>
+      <article class="stat"><span>${t("Más buscado")}</span><strong>${wanted ? wanted.id : "—"}</strong><p class="admin-note">${escapeHtml(productName(wanted))}</p></article>
+      <article class="stat"><span>${t("Más vendido")}</span><strong>${best ? best.id : "—"}</strong><p class="admin-note">${escapeHtml(productName(best))}${best ? `. ${best.sold} ${t("uds.")}` : ""}</p></article>
+      <article class="stat"><span>${t("Menos vendido")}</span><strong>${escapeHtml(leastStrong)}</strong><p class="admin-note">${escapeHtml(leastNote)}</p></article>
     </div>
     <div class="chart-grid">
-      <article class="admin-block"><p class="eyebrow">Del ingreso al pedido</p>${meterList(funnel)}</article>
-      <article class="admin-block"><p class="eyebrow">Pantallas</p>${pageMeters.length ? meterList(pageMeters) : "<p class=\"admin-note\">Todavía no hay páginas vistas.</p>"}</article>
+      <article class="admin-block"><p class="eyebrow">${t("Del ingreso al pedido")}</p>${meterList(funnel)}</article>
+      <article class="admin-block"><p class="eyebrow">${t("Pantallas")}</p>${pageMeters.length ? meterList(pageMeters) : `<p class="admin-note">${t("Todavía no hay páginas vistas.")}</p>`}</article>
     </div>
     <div class="chart-grid">
-      <article class="admin-block"><p class="eyebrow">Hacia dónde siguen</p>${flow}</article>
-      <article class="admin-block"><p class="eyebrow">Últimas visitas</p>${recent ? `<ul class="trace-list">${recent}</ul>` : "<p class=\"admin-note\">La primera visita queda registrada al abrir el sitio.</p>"}</article>
-    </div>
-    <article class="admin-block"><p class="eyebrow">Referencias</p><p class="admin-note">Vistas de ficha, búsquedas por nombre o referencia, veces que entró al carrito y unidades de pedidos confirmados. Los ejemplos no cuentan como venta.</p><div class="table-wrap"><table class="admin-table"><thead><tr><th>Ref.</th><th>Artículo</th><th>Vistas</th><th>Búsquedas</th><th>Carrito</th><th>Vendidas</th></tr></thead><tbody>${table}</tbody></table></div></article>`;
+      <article class="admin-block"><p class="eyebrow">${t("Lo más movido")}</p>${activeTable}</article>
+      <article class="admin-block"><p class="eyebrow">${t("Últimas visitas")}</p>${recent ? `<ul class="trace-list">${recent}</ul>` : `<p class="admin-note">${t("La primera visita queda registrada al abrir el sitio.")}</p>`}</article>
+    </div>`;
 }
 
 function renderAdmin() {
@@ -1239,7 +1652,7 @@ function renderAdmin() {
         const user = String(data.get("usuario") || "").trim();
         const pass = String(data.get("clave") || "");
         if (user !== ADMIN.user || pass !== ADMIN.password) {
-          error.textContent = "El usuario o la contraseña no coinciden.";
+          error.textContent = t("El usuario o la contraseña no coinciden.");
           return;
         }
         error.textContent = "";
@@ -1254,7 +1667,10 @@ function renderAdmin() {
   const stock = stockMap();
   const sold = list.reduce((sum, order) => sum + order.total, 0);
   const pending = list.filter((order) => order.status !== "Entregado").length;
-  const low = PRODUCTS.filter((item) => (stock[item.id] ?? 0) <= item.min);
+  const low = PRODUCTS.filter((item) => {
+    const minimum = fichaDe(item.id).min != null ? Number(fichaDe(item.id).min) : item.min;
+    return (stock[item.id] ?? 0) <= minimum;
+  });
   const units = PRODUCTS.reduce((sum, item) => sum + (stock[item.id] ?? 0), 0);
   const byMonth = salesByMonth(list);
   const byLine = salesByLine(list);
@@ -1263,12 +1679,19 @@ function renderAdmin() {
     value: list.filter((order) => order.status === status).length,
     display: String(list.filter((order) => order.status === status).length),
   }));
-  const byPlace = LINES.map((line) => {
-    const items = PRODUCTS.filter((item) => item.line === line);
-    const total = items.reduce((sum, item) => sum + (stock[item.id] ?? 0), 0);
-    const warn = items.some((item) => (stock[item.id] ?? 0) <= item.min);
-    return { label: line, value: total, display: String(total), warn };
-  });
+  const shownLines = (() => {
+    const sorted = byLine.slice().sort((a, b) => b.value - a.value);
+    if (desk.linesOpen || sorted.length <= 6) return sorted;
+    const head = sorted.slice(0, 5);
+    const rest = sorted.slice(5).reduce((sum, part) => sum + part.value, 0);
+    if (rest) head.push({ label: t("Otras líneas"), color: "#6d737a", value: rest });
+    return head;
+  })();
+  const restock = low.length
+    ? `${t("Reponer")} ${low.slice(0, 4).map((item) => item.id).join(", ")}${low.length > 4 ? ` ${t("y")} ${low.length - 4} ${t("más")}` : ""}.`
+    : t("Ninguna referencia está en el mínimo.");
+  const statusLabel = (status) => t(status);
+  const statusOptions = (current) => ["Recibido", "En preparación", "Despachado", "Entregado"].map((status) => `<option value="${status}" style="background:#141416;color:#f3f4f5" ${status === current ? "selected" : ""}>${statusLabel(status)}</option>`).join("");
 
   const general = document.querySelector('[data-admin-panel="general"]');
   const sales = document.querySelector('[data-admin-panel="ventas"]');
@@ -1276,61 +1699,82 @@ function renderAdmin() {
   const wompi = wompiConfig();
   const localPhone = advisorPhone().replace(/^57/, "");
   general.innerHTML = `<div class="stats">
-      <article class="stat"><span>Referencias</span><strong>${PRODUCTS.length}</strong></article>
-      <article class="stat"><span>Unidades</span><strong>${units}</strong></article>
-      <article class="stat"><span>Pedidos</span><strong>${list.length}</strong></article>
-      <article class="stat"><span>Ventas</span><strong class="stat-money">${money(sold)}</strong></article>
-      <article class="stat"><span>Por despachar</span><strong>${pending}</strong></article>
-      <article class="stat"><span>Por reponer</span><strong>${low.length}</strong></article>
+      <article class="stat"><span>${t("Referencias")}</span><strong>${PRODUCTS.length}</strong></article>
+      <article class="stat"><span>${t("Unidades")}</span><strong>${units}</strong></article>
+      <article class="stat"><span>${t("Pedidos")}</span><strong>${list.length}</strong></article>
+      <article class="stat"><span>${t("Ventas")}</span><strong class="stat-money">${money(sold)}</strong></article>
+      <article class="stat"><span>${t("Por despachar")}</span><strong>${pending}</strong></article>
+      <article class="stat"><span>${t("Por reponer")}</span><strong>${low.length}</strong></article>
     </div>
     <div class="chart-grid">
-      <article class="admin-block"><p class="eyebrow">Ventas por mes</p><p class="admin-note">Seis meses, con los ejemplos y los pedidos de este navegador.</p>${barChart(byMonth, "Ventas de los últimos seis meses")}</article>
-      <article class="admin-block"><p class="eyebrow">Ventas por línea</p><div class="donut-row">${donutChart(byLine, "Ventas por línea")}${legend(byLine)}</div></article>
+      <article class="admin-block"><p class="eyebrow">${t("Ventas por mes")}</p><p class="admin-note">${t("Seis meses, con los ejemplos y los pedidos de este navegador.")}</p>${barChart(byMonth, t("Ventas de los últimos seis meses"))}</article>
+      <article class="admin-block"><p class="eyebrow">${t("Ventas por línea")}</p><div class="${desk.linesOpen ? "legend-scroll" : ""}">${lineMeters(shownLines)}</div><button class="btn btn-ghost" type="button" data-lines-toggle>${desk.linesOpen ? t("Ver menos") : t("Ver todas")}</button><p class="admin-note">${restock}</p></article>
     </div>
-    <div class="chart-grid">
-      <article class="admin-block"><p class="eyebrow">Estado de pedidos</p>${meterList(byStatus)}</article>
-      <article class="admin-block"><p class="eyebrow">Unidades por línea</p><p class="admin-note">${low.length ? `Reponer ${low.slice(0, 8).map((item) => item.id).join(", ")}${low.length > 8 ? ` y ${low.length - 8} más` : ""}.` : "Ninguna referencia está en el mínimo."}</p>${meterList(byPlace)}</article>
-    </div>`;
+    <article class="admin-block"><p class="eyebrow">${t("Estado de pedidos")}</p>${meterList(byStatus.map((part) => ({ ...part, label: statusLabel(part.label) })))}</article>`;
 
-  const saleRows = list.length
-    ? list.map((order) => `<tr><td>${escapeHtml(order.id)}${order.example ? '<span class="example-tag">Ejemplo</span>' : ""}</td><td>${new Date(order.date).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })}</td><td>${escapeHtml(order.customer.nombre)}<br>${escapeHtml(order.customer.institucion || "")}</td><td>${escapeHtml(order.customer.ciudad)}<br>${escapeHtml(order.customer.metodo || "")}</td><td>${money(order.total)}</td><td><select class="status-select" data-status="${escapeHtml(order.id)}">${["Recibido", "En preparación", "Despachado", "Entregado"].map((status) => `<option style="background:#141416;color:#f3f4f5" ${status === order.status ? "selected" : ""}>${status}</option>`).join("")}</select></td></tr>`).join("")
-    : `<tr><td colspan="6">Todavía no hay pedidos.</td></tr>`;
-  sales.innerHTML = `<div class="chart-grid chart-grid-sales"><article class="admin-block"><p class="eyebrow">Ventas por mes</p>${barChart(byMonth, "Ventas de los últimos seis meses")}</article><article class="admin-block"><p class="eyebrow">Por cobrar y despachar</p><p class="admin-note">Total ${money(sold)}. ${pending} pedidos siguen abiertos.</p>${meterList(byStatus)}</article></div><div class="admin-block"><p class="eyebrow">Pedidos</p><p class="admin-note">Una compra confirmada entra en esta tabla. El precio queda a consultar hasta que el asesor lo cierre.</p><div class="table-wrap"><table class="admin-table"><thead><tr><th>Pedido</th><th>Fecha</th><th>Cliente</th><th>Ciudad</th><th>Total</th><th>Estado</th></tr></thead><tbody>${saleRows}</tbody></table></div></div>`;
+  const salePages = Math.max(1, Math.ceil(list.length / 8));
+  desk.ventasPage = Math.min(Math.max(1, desk.ventasPage), salePages);
+  const saleSlice = list.slice((desk.ventasPage - 1) * 8, desk.ventasPage * 8);
+  const saleRows = saleSlice.length
+    ? saleSlice.map((order) => `<tr><td>${escapeHtml(order.id)}${order.example ? `<span class="example-tag">${t("Ejemplo")}</span>` : ""}</td><td>${new Date(order.date).toLocaleDateString(lang() === "en" ? "en-US" : "es-CO", { day: "2-digit", month: "short", year: "numeric" })}</td><td>${escapeHtml(order.customer.nombre)}<br>${escapeHtml(order.customer.institucion || "")}</td><td>${escapeHtml(order.customer.ciudad)}<br>${escapeHtml(order.customer.metodo || "")}</td><td>${money(order.total)}</td><td><select class="status-select" data-status="${escapeHtml(order.id)}">${statusOptions(order.status)}</select></td></tr>`).join("")
+    : `<tr><td colspan="6">${t("Todavía no hay pedidos.")}</td></tr>`;
+  sales.innerHTML = `<div class="chart-grid chart-grid-sales"><article class="admin-block"><p class="eyebrow">${t("Ventas por mes")}</p>${barChart(byMonth, t("Ventas de los últimos seis meses"))}</article><article class="admin-block"><p class="eyebrow">${t("Por cobrar y despachar")}</p><p class="admin-note">${t("Total")} ${money(sold)}. ${pending} ${t("siguen abiertos.")}</p>${meterList(byStatus.map((part) => ({ ...part, label: statusLabel(part.label) })))}</article></div><div class="admin-block"><p class="eyebrow">${t("Pedidos")}</p><p class="admin-note">${t("Una compra confirmada entra en esta tabla. El precio queda a consultar hasta que el asesor lo cierre.")}</p><div class="table-wrap"><table class="admin-table"><thead><tr><th>${t("Pedido")}</th><th>${t("Fecha")}</th><th>${t("Cliente")}</th><th>${t("Ciudad")}</th><th>${t("Total")}</th><th>${t("Estado")}</th></tr></thead><tbody>${saleRows}</tbody></table></div><div class="pager"><button class="btn btn-ghost" type="button" data-ventas-page="prev" ${desk.ventasPage <= 1 ? "disabled" : ""}>${t("Anterior")}</button><span>${t("Página")} ${desk.ventasPage} ${t("de")} ${salePages}</span><button class="btn btn-ghost" type="button" data-ventas-page="next" ${desk.ventasPage >= salePages ? "disabled" : ""}>${t("Siguiente")}</button></div></div>`;
 
-  const scale = Math.max(...PRODUCTS.map((item) => Math.max(stock[item.id] ?? 0, item.min)), 1);
-  const stockMeters = PRODUCTS.map((item) => {
+  const bodegaFiltered = PRODUCTS.filter((item) => {
+    if (desk.bodegaLine !== "todas" && item.line !== desk.bodegaLine) return false;
+    const query = desk.bodegaQuery.trim().toLowerCase();
+    return !query || `${item.id} ${item.name} ${item.line}`.toLowerCase().includes(query);
+  });
+  const bodegaPages = Math.max(1, Math.ceil(bodegaFiltered.length / 12));
+  desk.bodegaPage = Math.min(Math.max(1, desk.bodegaPage), bodegaPages);
+  const bodegaSlice = bodegaFiltered.slice((desk.bodegaPage - 1) * 12, desk.bodegaPage * 12);
+  const openItem = desk.bodegaId ? product(desk.bodegaId) : null;
+  const sheet = (item) => {
+    const ficha = fichaDe(item.id);
+    const cop = savedPrice(item);
+    const price = cop ? String(Math.round(cop)) : "";
+    const dollars = savedUsd(item);
+    const usd = dollars ? String(dollars) : "";
+    const place = ficha.place != null ? ficha.place : (item.place || "");
+    const note = ficha.note || "";
+    const minimum = ficha.min != null ? ficha.min : item.min;
     const left = stock[item.id] ?? 0;
-    const width = Math.max(2, Math.round((left / scale) * 100));
-    const mark = Math.round((item.min / scale) * 100);
-    return `<li class="${left <= item.min ? "low" : ""}"><span>${item.id}</span><div class="meter" aria-hidden="true"><i class="${left <= item.min ? "is-low" : ""}" style="width:${width}%"></i><b style="left:${mark}%"></b></div><em>${left}</em></li>`;
-  }).join("");
-  const stockRows = PRODUCTS.map((item) => {
+    return `<article class="admin-block product-sheet"><div class="sheet-photo"><img src="${productImage(item)}" alt="${escapeHtml(item.name)}" data-product="${item.id}"><label class="btn btn-ghost sheet-file">${t("Cambiar imagen")}<input data-sheet-photo="${item.id}" type="file" accept="image/*"></label><p class="admin-note">${t("La foto se ajusta sola: tamaño, resolución e iluminación.")}</p></div><form class="panel-form" data-sheet-form="${item.id}"><p class="eyebrow">${item.id}</p><h2>${escapeHtml(item.name)}</h2><p class="admin-note">${escapeHtml(item.line)}</p><div class="price-pair"><label>${t("Precio COP")}<input name="price" data-price-cop inputmode="decimal" value="${escapeHtml(price)}" placeholder="${t("A consultar")}" autocomplete="off"></label><label>${t("Precio USD")}<input name="usd" data-price-usd inputmode="decimal" value="${escapeHtml(usd)}" placeholder="${t("A consultar")}" autocomplete="off"></label></div><p class="admin-note" data-trm-note>${escapeHtml(trmNote())}</p><label>${t("Existencia")}<input name="qty" type="number" min="0" value="${left}"></label><label>${t("Mínimo")}<input name="min" type="number" min="0" value="${minimum}"></label><label>${t("Ubicación")}<input name="place" value="${escapeHtml(place)}"></label><label>${t("Nota")}<textarea name="note" rows="3">${escapeHtml(note)}</textarea></label><p data-sheet-status>${escapeHtml(desk.fichaNote)}</p><div class="catalog-actions"><button class="btn btn-metal" type="submit">${t("Guardar ficha")}</button><button class="btn btn-ghost" type="button" data-bodega-close>${t("Volver a la lista")}</button></div></form></article>`;
+  };
+  const bodegaRows = bodegaSlice.map((item) => {
     const left = stock[item.id] ?? 0;
-    const mark = left <= item.min ? "low" : "";
-    return `<tr class="${mark}"><td>${item.id}</td><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item.line)}</td><td>${escapeHtml(item.place)}</td><td>${item.min}</td><td><form class="stock-edit" data-stock-form="${item.id}"><input name="qty" type="number" min="0" value="${left}" aria-label="Existencia de ${item.id}"><button class="linkish" type="submit">Guardar</button></form></td><td>${left <= item.min ? "Reponer" : "Disponible"}</td></tr>`;
-  }).join("");
-  warehouse.innerHTML = `<div class="admin-block"><p class="eyebrow">Imágenes del catálogo</p><p class="admin-note">En Drive use Descargar. Si baja un .zip, súbalo tal cual. Si baja la carpeta ya abierta, use Subir carpeta. Cada archivo puede llamarse como la referencia (DT-1001.png) o como el nombre del producto. La foto entra en la ficha, el catálogo y el carrito de este navegador.</p><div class="photo-drop" data-photo-drop><p>Suelte aquí la carpeta o las imágenes.</p><div class="photo-actions"><label class="btn btn-metal">Subir carpeta<input data-photo-folder type="file" webkitdirectory mozdirectory directory multiple></label><label class="btn btn-ghost">Elegir imágenes o zip<input data-photo-files type="file" accept="image/*,.zip" multiple></label><button class="btn btn-ghost" type="button" data-photo-clear>Quitar cargadas</button></div></div><p data-photo-status></p><div class="photo-grid" data-photo-grid></div></div><div class="admin-block"><p class="eyebrow">Existencia frente al mínimo</p><p class="admin-note">La marca vertical es el mínimo de reposición. Al confirmar una compra, la existencia baja.</p><ul class="meters stock-meters">${stockMeters}</ul></div><div class="admin-block"><p class="eyebrow">Bodega</p><div class="table-wrap"><table class="admin-table"><thead><tr><th>Ref.</th><th>Artículo</th><th>Línea</th><th>Ubicación</th><th>Mínimo</th><th>Existencia</th><th>Estado</th></tr></thead><tbody>${stockRows}</tbody></table></div></div>`;
+    const minimum = fichaDe(item.id).min != null ? Number(fichaDe(item.id).min) : item.min;
+    const warn = left <= minimum;
+    return `<tr class="bodega-row${warn ? " low" : ""}" data-bodega-open="${item.id}"><td>${item.id}</td><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item.line)}</td><td>${left}</td><td>${warn ? t("Reponer") : t("Disponible")}</td></tr>`;
+  }).join("") || `<tr><td colspan="5">${t("Sin coincidencias.")}</td></tr>`;
+  const lineOptions = [`<option value="todas">${t("Todas")}</option>`, ...LINES.map((line) => `<option value="${escapeHtml(line)}" ${desk.bodegaLine === line ? "selected" : ""}>${escapeHtml(line)}</option>`)].join("");
+  warehouse.innerHTML = openItem
+    ? sheet(openItem)
+    : `<div class="admin-block"><p class="eyebrow">${t("Imágenes del catálogo")}</p><p class="admin-note">${t("Suba la carpeta, un zip o la foto de una referencia. Al entrar, la imagen se recorta al tamaño de ficha, se aclara si viene oscura y queda lista para el celular.")}</p><div class="photo-drop" data-photo-drop><p>${t("Suelte aquí la carpeta o las imágenes.")}</p><div class="photo-actions"><label class="btn btn-metal">${t("Subir carpeta")}<input data-photo-folder type="file" webkitdirectory mozdirectory directory multiple></label><label class="btn btn-ghost">${t("Elegir imágenes o zip")}<input data-photo-files type="file" accept="image/*,.zip" multiple></label><button class="btn btn-ghost" type="button" data-photo-clear>${t("Quitar cargadas")}</button></div></div><p data-photo-status></p></div><div class="admin-block"><div class="desk-tools"><label>${t("Buscar")}<input data-bodega-search type="search" value="${escapeHtml(desk.bodegaQuery)}" placeholder="${t("Referencia o nombre")}" autocomplete="off"></label><label>${t("Línea")}<select data-bodega-line>${lineOptions}</select></label></div><div class="table-wrap"><table class="admin-table"><thead><tr><th>Ref.</th><th>${t("Artículo")}</th><th>${t("Línea")}</th><th>${t("Existencia")}</th><th>${t("Estado")}</th></tr></thead><tbody>${bodegaRows}</tbody></table></div><div class="pager"><button class="btn btn-ghost" type="button" data-bodega-page="prev" ${desk.bodegaPage <= 1 ? "disabled" : ""}>${t("Anterior")}</button><span>${t("Página")} ${desk.bodegaPage} ${t("de")} ${bodegaPages}</span><button class="btn btn-ghost" type="button" data-bodega-page="next" ${desk.bodegaPage >= bodegaPages ? "disabled" : ""}>${t("Siguiente")}</button></div></div>`;
 
   const trace = document.querySelector('[data-admin-panel="trazabilidad"]');
   if (trace) trace.innerHTML = traceBoard();
 
   const settings = document.querySelector('[data-admin-panel="configuracion"]');
   if (settings) {
+    const internalText = internalBase() ? `${t("La comunicación apunta a")} ${internalBase()}.` : t("La comunicación queda abierta. Aún no hay dirección.");
     settings.innerHTML = `<div class="chart-grid">
-      <article class="admin-block"><p class="eyebrow">Asesor comercial</p><p class="admin-note">Este WhatsApp recibe los pedidos y atiende el botón del sitio.</p><form class="panel-form" data-wa-form><label>Número<input name="wa" inputmode="numeric" autocomplete="tel" required value="${escapeHtml(localPhone)}"></label><button class="btn btn-metal" type="submit">Guardar número</button></form><p data-wa-status></p></article>
-      <article class="admin-block"><p class="eyebrow">Pasarela Wompi</p><p class="admin-note">Cuando el comercio tenga las llaves, péguelas aquí. El pago en línea del pedido usa esa pasarela.</p><form class="panel-form" data-wompi-form><label>Llave pública<input name="publicKey" autocomplete="off" value="${escapeHtml(wompi.publicKey)}" placeholder="pub_test_ o pub_prod_"></label><label>Secreto de integridad<input name="integrity" autocomplete="off" value="${escapeHtml(wompi.integrity)}"></label><button class="btn btn-metal" type="submit">Guardar Wompi</button></form><p data-wompi-status>${wompi.publicKey && wompi.integrity ? "Wompi está listo para cobrar en el pedido." : "Wompi queda abierto hasta tener las llaves."}</p></article>
-      <article class="admin-block span-row"><p class="eyebrow">Aplicación interna</p><p class="admin-note">A partir de diciembre o enero este sitio le enviará pedidos, existencia, el WhatsApp del asesor, el aviso de pago y la trazabilidad. Pegue la dirección cuando el software exista. Vacía, la compra sigue en este navegador.</p><form class="panel-form" data-internal-form><label>Dirección<input name="base" inputmode="url" autocomplete="off" placeholder="https://api.deltactica.com" value="${escapeHtml(internalBase())}"></label><button class="btn btn-metal" type="submit">Guardar dirección</button></form><p data-internal-status>${internalBase() ? `La comunicación apunta a ${escapeHtml(internalBase())}.` : "La comunicación queda abierta. Aún no hay dirección."}</p></article>
+      <article class="admin-block"><p class="eyebrow">${t("Asesor comercial")}</p><p class="admin-note">${t("Este WhatsApp recibe los pedidos y atiende el botón del sitio.")}</p><form class="panel-form" data-wa-form><label>${t("Número")}<input name="wa" inputmode="numeric" autocomplete="tel" required value="${escapeHtml(localPhone)}"></label><button class="btn btn-metal" type="submit">${t("Guardar número")}</button></form><p data-wa-status></p></article>
+      <article class="admin-block"><p class="eyebrow">${t("Pasarela Wompi")}</p><p class="admin-note">${t("Cuando el comercio tenga las llaves, péguelas aquí. El pago en línea del pedido usa esa pasarela.")}</p><form class="panel-form" data-wompi-form><label>${t("Llave pública")}<input name="publicKey" autocomplete="off" value="${escapeHtml(wompi.publicKey)}" placeholder="pub_test_ o pub_prod_"></label><label>${t("Secreto de integridad")}<input name="integrity" autocomplete="off" value="${escapeHtml(wompi.integrity)}"></label><button class="btn btn-metal" type="submit">${t("Guardar Wompi")}</button></form><p data-wompi-status>${wompi.publicKey && wompi.integrity ? t("Wompi está listo para cobrar en el pedido.") : t("Wompi queda abierto hasta tener las llaves.")}</p></article>
+      <article class="admin-block span-row"><p class="eyebrow">${t("Aplicación interna")}</p><p class="admin-note">${t("A partir de diciembre o enero este sitio le enviará pedidos, existencia, el WhatsApp del asesor, el aviso de pago y la trazabilidad. Pegue la dirección cuando el software exista. Vacía, la compra sigue en este navegador.")}</p><form class="panel-form" data-internal-form><label>${t("Dirección")}<input name="base" inputmode="url" autocomplete="off" placeholder="https://api.deltactica.com" value="${escapeHtml(internalBase())}"></label><button class="btn btn-metal" type="submit">${t("Guardar dirección")}</button></form><p data-internal-status>${escapeHtml(internalText)}</p></article>
     </div>`;
   }
 
   const catalog = document.querySelector('[data-admin-panel="catalogo"]');
   if (catalog) {
+    if (!desk.catalogLines) desk.catalogLines = new Set(LINES);
     const counts = Object.fromEntries(LINES.map((line) => [line, PRODUCTS.filter((item) => item.line === line).length]));
+    const allOn = LINES.every((line) => desk.catalogLines.has(line));
     const chips = [
-      `<button class="filter is-active" type="button" data-line-filter="todas" aria-pressed="true">Todas <b>${PRODUCTS.length}</b></button>`,
-      ...LINES.map((line) => `<button class="filter is-active" type="button" data-line-filter="${line}" aria-pressed="true">${line} <b>${counts[line]}</b></button>`)
+      `<button class="filter${allOn ? " is-active" : ""}" type="button" data-line-filter="todas" aria-pressed="${allOn ? "true" : "false"}">${t("Todas")} <b>${PRODUCTS.length}</b></button>`,
+      ...LINES.map((line) => `<button class="filter${desk.catalogLines.has(line) ? " is-active" : ""}" type="button" data-line-filter="${escapeHtml(line)}" aria-pressed="${desk.catalogLines.has(line) ? "true" : "false"}">${escapeHtml(line)} <b>${counts[line]}</b></button>`)
     ].join("");
-    catalog.innerHTML = `<div class="admin-block"><p class="eyebrow">Descargar catálogo</p><p class="admin-note">Combine líneas o busque una referencia. El PDF lleva el logo a un lado y las fichas en tamaño de catálogo.</p><div class="catalog-tools"><label class="catalog-search">Buscar<input data-catalog-search type="search" placeholder="Referencia o nombre" autocomplete="off"></label><div class="filters" role="group" aria-label="Líneas del PDF">${chips}</div></div><p class="count" data-download-count></p><div class="download-picks" data-download-list></div><button class="btn btn-metal" type="button" data-download-catalog>Descargar catálogo</button><p data-download-status></p></div>`;
+    catalog.innerHTML = `<div class="admin-block catalog-desk"><p class="eyebrow">${t("Descargar catálogo")}</p><p class="admin-note">${t("Combine líneas o busque una referencia. Descargue el catálogo completo o solo lo que dejó filtrado.")}</p><div class="catalog-tools"><label class="catalog-search">${t("Buscar")}<input data-catalog-search type="search" placeholder="${t("Referencia o nombre")}" autocomplete="off" value="${escapeHtml(desk.catalogQuery || "")}"></label><div class="filters catalog-lines" role="group" aria-label="${t("Líneas del PDF")}">${chips}</div></div><p class="count" data-download-count></p><div class="download-picks" data-download-list></div><div class="catalog-actions"><button class="btn btn-metal" type="button" data-download-catalog data-download-mode="filtrado">${t("Descargar filtrado")}</button><button class="btn btn-ghost" type="button" data-download-catalog data-download-mode="completo">${t("Descargar completo")}</button></div><p data-download-status></p></div>`;
     paintDownloadCount();
   }
 
@@ -1354,11 +1798,58 @@ function renderAdmin() {
     }));
   }
   show((location.hash || "#general").slice(1));
+  paintLang();
   paintPhotoDesk();
   applyPhotos();
+  if (desk.focus === "bodega") {
+    const input = document.querySelector("[data-bodega-search]");
+    if (input) {
+      input.focus();
+      const end = input.value.length;
+      input.setSelectionRange(end, end);
+    }
+    desk.focus = "";
+  }
 }
 
 document.addEventListener("click", (event) => {
+  const langButton = event.target.closest("[data-lang]");
+  if (langButton) {
+    localStorage.setItem(KEYS.lang, langButton.dataset.lang === "en" ? "en" : "es");
+    paintLang();
+    renderAdmin();
+    return;
+  }
+  if (event.target.closest("[data-lines-toggle]")) {
+    desk.linesOpen = !desk.linesOpen;
+    renderAdmin();
+    return;
+  }
+  const bodegaOpen = event.target.closest("[data-bodega-open]");
+  if (bodegaOpen) {
+    desk.bodegaId = bodegaOpen.dataset.bodegaOpen;
+    desk.fichaNote = "";
+    renderAdmin();
+    return;
+  }
+  if (event.target.closest("[data-bodega-close]")) {
+    desk.bodegaId = "";
+    desk.fichaNote = "";
+    renderAdmin();
+    return;
+  }
+  const bodegaPage = event.target.closest("[data-bodega-page]");
+  if (bodegaPage && !bodegaPage.disabled) {
+    desk.bodegaPage += bodegaPage.dataset.bodegaPage === "next" ? 1 : -1;
+    renderAdmin();
+    return;
+  }
+  const ventasPage = event.target.closest("[data-ventas-page]");
+  if (ventasPage && !ventasPage.disabled) {
+    desk.ventasPage += ventasPage.dataset.ventasPage === "next" ? 1 : -1;
+    renderAdmin();
+    return;
+  }
   const lineFilter = event.target.closest("[data-filter]");
   if (lineFilter && lineFilter.dataset.filter !== "todos") {
     rememberTrace({ a: "filtro", p: "Catálogo", d: lineFilter.dataset.filter });
@@ -1453,21 +1944,24 @@ document.addEventListener("click", (event) => {
       mark(lineButton, lineButton.getAttribute("aria-pressed") !== "true");
       if (all) mark(all, rest.every((button) => button.getAttribute("aria-pressed") === "true"));
     }
+    desk.catalogLines = new Set(rest.filter((button) => button.getAttribute("aria-pressed") === "true").map((button) => button.dataset.lineFilter));
     paintDownloadCount();
     return;
   }
   if (event.target.closest("[data-download-catalog]")) {
-    const items = catalogSelection();
+    const button = event.target.closest("[data-download-catalog]");
+    const mode = button.dataset.downloadMode || "filtrado";
+    const items = mode === "completo" ? PRODUCTS : catalogSelection();
     const status = document.querySelector("[data-download-status]");
     if (!items.length) {
-      if (status) status.textContent = "Elija al menos una línea.";
+      if (status) status.textContent = t("Elija al menos una línea.");
       return;
     }
-    if (status) status.textContent = "Se está armando el PDF.";
-    saveCatalog().then((name) => {
-      if (status) status.textContent = `Se descargó ${name}.`;
+    if (status) status.textContent = t("Se está armando el PDF.");
+    saveCatalog(mode).then((name) => {
+      if (status) status.textContent = `${t("Se descargó")} ${name}.`;
     }).catch(() => {
-      if (status) status.textContent = "No se pudo armar el PDF.";
+      if (status) status.textContent = t("No se pudo armar el PDF.");
     });
     return;
   }
@@ -1490,7 +1984,7 @@ document.addEventListener("click", (event) => {
       });
       paintPhotoDesk();
       const status = document.querySelector("[data-photo-status]");
-      if (status) status.textContent = "Se quitaron las imágenes cargadas. El catálogo volvió a las fotos del sitio.";
+      if (status) status.textContent = t("Se quitaron las imágenes cargadas. El catálogo volvió a las fotos del sitio.");
     });
   }
 });
@@ -1512,10 +2006,12 @@ function paintDownloadCount() {
   const list = document.querySelector("[data-download-list]");
   if (!count || !list) return;
   const items = catalogSelection();
-  count.textContent = items.length === 1 ? "1 referencia" : `${items.length} referencias`;
-  list.innerHTML = items.length
-    ? items.map((item) => `<span>${item.id} · ${escapeHtml(item.name)}</span>`).join("")
-    : "<span>Elija al menos una línea.</span>";
+  count.textContent = items.length === 1 ? `1 ${t("referencia")}` : `${items.length} ${t("referencias")}`;
+  const preview = items.slice(0, 6);
+  const extra = items.length - preview.length;
+  list.innerHTML = preview.length
+    ? `${preview.map((item) => `<span>${item.id} · ${escapeHtml(item.name)}</span>`).join("")}${extra ? `<span>${extra} ${t("y más en el PDF.")}</span>` : ""}`
+    : `<span>${t("Elija al menos una línea.")}</span>`;
 }
 
 function blobToDataUrl(blob) {
@@ -1584,20 +2080,22 @@ async function catalogFile(items, lines) {
 </html>`;
 }
 
-async function saveCatalog() {
-  const picked = catalogSelection();
+async function saveCatalog(mode) {
+  const picked = mode === "completo" ? PRODUCTS.slice() : catalogSelection();
   const lines = [...new Set(picked.map((item) => item.line))];
   const items = picked;
   const assets = await brandAssets();
-  const query = (document.querySelector("[data-catalog-search]")?.value || "").trim();
-  const title = query
-    ? `Búsqueda: ${query}`
-    : lines.length === LINES.length ? "Catálogo completo" : lines.join(", ");
+  const query = mode === "completo" ? "" : (document.querySelector("[data-catalog-search]")?.value || "").trim();
+  const title = mode === "completo"
+    ? t("Catálogo completo")
+    : query
+      ? `Búsqueda: ${query}`
+      : lines.length === LINES.length ? t("Catálogo completo") : lines.join(", ");
   const sheets = [];
   for (const item of items) {
     const src = productImage(item);
     const photo = await window.DTPDF.loadJpeg(src, "#f3f4f5").catch(() => null);
-    sheets.push({ id: item.id, name: item.name, line: item.line, note: NOTES[item.id] || "", price: item.price, photo });
+    sheets.push({ id: item.id, name: item.name, line: item.line, note: fichaDe(item.id).note || NOTES[item.id] || "", price: savedPrice(item), usd: savedUsd(item), priceText: priceLabel(item), photo });
   }
   const blob = await window.DTPDF.catalog(sheets, { ...assets, title });
   const slug = query ? "busqueda" : lines.length === LINES.length ? "completo" : lines.map((line) => line.toLowerCase()).join("-");
@@ -1617,8 +2115,26 @@ document.addEventListener("change", (event) => {
       photoStatus(result.matched, result.skipped);
     }).catch(() => {
       const status = document.querySelector("[data-photo-status]");
-      if (status) status.textContent = "No se pudo leer la carpeta en este navegador.";
+      if (status) status.textContent = t("No se pudo leer la carpeta en este navegador.");
     });
+    return;
+  }
+  const sheetPhoto = event.target.closest("[data-sheet-photo]");
+  if (sheetPhoto && sheetPhoto.files && sheetPhoto.files[0]) {
+    const id = sheetPhoto.dataset.sheetPhoto;
+    preparePhoto(sheetPhoto.files[0]).then((blob) => savePhotoBlob(id, blob)).then(() => {
+      desk.bodegaId = id;
+      desk.fichaNote = t("Ficha guardada.");
+      renderAdmin();
+      applyPhotos();
+    });
+    return;
+  }
+  const bodegaLine = event.target.closest("[data-bodega-line]");
+  if (bodegaLine) {
+    desk.bodegaLine = bodegaLine.value;
+    desk.bodegaPage = 1;
+    renderAdmin();
     return;
   }
   const select = event.target.closest("[data-status]");
@@ -1636,6 +2152,33 @@ document.addEventListener("change", (event) => {
 
 let catalogSearchTimer = 0;
 document.addEventListener("input", (event) => {
+  const copInput = event.target.closest("[data-price-cop]");
+  const usdInput = event.target.closest("[data-price-usd]");
+  if (copInput || usdInput) {
+    const form = event.target.form;
+    const copField = form && form.querySelector("[data-price-cop]");
+    const usdField = form && form.querySelector("[data-price-usd]");
+    if (copInput) {
+      desk.priceSide = "cop";
+      const dollars = copToUsd(readAmount(copInput.value));
+      if (usdField && trmRate()) usdField.value = dollars ? String(dollars) : "";
+    } else {
+      desk.priceSide = "usd";
+      const pesos = usdToCop(readAmount(usdInput.value));
+      if (copField && trmRate()) copField.value = pesos ? String(pesos) : "";
+    }
+    return;
+  }
+  const bodegaSearch = event.target.closest("[data-bodega-search]");
+  if (bodegaSearch) {
+    desk.bodegaQuery = bodegaSearch.value;
+    desk.bodegaPage = 1;
+    desk.focus = "bodega";
+    renderAdmin();
+    return;
+  }
+  const catalogSearch = event.target.closest("[data-catalog-search]");
+  if (catalogSearch) desk.catalogQuery = catalogSearch.value;
   if (event.target.closest("[data-catalog-search]")) paintDownloadCount();
   const catalogQuery = event.target.closest("[data-catalog-query]");
   if (!catalogQuery) return;
@@ -1647,19 +2190,50 @@ document.addEventListener("input", (event) => {
 });
 
 document.addEventListener("submit", (event) => {
+  const sheet = event.target.closest("[data-sheet-form]");
+  if (sheet) {
+    event.preventDefault();
+    const id = sheet.dataset.sheetForm;
+    const data = new FormData(sheet);
+    let price = Math.round(readAmount(data.get("price")));
+    let usd = Math.round(readAmount(data.get("usd")) * 100) / 100;
+    if (trmRate()) {
+      if (desk.priceSide === "usd" && usd) price = usdToCop(usd);
+      if (price) usd = copToUsd(price);
+      else if (usd) price = usdToCop(usd);
+    }
+    const fichas = read(KEYS.ficha, {});
+    fichas[id] = {
+      price,
+      usd,
+      trm: trmRate() || undefined,
+      place: String(data.get("place") || "").trim(),
+      note: String(data.get("note") || "").trim(),
+      min: Math.max(0, Number(data.get("min")) || 0),
+    };
+    write(KEYS.ficha, fichas);
+    const stock = stockMap();
+    stock[id] = Math.max(0, Number(data.get("qty")) || 0);
+    write(KEYS.stock, stock);
+    notifyInternal("existencia", stock);
+    desk.bodegaId = id;
+    desk.fichaNote = t("Ficha guardada.");
+    renderAdmin();
+    return;
+  }
   const waForm = event.target.closest("[data-wa-form]");
   if (waForm) {
     event.preventDefault();
     const status = waForm.parentElement.querySelector("[data-wa-status]");
     const phone = normalizePhone(new FormData(waForm).get("wa"));
     if (!phone) {
-      if (status) status.textContent = "Escriba el celular del asesor. Ejemplo: 3227043082.";
+      if (status) status.textContent = t("Escriba el celular del asesor. Ejemplo: 3227043082.");
       return;
     }
     localStorage.setItem(KEYS.wa, phone);
     applyAdvisorPhone();
     notifyInternal("asesor", { whatsapp: phone });
-    if (status) status.textContent = `El asesor atiende en ${prettyPhone(phone)}.`;
+    if (status) status.textContent = `${t("El asesor atiende en")} ${prettyPhone(phone)}.`;
     return;
   }
   const wompiForm = event.target.closest("[data-wompi-form]");
@@ -1671,7 +2245,7 @@ document.addEventListener("submit", (event) => {
     write(KEYS.wompi, { publicKey, integrity });
     notifyInternal("pago", { pasarela: "wompi", lista: Boolean(publicKey && integrity) });
     const status = wompiForm.parentElement.querySelector("[data-wompi-status]");
-    if (status) status.textContent = publicKey && integrity ? "Wompi está listo para cobrar en el pedido." : "Wompi queda abierto hasta tener las llaves.";
+    if (status) status.textContent = publicKey && integrity ? t("Wompi está listo para cobrar en el pedido.") : t("Wompi queda abierto hasta tener las llaves.");
     return;
   }
   const internalForm = event.target.closest("[data-internal-form]");
@@ -1680,10 +2254,10 @@ document.addEventListener("submit", (event) => {
     const status = internalForm.parentElement.querySelector("[data-internal-status]");
     const saved = saveInternalBase(new FormData(internalForm).get("base"));
     if (saved === null) {
-      if (status) status.textContent = "Escriba una dirección http o https. Ejemplo: https://api.deltactica.com";
+      if (status) status.textContent = t("Escriba una dirección http o https. Ejemplo: https://api.deltactica.com");
       return;
     }
-    if (status) status.textContent = saved ? `La comunicación apunta a ${saved}.` : "La comunicación queda abierta. Aún no hay dirección.";
+    if (status) status.textContent = saved ? `${t("La comunicación apunta a")} ${saved}.` : t("La comunicación queda abierta. Aún no hay dirección.");
     return;
   }
   const form = event.target.closest("[data-stock-form]");
@@ -1715,7 +2289,7 @@ document.addEventListener("drop", (event) => {
     photoStatus(result.matched, result.skipped);
   }).catch(() => {
     const status = document.querySelector("[data-photo-status]");
-    if (status) status.textContent = "No se pudo leer esa carpeta. Use el botón Subir carpeta.";
+    if (status) status.textContent = t("No se pudo leer esa carpeta. Use el botón Subir carpeta.");
   });
 });
 
@@ -1839,7 +2413,7 @@ function renderPublic() {
         <p class="card-kicker"><span>${item.id}</span><span>${escapeHtml(item.line)}</span></p>
         <h3>${escapeHtml(titulo)}</h3>
         ${colores}
-        <p class="price">${priceLabel(item)}</p>
+        <p class="price" data-price="${item.id}">${priceLabel(item)}</p>
         <a class="consult" href="${root}producto.html?id=${item.id}">${window.DT_VISTAS && window.DT_VISTAS[item.id] ? "Ver en 360" : "Ver foto"}</a>
         ${window.DT_VISTAS && window.DT_VISTAS[item.id] ? `<a class="consult" href="${root}probar.html?id=${item.id}">Probar</a>` : ""}
         <button class="cart-add" type="button" data-add="${item.id}"${junto}>Añadir al carrito</button>
@@ -1898,7 +2472,9 @@ paintPrices();
 renderCart();
 renderCheckout();
 paintAccount();
+paintLang();
 renderAdmin();
+loadTrm();
 loadPhotos().then(() => {
   applyPhotos();
   paintPhotoDesk();

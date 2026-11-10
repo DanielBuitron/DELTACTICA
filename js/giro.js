@@ -20,7 +20,8 @@
   document.title = `${item.id} ${item.name} | Deltactica`;
   if (kicker) kicker.textContent = `${item.id} · ${item.line}`;
   if (title) title.textContent = item.name;
-  if (price) price.textContent = item.price ? new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(item.price) : "A consultar";
+  const amount = typeof window.dtPriceLabel === "function" ? window.dtPriceLabel(item) : "";
+  if (price) price.textContent = amount || (item.price ? new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(item.price) : "A consultar");
   if (add) add.dataset.add = item.id;
   const copy = {
     ropa: "La prenda se ve completa, en vitrina clara. Arrastre para dar la vuelta.",

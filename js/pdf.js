@@ -251,21 +251,35 @@
     pdf.text(44, y, 10, "REF.", { bold: true, color: "#f4f5f6" });
     pdf.text(110, y, 10, "ARTÍCULO", { bold: true, color: "#f4f5f6" });
     pdf.text(360, y, 10, "CANT.", { bold: true, color: "#f4f5f6" });
-    pdf.text(430, y, 10, "PRECIO", { bold: true, color: "#f4f5f6" });
+    pdf.text(400, y, 10, "PRECIO", { bold: true, color: "#f4f5f6" });
     pdf.text(PAGE_W - 44, y, 10, "TOTAL", { bold: true, color: "#f4f5f6", align: "right" });
     y -= 28;
+    const pairLines = (cop, usd) => {
+      const lines = [];
+      if (cop) lines.push(assets.money(cop));
+      if (usd) {
+        const digits = Number.isInteger(Number(usd)) ? 0 : 2;
+        lines.push(`USD ${new Intl.NumberFormat("en-US", { minimumFractionDigits: digits, maximumFractionDigits: 2 }).format(usd)}`);
+      }
+      return lines.length ? lines : ["A consultar"];
+    };
     (order.lines || []).forEach((line, index) => {
-      if (index % 2 === 0) pdf.rect(36, y - 8, PAGE_W - 72, 24, "#f4f5f6");
+      const unit = pairLines(line.price, line.usd);
+      const total = pairLines((line.price || 0) * line.qty, (line.usd || 0) * line.qty);
+      const rowH = Math.max(unit.length, total.length) > 1 ? 36 : 24;
+      if (index % 2 === 0) pdf.rect(36, y - 8, PAGE_W - 72, rowH, "#f4f5f6");
       pdf.text(44, y, 11, line.id, { bold: true });
       pdf.text(110, y, 11, line.name);
       pdf.text(372, y, 11, String(line.qty));
-      pdf.text(430, y, 11, line.price ? assets.money(line.price) : "A consultar");
-      pdf.text(PAGE_W - 44, y, 11, line.price ? assets.money(line.price * line.qty) : "A consultar", { align: "right" });
-      y -= 26;
+      unit.forEach((text, row) => pdf.text(400, y - row * 12, 9, text));
+      total.forEach((text, row) => pdf.text(PAGE_W - 44, y - row * 12, 9, text, { align: "right" }));
+      y -= rowH + 2;
     });
     y -= 8;
-    pdf.rect(360, y - 10, PAGE_W - 396, 32, "#070708");
-    pdf.text(PAGE_W - 44, y + 2, 14, order.total ? assets.money(order.total) : "A consultar", { bold: true, color: "#f4f5f6", align: "right" });
+    const usdTotal = (order.lines || []).reduce((sum, line) => sum + (Number(line.usd) || 0) * (Number(line.qty) || 0), 0);
+    const totalText = pairLines(order.total, usdTotal).join(" · ");
+    pdf.rect(300, y - 10, PAGE_W - 336, 32, "#070708");
+    pdf.text(PAGE_W - 44, y + 2, 12, totalText, { bold: true, color: "#f4f5f6", align: "right" });
     y -= 36;
     pdf.text(36, y, 11, `Pago: ${customer.metodo || ""}`, { color: "#161616" });
     if (customer.pago) pdf.text(36, y - 16, 11, customer.pago, { color: "#5c6168" });
@@ -334,7 +348,9 @@
           wrap(item.note || "", 8, cellW).slice(0, 2).forEach((line, lineIndex) => {
             pdf.text(x, top - photoH - 64 - lineIndex * 11, 8, line, { color: "#5c6168" });
           });
-          pdf.text(x, top - photoH - 96, 11, item.price ? assets.money(item.price) : "A consultar", { bold: true, color: "#161616" });
+          wrap(item.priceText || (item.price ? assets.money(item.price) : "A consultar"), 10, cellW).slice(0, 2).forEach((line, lineIndex) => {
+            pdf.text(x, top - photoH - 96 - lineIndex * 12, 10, line, { bold: true, color: "#161616" });
+          });
         });
         const pageNumber = Math.floor(index / perPage) + 2;
         pdf.text(PAGE_W - margin, 22, 9, String(pageNumber), { color: "#8d939a", align: "right" });

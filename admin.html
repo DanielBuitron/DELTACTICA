@@ -10,15 +10,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/styles.css?v=real100" />
+    <link rel="stylesheet" href="css/styles.css?v=real113" />
     <script>document.documentElement.classList.add("js");</script>
   </head>
   <body data-wa="573227043082">
-    <a class="skip" href="#contenido">Saltar al contenido</a>
+    <a class="skip" href="#contenido" data-i18n="Saltar al contenido">Saltar al contenido</a>
     <header class="header" data-header>
       <a class="brand" href="index.html"><img src="img/wordmark.png" alt="Deltactica" width="1013" height="100" /></a>
       <div class="header-tools is-end">
-        <a class="nav-item" href="index.html"><span class="nav-long">Volver al sitio</span><span class="nav-short">Sitio</span></a>
+        <div class="lang-switch" role="group" aria-label="Idioma">
+          <button type="button" data-lang="es">ES</button>
+          <button type="button" data-lang="en">EN</button>
+        </div>
+        <a class="nav-item" href="index.html"><span class="nav-long" data-i18n="Volver al sitio">Volver al sitio</span><span class="nav-short" data-i18n="Sitio">Sitio</span></a>
         <div class="account" data-account>
           <a class="account-toggle" data-account-link href="admin.html"><span>Iniciar sesión</span></a>
           <button class="account-toggle" type="button" data-account-toggle hidden aria-expanded="false" aria-haspopup="true">
@@ -32,31 +36,31 @@
       <section class="page">
         <div class="wrap">
           <form class="admin-login contact-form" data-admin-login autocomplete="off">
-            <p class="eyebrow">Acceso</p>
-            <h1>Iniciar sesión</h1>
-            <p>Ingreso administrativo del panel.</p>
-            <label>Usuario<input name="usuario" required autocomplete="off" value="delta"></label>
-            <label>Contraseña<input name="clave" type="password" required autocomplete="current-password"></label>
-            <button class="btn btn-metal" type="submit">Entrar</button>
+            <p class="eyebrow" data-i18n="Acceso">Acceso</p>
+            <h1 data-i18n="Iniciar sesión">Iniciar sesión</h1>
+            <p data-i18n="Ingreso administrativo del panel.">Ingreso administrativo del panel.</p>
+            <label><span data-i18n="Usuario">Usuario</span><input name="usuario" required autocomplete="off" value="delta"></label>
+            <label><span data-i18n="Contraseña">Contraseña</span><input name="clave" type="password" required autocomplete="current-password"></label>
+            <button class="btn btn-metal" type="submit" data-i18n="Entrar">Entrar</button>
             <p data-admin-error></p>
           </form>
           <div data-admin-shell hidden>
             <header class="page-hero admin-top">
               <div>
-                <p class="eyebrow">Panel de control</p>
-                <h1>Operación</h1>
+                <p class="eyebrow" data-i18n="Panel de control">Panel de control</p>
+                <h1 data-i18n="Operación">Operación</h1>
                 <p class="admin-note" data-admin-who>Los pedidos y la existencia se guardan en este navegador.</p>
               </div>
-              <button class="btn btn-ghost" type="button" data-logout>Salir</button>
+              <button class="btn btn-ghost" type="button" data-logout data-i18n="Salir">Salir</button>
             </header>
             <div class="admin-shell">
               <nav class="admin-menu" aria-label="Menús administrativos">
-                <a href="#general" data-admin-tab="general">General</a>
-                <a href="#ventas" data-admin-tab="ventas">Ventas</a>
-                <a href="#bodega" data-admin-tab="bodega">Bodega</a>
-                <a href="#trazabilidad" data-admin-tab="trazabilidad">Trazabilidad</a>
-                <a href="#catalogo" data-admin-tab="catalogo">Descargar catálogo</a>
-                <a href="#configuracion" data-admin-tab="configuracion">Configuración</a>
+                <a href="#general" data-admin-tab="general" data-i18n="General">General</a>
+                <a href="#ventas" data-admin-tab="ventas" data-i18n="Ventas">Ventas</a>
+                <a href="#bodega" data-admin-tab="bodega" data-i18n="Bodega">Bodega</a>
+                <a href="#trazabilidad" data-admin-tab="trazabilidad" data-i18n="Trazabilidad">Trazabilidad</a>
+                <a href="#catalogo" data-admin-tab="catalogo" data-i18n="Descargar catálogo">Descargar catálogo</a>
+                <a href="#configuracion" data-admin-tab="configuracion" data-i18n="Configuración">Configuración</a>
                 <!-- En espera hasta dejar el probador al 100%. <a href="#prendas" data-admin-tab="prendas">Prendas 3D</a> -->
               </nav>
               <div>
@@ -75,7 +79,7 @@
     </main>
 
     <script src="js/productos.js?v=real44" defer></script>
-    <script src="js/store.js?v=real91" defer></script>
+    <script src="js/store.js?v=real96" defer></script>
     <!-- En espera. <script src="js/prendas3d.js?v=2" defer></script> -->
     <script src="js/main.js?v=real45" defer></script>
   </body>
