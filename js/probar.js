@@ -484,8 +484,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       const pb = punto(b);
       const pc = punto(c);
       const incluidos = (filtro(pa) ? 1 : 0) + (filtro(pb) ? 1 : 0) + (filtro(pc) ? 1 : 0);
-      const centro = { x: (pa.x + pb.x + pc.x) / 3, y: (pa.y + pb.y + pc.y) / 3, z: (pa.z + pb.z + pc.z) / 3 };
-      if (incluidos < 2 && !filtro(centro)) return;
+      if (incluidos < 3) return;
       idx.push(tomar(a), tomar(b), tomar(c));
     };
     if (indices) {
@@ -936,13 +935,23 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     const lateral = new THREE.Vector3();
     const vertical = new THREE.Vector3();
     const apoyo = new THREE.Vector3();
+    let lateralFijo = null;
     for (let j = 0; j < puntos.length; j += 1) {
       if (j < puntos.length - 1) eje.subVectors(puntos[j + 1], puntos[j]);
       else eje.subVectors(puntos[j], puntos[j - 1]);
+      if (eje.lengthSq() < 1e-8) eje.set(0, -1, 0);
       eje.normalize();
-      apoyo.set(0, 0, 1);
-      if (Math.abs(eje.dot(apoyo)) > 0.92) apoyo.set(1, 0, 0);
-      lateral.crossVectors(eje, apoyo).normalize();
+      if (!lateralFijo) {
+        apoyo.set(0, 0, 1);
+        if (Math.abs(eje.dot(apoyo)) > 0.92) apoyo.set(0, 1, 0);
+        lateral.crossVectors(eje, apoyo).normalize();
+        lateralFijo = lateral.clone();
+      } else {
+        lateral.copy(lateralFijo).addScaledVector(eje, -lateralFijo.dot(eje));
+        if (lateral.lengthSq() < 1e-8) lateral.crossVectors(eje, apoyo.set(0, 1, 0));
+        lateral.normalize();
+        lateralFijo.copy(lateral);
+      }
       vertical.crossVectors(eje, lateral).normalize();
       for (let i = 0; i <= seg; i += 1) {
         const angulo = (i / seg) * Math.PI * 2;
@@ -1334,6 +1343,36 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     return malla;
   }
 
+  function mangasDelCuerpo(grupo, med, material, corta) {
+    let malla = null;
+    cuerpo.traverse((nodo) => {
+      if (!malla && nodo.isSkinnedMesh && nodo.skeleton) malla = nodo;
+    });
+    if (!malla) return;
+    malla.skeleton.update();
+    [-1, 1].forEach((lado) => {
+      const sufijo = lado < 0 ? "L" : "R";
+      const nombres = corta
+        ? ["shoulder01", "upperarm01", "upperarm02"]
+        : ["shoulder01", "upperarm01", "upperarm02", "lowerarm01", "lowerarm02", "wrist"];
+      const puntos = [];
+      nombres.forEach((nombre) => {
+        const hueso = malla.skeleton.bones.find((item) => item.name === nombre + sufijo);
+        if (!hueso) return;
+        const punto = new THREE.Vector3();
+        hueso.getWorldPosition(punto);
+        figura.worldToLocal(punto);
+        puntos.push(punto);
+      });
+      if (puntos.length < 2) return;
+      const radios = puntos.map((_, indice) => {
+        const t = indice / (puntos.length - 1);
+        return (corta ? 0.055 : 0.064) * (1 - t * 0.32);
+      });
+      grupo.add(tuboTela(puntos, radios, material, lado < 0 ? 0.02 : 0.78, lado < 0 ? 0.22 : 0.98));
+    });
+  }
+
   function agregarPrenda(item, color, telas) {
     const med = medidas;
     const solido = tela(color);
@@ -1353,12 +1392,14 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       const corta = slot === "camisa" && tipo === "manga-corta";
       const bajo = slot === "chaleco" ? med.caderaY - 0.08 : (slot === "chaqueta" ? med.caderaY - 0.06 : (tipo === "fuera" ? med.caderaY - 0.04 : med.cinturaY - 0.02));
       const holgura = slot === "chaqueta" ? 0.03 : (slot === "chaleco" ? 0.026 : 0.022);
+      const conMangas = slot !== "chaleco";
       ponerCuerpo((p) => {
         if (esCabeza(p, med) || esMano(p, med) || p.y < bajo || p.y > med.cuelloY + 0.02) return false;
+        if (conMangas && esBrazo(p, med)) return false;
         if (slot === "chaleco" && esBrazo(p, med)) return false;
-        if (corta && esBrazo(p, med) && p.y < med.pechoY - 0.08) return false;
         return true;
       }, holgura);
+      if (conMangas) mangasDelCuerpo(grupo, med, telaPrenda, corta);
     } else if (slot === "completo") {
       ponerCuerpo((p) => {
         if (esCabeza(p, med) || esMano(p, med)) return false;
