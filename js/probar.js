@@ -439,7 +439,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     superficie = { posiciones, normales, indices, total: pos.count };
   }
 
-  function mallaDeCuerpo(filtro, holgura, material) {
+  function mallaDeCuerpo(filtro, holgura, material, cerrar) {
     if (!superficie) return null;
     const { posiciones, normales, indices, total } = superficie;
     const mapa = new Map();
@@ -447,18 +447,20 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     const nrm = [];
     const uv = [];
     const idx = [];
-    const tomar = (vi) => {
-      const previo = mapa.get(vi);
-      if (previo !== undefined) return previo;
-      const id = mapa.size;
-      mapa.set(vi, id);
-      const o = vi * 3;
-      const x = posiciones[o];
-      const y = posiciones[o + 1];
-      const z = posiciones[o + 2];
-      let nx = normales[o];
-      let ny = normales[o + 1];
-      let nz = normales[o + 2];
+    const cadenas = cadenasDeBrazo();
+    const empujar = (x, y, z, nx0, ny0, nz0) => {
+      let nx = nx0;
+      let ny = ny0;
+      let nz = nz0;
+      const lateral = Math.abs(x) > (medidas.mujer ? 0.16 : 0.2) && y > 0.62;
+      if (lateral && cadenas.length) {
+        const info = sobreBrazo({ x, y, z }, cadenas);
+        if (info && info.dist > 0.001) {
+          nx = info.dx / info.dist;
+          ny = info.dy / info.dist;
+          nz = info.dz / info.dist;
+        }
+      }
       let cx = 0;
       let cz = medidas.adelante || 0;
       const ax = Math.abs(x);
@@ -468,14 +470,30 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       } else if (y < medidas.cinturaY + 0.02 && ax > 0.04) {
         cx = Math.sign(x) * Math.min(Math.max(ax, 0.09), medidas.mujer ? 0.14 : 0.16);
       }
-      if (nx * (x - cx) + nz * (z - cz) < 0) {
+      if (!lateral && nx * (x - cx) + nz * (z - cz) < 0) {
         nx = -nx;
         ny = -ny;
         nz = -nz;
       }
+      if (!lateral && y > medidas.cinturaY && y < medidas.cuelloY && z > 0) {
+        nz += 0.45;
+        const largo = Math.hypot(nx, ny, nz) || 1;
+        nx /= largo;
+        ny /= largo;
+        nz /= largo;
+      }
+      const id = pos.length / 3;
       pos.push(x + nx * holgura, y + ny * holgura, z + nz * holgura);
       nrm.push(nx, ny, nz);
       uv.push(0, 0);
+      return id;
+    };
+    const tomar = (vi) => {
+      const previo = mapa.get(vi);
+      if (previo !== undefined) return previo;
+      const o = vi * 3;
+      const id = empujar(posiciones[o], posiciones[o + 1], posiciones[o + 2], normales[o], normales[o + 1], normales[o + 2]);
+      mapa.set(vi, id);
       return id;
     };
     const punto = (vi) => ({ x: posiciones[vi * 3], y: posiciones[vi * 3 + 1], z: posiciones[vi * 3 + 2] });
@@ -483,9 +501,23 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       const pa = punto(a);
       const pb = punto(b);
       const pc = punto(c);
-      const incluidos = (filtro(pa) ? 1 : 0) + (filtro(pb) ? 1 : 0) + (filtro(pc) ? 1 : 0);
-      if (incluidos < 3) return;
-      idx.push(tomar(a), tomar(b), tomar(c));
+      const dentro = [filtro(pa), filtro(pb), filtro(pc)];
+      const incluidos = (dentro[0] ? 1 : 0) + (dentro[1] ? 1 : 0) + (dentro[2] ? 1 : 0);
+      if (!incluidos) return;
+      if (incluidos === 3 || !cerrar) {
+        if (incluidos < 3) return;
+        idx.push(tomar(a), tomar(b), tomar(c));
+        return;
+      }
+      const verts = [a, b, c];
+      const pts = [pa, pb, pc];
+      const ids = verts.map((vi, k) => {
+        if (dentro[k]) return tomar(vi);
+        const q = cerrar(pts[k]) || pts[k];
+        const o = vi * 3;
+        return empujar(q.x, q.y, q.z, normales[o], normales[o + 1], normales[o + 2]);
+      });
+      idx.push(ids[0], ids[1], ids[2]);
     };
     if (indices) {
       for (let i = 0; i < indices.length; i += 3) recorrer(indices[i], indices[i + 1], indices[i + 2]);
@@ -681,6 +713,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
           y1 = quitarPiel(data, w, x0, y0, x1, y1);
           const tela = texturaDe(imagen, x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0));
           tela.zonas = zonasDe(data, w, h, x0, y0, x1, y1);
+          tela.manga = (tela.zonas && tela.zonas.manga) || "larga";
           resolve(tela);
         }
       };
@@ -763,7 +796,17 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     const izquierda = Math.max(0.16, Math.min(0.4, (eje - torso / 2 - x0) / ancho));
     const derecha = Math.max(0.6, Math.min(0.84, (eje + torso / 2 - x0) / ancho));
     if (derecha - izquierda < 0.18) return null;
-    return { izquierda: [0.01, izquierda], torso: [izquierda, derecha], derecha: [derecha, 0.99] };
+    const banda = (desde, hasta) => {
+      const yA = filas[0].y + alto * desde;
+      const yB = filas[0].y + alto * hasta;
+      const sub = filas.filter((fila) => fila.y >= yA && fila.y <= yB);
+      if (!sub.length) return 0;
+      return sub.reduce((suma, fila) => suma + fila.ancho, 0) / sub.length;
+    };
+    const hombros = banda(0.04, 0.24);
+    const bajo = banda(0.68, 0.92);
+    const manga = hombros > 24 && bajo > 0 && bajo < hombros * 0.78 ? "corta" : "larga";
+    return { izquierda: [0.01, izquierda], torso: [izquierda, derecha], derecha: [derecha, 0.99], manga };
   }
 
   function ajusteDe(id) {
@@ -853,7 +896,8 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = Math.min(16, renderizador.capabilities.getMaxAnisotropy());
     tex.magFilter = THREE.LinearFilter;
-    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.minFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
     tex.userData = {
       prenda: true,
       varias: lista.length > 1,
@@ -861,7 +905,9 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
       derecha: colocarVista(ctx, imagen(vistas[1]), mitad, 0, mitad, mitad, lado),
       espalda: colocarVista(ctx, imagen(vistas[2]), 0, mitad, mitad, mitad, lado),
       izquierda: colocarVista(ctx, imagen(vistas[3]), mitad, mitad, mitad, mitad, lado),
-      zonas: (vistas[0] && vistas[0].zonas) || null
+      zonas: (vistas[0] && vistas[0].zonas) || null,
+      zonasEspalda: (vistas[2] && vistas[2].zonas) || null,
+      manga: (vistas[0] && vistas[0].zonas && vistas[0].zonas.manga) || "larga"
     };
     tex.needsUpdate = true;
     cacheAtlas.set(clave, tex);
@@ -927,7 +973,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   }
 
   function tuboTela(puntos, radios, material, u0, u1) {
-    const seg = 14;
+    const seg = 20;
     const posiciones = [];
     const uvs = [];
     const indices = [];
@@ -995,6 +1041,7 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
   function uvFoto(grupo) {
     const mallas = [];
     grupo.traverse((nodo) => {
+      if (nodo.userData && nodo.userData.mangaTubo) return;
       if (nodo.isMesh && nodo.geometry && nodo.material && nodo.material.map && nodo.material.map.userData && nodo.material.map.userData.prenda) {
         mallas.push(nodo);
       }
@@ -1022,6 +1069,10 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     const fraccion = (valor, minimo, maximo) => (valor - minimo) / Math.max(0.001, maximo - minimo);
     const piezaBaja = maxY - minY < 0.22 && maxZ - minZ > maxY - minY;
     const dosPiernas = !piezaBaja && maxY - minY > 0.35 && (minY + maxY) / 2 < medidas.cinturaY + 0.08;
+    const cadenas = piezaBaja ? [] : cadenasDeBrazo();
+    const marcos = marcosBrazo(cadenas);
+    const mangaCorta = cara.manga === "corta";
+    const topeManga = 0.47;
     mallas.forEach((nodo) => {
       const pos = nodo.geometry.attributes.position;
       const uv = nodo.geometry.attributes.uv;
@@ -1029,43 +1080,42 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
         const x = pos.getX(i);
         const y = pos.getY(i);
         const z = pos.getZ(i);
-        const vista = "frente";
         const zonas = cara.zonas;
-        const enBrazo = Math.abs(x) > (medidas.mujer ? 0.18 : 0.22) && y > medidas.caderaY - 0.02;
+        const info = cadenas.length ? sobreBrazo({ x, y, z }, cadenas) : null;
+        const enManga = !!(info && info.dist < (medidas.mujer ? 0.12 : 0.15) && Math.abs(info.cx) > (medidas.mujer ? 0.08 : 0.1) && Math.abs(x) > (medidas.mujer ? 0.16 : 0.2) && y > medidas.caderaY - 0.2);
         let u = fraccion(x, minX, maxX);
         let v = piezaBaja ? fraccion(z, minZ, maxZ) : fraccion(y, minY, maxY);
-        if (dosPiernas) {
+        let rect = cara.frente;
+        if (piezaBaja) {
+          rect = cara.frente;
+        } else if (enManga && zonas && marcos[info.indice] && marcos[info.indice][info.seg]) {
+          const marco = marcos[info.indice][info.seg];
+          const seno = info.dx * marco.ox + info.dy * marco.oy + info.dz * marco.oz;
+          const zona = info.signo < 0 ? zonas.izquierda : zonas.derecha;
+          const anchoZ = zona[1] - zona[0];
+          const centro = info.signo < 0 ? zona[0] + anchoZ * 0.36 : zona[1] - anchoZ * 0.36;
+          const medio = anchoZ * 0.08;
+          const cruce = Math.max(-1, Math.min(1, (info.signo * seno) / 0.05));
+          u = centro + cruce * medio;
+          const avance = mangaCorta ? Math.min(1, info.t / topeManga) : info.t;
+          v = 0.28 + (1 - Math.min(1, Math.max(0, avance))) * 0.42;
+          rect = cara.frente;
+        } else if (dosPiernas) {
           const lado = x < 0 ? -1 : 1;
           const salida = Math.min(1, Math.max(0, (Math.abs(x) - 0.045) / 0.13));
           const junto = lado < 0 ? 0.44 : 0.56;
           const fuera = lado < 0 ? 0.24 : 0.76;
           u = junto + salida * (fuera - junto);
           v = fraccion(y, minY, maxY);
-        } else if (zonas && enBrazo && maxY - minY > 0.45) {
-          const signo = x < 0 ? -1 : 1;
-          const zona = x < 0 ? zonas.izquierda : zonas.derecha;
-          const sx = signo * medidas.hombro;
-          const sy = medidas.pechoY + (medidas.mujer ? 0.12 : 0.16);
-          const sz = medidas.adelante || 0;
-          const dx = signo * medidas.mano[0] - sx;
-          const dy = medidas.mano[1] - sy;
-          const dz = medidas.mano[2] - sz;
-          const largo = dx * dx + dy * dy + dz * dz || 1;
-          const recorrido = Math.min(1, Math.max(0, ((x - sx) * dx + (y - sy) * dy + (z - sz) * dz) / largo));
-          const ejeX = sx + recorrido * dx;
-          const haciaCuerpo = (Math.abs(ejeX) - Math.abs(x)) / 0.07;
-          const localBrazo = Math.min(0.92, Math.max(0.08, 0.42 + haciaCuerpo * 0.5));
-          const une = recorrido < 0.28 ? 1 - recorrido / 0.28 : 0;
-          const local = localBrazo + (0.96 - localBrazo) * une;
-          u = zona[0] + local * (zona[1] - zona[0]);
-          v = 0.98 - recorrido * 0.94;
+          rect = z >= 0 ? cara.frente : (cara.espalda || cara.frente);
         } else if (zonas) {
-          const zona = zonas.torso;
-          const mitad = medidas.hombro * 0.9;
-          u = zona[0] + fraccion(x, -mitad, mitad) * (zona[1] - zona[0]);
+          const mitad = medidas.hombro * 0.92;
+          const atras = z < 0 && cara.zonasEspalda;
+          const zona = atras ? cara.zonasEspalda.torso : zonas.torso;
+          u = zona[0] + fraccion(atras ? -x : x, -mitad, mitad) * (zona[1] - zona[0]);
           v = fraccion(y, minY, maxY);
+          rect = z >= 0 ? cara.frente : (cara.espalda || cara.frente);
         }
-        const rect = cara[vista] || cara.frente;
         uv.setXY(i, rect.u0 + limitar(u) * (rect.u1 - rect.u0), rect.v0 + limitar(v) * (rect.v1 - rect.v0));
       }
       uv.needsUpdate = true;
@@ -1343,6 +1393,135 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     return malla;
   }
 
+  function cadenasDeBrazo() {
+    let malla = null;
+    cuerpo.traverse((nodo) => {
+      if (!malla && nodo.isSkinnedMesh && nodo.skeleton) malla = nodo;
+    });
+    if (!malla) return [];
+    malla.skeleton.update();
+    return [-1, 1].map((lado) => {
+      const sufijo = lado < 0 ? "L" : "R";
+      const puntos = [];
+      ["shoulder01", "upperarm01", "upperarm02", "lowerarm01", "lowerarm02", "wrist"].forEach((nombre) => {
+        const hueso = malla.skeleton.bones.find((item) => item.name === nombre + sufijo || item.name === `${nombre}.${sufijo}`);
+        if (!hueso) return;
+        const punto = new THREE.Vector3();
+        hueso.getWorldPosition(punto);
+        puntos.push([punto.x, punto.y, punto.z]);
+      });
+      return puntos;
+    }).filter((puntos) => puntos.length >= 2);
+  }
+
+  function sobreBrazo(p, cadenas) {
+    let mejor = null;
+    for (let c = 0; c < cadenas.length; c += 1) {
+      const puntos = cadenas[c];
+      let total = 0;
+      const largos = [];
+      for (let i = 0; i < puntos.length - 1; i += 1) {
+        const a = puntos[i];
+        const b = puntos[i + 1];
+        const l = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+        largos.push(l);
+        total += l;
+      }
+      let andado = 0;
+      for (let i = 0; i < puntos.length - 1; i += 1) {
+        const a = puntos[i];
+        const b = puntos[i + 1];
+        const abx = b[0] - a[0];
+        const aby = b[1] - a[1];
+        const abz = b[2] - a[2];
+        const l2 = abx * abx + aby * aby + abz * abz || 1e-8;
+        let t = ((p.x - a[0]) * abx + (p.y - a[1]) * aby + (p.z - a[2]) * abz) / l2;
+        if (t < 0) t = 0;
+        else if (t > 1) t = 1;
+        const cx = a[0] + abx * t;
+        const cy = a[1] + aby * t;
+        const cz = a[2] + abz * t;
+        const dx = p.x - cx;
+        const dy = p.y - cy;
+        const dz = p.z - cz;
+        const dist = Math.hypot(dx, dy, dz);
+        const largo = andado + largos[i] * t;
+        andado += largos[i];
+        if (!mejor || dist < mejor.dist) {
+          mejor = { dist, t: total ? largo / total : 0, signo: puntos[0][0] < 0 ? -1 : 1, cx, cy, cz, dx, dy, dz, abx, aby, abz, indice: c, seg: i };
+        }
+      }
+    }
+    return mejor;
+  }
+
+  function marcosBrazo(cadenas) {
+    return cadenas.map((puntos) => {
+      const marcos = [];
+      let frente = null;
+      const signo = puntos[0][0] < 0 ? -1 : 1;
+      for (let i = 0; i < puntos.length - 1; i += 1) {
+        const ax = puntos[i + 1][0] - puntos[i][0];
+        const ay = puntos[i + 1][1] - puntos[i][1];
+        const az = puntos[i + 1][2] - puntos[i][2];
+        const el = Math.hypot(ax, ay, az) || 1;
+        const ex = ax / el;
+        const ey = ay / el;
+        const ez = az / el;
+        if (!frente) {
+          let fx = -ex * ez;
+          let fy = -ey * ez;
+          let fz = 1 - ez * ez;
+          if (Math.hypot(fx, fy, fz) < 1e-4) {
+            fx = 0;
+            fy = 1;
+            fz = 0;
+          }
+          const fl = Math.hypot(fx, fy, fz) || 1;
+          frente = [fx / fl, fy / fl, fz / fl];
+        } else {
+          const d = frente[0] * ex + frente[1] * ey + frente[2] * ez;
+          let fx = frente[0] - ex * d;
+          let fy = frente[1] - ey * d;
+          let fz = frente[2] - ez * d;
+          const fl = Math.hypot(fx, fy, fz);
+          frente = fl < 1e-4 ? [0, 1, 0] : [fx / fl, fy / fl, fz / fl];
+        }
+        let ox = ey * frente[2] - ez * frente[1];
+        let oy = ez * frente[0] - ex * frente[2];
+        let oz = ex * frente[1] - ey * frente[0];
+        if (ox * signo < 0) {
+          ox = -ox;
+          oy = -oy;
+          oz = -oz;
+        }
+        marcos.push({ fx: frente[0], fy: frente[1], fz: frente[2], ox, oy, oz });
+      }
+      return marcos;
+    });
+  }
+
+  function puntoEnCadena(puntos, tDeseado) {
+    let total = 0;
+    const largos = [];
+    for (let i = 0; i < puntos.length - 1; i += 1) {
+      const l = Math.hypot(puntos[i + 1][0] - puntos[i][0], puntos[i + 1][1] - puntos[i][1], puntos[i + 1][2] - puntos[i][2]);
+      largos.push(l);
+      total += l;
+    }
+    let queda = Math.max(0, Math.min(1, tDeseado)) * total;
+    for (let i = 0; i < largos.length; i += 1) {
+      if (queda <= largos[i] || i === largos.length - 1) {
+        const t = largos[i] ? Math.min(1, queda / largos[i]) : 0;
+        const a = puntos[i];
+        const b = puntos[i + 1];
+        return { x: a[0] + (b[0] - a[0]) * t, y: a[1] + (b[1] - a[1]) * t, z: a[2] + (b[2] - a[2]) * t };
+      }
+      queda -= largos[i];
+    }
+    return { x: puntos[0][0], y: puntos[0][1], z: puntos[0][2] };
+  }
+
   function mangasDelCuerpo(grupo, med, material, corta) {
     let malla = null;
     cuerpo.traverse((nodo) => {
@@ -1353,11 +1532,11 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     [-1, 1].forEach((lado) => {
       const sufijo = lado < 0 ? "L" : "R";
       const nombres = corta
-        ? ["shoulder01", "upperarm01", "upperarm02"]
-        : ["shoulder01", "upperarm01", "upperarm02", "lowerarm01", "lowerarm02", "wrist"];
+        ? ["clavicle", "shoulder01", "upperarm01", "upperarm02"]
+        : ["clavicle", "shoulder01", "upperarm01", "upperarm02", "lowerarm01", "lowerarm02", "wrist"];
       const puntos = [];
       nombres.forEach((nombre) => {
-        const hueso = malla.skeleton.bones.find((item) => item.name === nombre + sufijo);
+        const hueso = malla.skeleton.bones.find((item) => item.name === nombre + sufijo || item.name === `${nombre}.${sufijo}`);
         if (!hueso) return;
         const punto = new THREE.Vector3();
         hueso.getWorldPosition(punto);
@@ -1365,11 +1544,35 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
         puntos.push(punto);
       });
       if (puntos.length < 2) return;
+      if (!corta) {
+        const a = puntos[puntos.length - 2];
+        const b = puntos[puntos.length - 1];
+        puntos.push(b.clone().add(b.clone().sub(a).multiplyScalar(0.22)));
+      }
       const radios = puntos.map((_, indice) => {
         const t = indice / (puntos.length - 1);
-        return (corta ? 0.055 : 0.064) * (1 - t * 0.32);
+        return (corta ? 0.08 : 0.09) * (1 - t * 0.42);
       });
-      grupo.add(tuboTela(puntos, radios, material, lado < 0 ? 0.02 : 0.78, lado < 0 ? 0.22 : 0.98));
+      const tubo = tuboTela(puntos, radios, material, lado < 0 ? 0.02 : 0.78, lado < 0 ? 0.22 : 0.98);
+      const cara = material.map && material.map.userData;
+      const uv = tubo.geometry.attributes.uv;
+      if (cara && cara.zonas && cara.frente && uv) {
+        const zona = lado < 0 ? cara.zonas.izquierda : cara.zonas.derecha;
+        const rect = cara.frente;
+        const centro = (zona[0] + zona[1]) / 2;
+        const ancho = (zona[1] - zona[0]) * 0.16;
+        const uBase = lado < 0 ? 0.02 : 0.78;
+        for (let i = 0; i < uv.count; i += 1) {
+          const alrededor = (uv.getX(i) - uBase) / 0.2;
+          const giro = Math.sin(alrededor * Math.PI * 2);
+          const u = Math.min(zona[1] - 0.02, Math.max(zona[0] + 0.02, centro + giro * ancho));
+          const v = 0.22 + Math.min(1, Math.max(0, uv.getY(i))) * 0.62;
+          uv.setXY(i, rect.u0 + u * (rect.u1 - rect.u0), rect.v0 + v * (rect.v1 - rect.v0));
+        }
+        uv.needsUpdate = true;
+      }
+      tubo.userData.mangaTubo = true;
+      grupo.add(tubo);
     });
   }
 
@@ -1383,35 +1586,100 @@ if (!grid || !tabs || !stage || !window.DT_CATALOG) {
     const ajuste = ajusteDe(item.id);
     const telaPrenda = materialTela(telas, solido);
     const conPantalon = puesto.inferior && corte(puesto.inferior) === "largo";
-    const ponerCuerpo = (filtro, holgura, material) => {
-      const malla = mallaDeCuerpo(filtro, holgura * (ajuste.ancho || 1), material || telaPrenda);
+    const cadenas = cadenasDeBrazo();
+    const topeManga = 0.47;
+    const enManga = (p) => {
+      const info = sobreBrazo(p, cadenas);
+      return !!(info && info.dist < (med.mujer ? 0.09 : 0.105) && Math.abs(info.cx) > (med.mujer ? 0.1 : 0.13) && Math.abs(p.x) > (med.mujer ? 0.12 : 0.15) && p.y > med.caderaY - 0.05);
+    };
+    const sacarMano = (q, p) => {
+      const cx = Math.sign(p.x || 1) * med.mano[0];
+      const cy = med.mano[1];
+      const cz = med.mano[2];
+      const vx = p.x - cx;
+      const vy = p.y - cy;
+      const vz = p.z - cz;
+      const d = Math.hypot(vx, vy, vz);
+      if (d * d < 0.02) {
+        const k = (Math.sqrt(0.02) + 0.014) / (d || 0.001);
+        q.x = cx + vx * k;
+        q.y = cy + vy * k;
+        q.z = cz + vz * k;
+      }
+    };
+    const esLateral = (p) => Math.abs(p.x) > (med.mujer ? 0.18 : 0.22) && p.y > 0.62;
+    const cerrarAlto = (bajo, cuello, corta) => (p) => {
+      const q = { x: p.x, y: p.y, z: p.z };
+      const lateral = esLateral(p);
+      if (!lateral && q.y > cuello) q.y = cuello;
+      if (!lateral && q.y < bajo) q.y = bajo;
+      if (!lateral) sacarMano(q, p);
+      if (corta && (enManga(p) || lateral)) {
+        const info = sobreBrazo(p, cadenas);
+        if (info && info.t > topeManga && cadenas[info.indice]) {
+          const corte = puntoEnCadena(cadenas[info.indice], topeManga);
+          q.x = corte.x + info.dx;
+          q.y = corte.y + info.dy;
+          q.z = corte.z + info.dz;
+        }
+      }
+      return q;
+    };
+    const ponerCuerpo = (filtro, holgura, material, cerrar) => {
+      const malla = mallaDeCuerpo(filtro, holgura * (ajuste.ancho || 1), material || telaPrenda, cerrar);
       if (malla) grupo.add(malla);
       return !!malla;
     };
     if (slot === "camisa" || slot === "chaqueta" || slot === "chaleco") {
-      const corta = slot === "camisa" && tipo === "manga-corta";
+      const nombre = plain(item.name);
+      const corta = slot === "camisa" && (tipo === "manga-corta" || (/camiseta/.test(nombre) && !/manga larga/.test(nombre)));
       const bajo = slot === "chaleco" ? med.caderaY - 0.08 : (slot === "chaqueta" ? med.caderaY - 0.06 : (tipo === "fuera" ? med.caderaY - 0.04 : med.cinturaY - 0.02));
-      const holgura = slot === "chaqueta" ? 0.03 : (slot === "chaleco" ? 0.026 : 0.022);
-      const conMangas = slot !== "chaleco";
+      const holgura = slot === "chaqueta" ? 0.036 : 0.034;
+      const cuello = med.cuelloY + 0.012;
+      const limiteBrazo = med.mujer ? 0.2 : 0.24;
       ponerCuerpo((p) => {
-        if (esCabeza(p, med) || esMano(p, med) || p.y < bajo || p.y > med.cuelloY + 0.02) return false;
-        if (conMangas && esBrazo(p, med)) return false;
-        if (slot === "chaleco" && esBrazo(p, med)) return false;
+        const lateral = slot !== "chaleco" && esLateral(p);
+        if (slot === "chaleco" && (esBrazo(p, med) || enManga(p) || Math.abs(p.x) > limiteBrazo)) return false;
+        if (!lateral && (p.y < bajo - 0.02 || p.y > cuello + 0.03)) return false;
+        if (esMano(p, med)) return false;
+        if (corta && lateral) {
+          const info = sobreBrazo(p, cadenas);
+          if (info && info.t > topeManga + 0.05) return false;
+        }
+        if (!lateral && (p.y > cuello || p.y < bajo)) return false;
         return true;
-      }, holgura);
-      if (conMangas) mangasDelCuerpo(grupo, med, telaPrenda, corta);
+      }, holgura, telaPrenda, (p) => {
+        const q = cerrarAlto(bajo, cuello, corta)(p);
+        if (slot === "chaleco" && Math.abs(q.x) > limiteBrazo && q.y > med.caderaY - 0.02) q.x = Math.sign(q.x || 1) * limiteBrazo;
+        return q;
+      });
     } else if (slot === "completo") {
+      const bajo = 0.1;
+      const cuello = med.cuelloY + 0.012;
+      const corta = !!(telas && telas.frente && telas.frente.manga === "corta");
       ponerCuerpo((p) => {
-        if (esCabeza(p, med) || esMano(p, med)) return false;
-        return p.y >= 0.1 && p.y <= med.cuelloY + 0.02;
-      }, 0.03);
+        if (esMano(p, med)) return false;
+        if (p.y < bajo - 0.03 || p.y > cuello + 0.04) return false;
+        if (corta && enManga(p)) {
+          const info = sobreBrazo(p, cadenas);
+          if (info && info.t > topeManga + 0.05) return false;
+        }
+        return p.y >= bajo && p.y <= cuello;
+      }, 0.032, telaPrenda, cerrarAlto(bajo, cuello, corta));
     } else if (slot === "inferior") {
       const bajo = tipo === "falda" ? med.caderaY - 0.42 : (tipo === "corto" ? med.caderaY - 0.4 : 0.1);
+      const cintura = med.cinturaY + 0.03;
       ponerCuerpo((p) => {
-        if (esBrazo(p, med) || esMano(p, med) || esCabeza(p, med)) return false;
+        if (esBrazo(p, med) || enManga(p) || esMano(p, med) || esCabeza(p, med)) return false;
         if (tipo === "falda" && p.y < med.caderaY - 0.02 && Math.abs(p.x) > 0.16) return false;
-        return p.y <= med.cinturaY + 0.03 && p.y >= bajo;
-      }, 0.032);
+        if (p.y > cintura + 0.03 || p.y < bajo - 0.03) return false;
+        return p.y <= cintura && p.y >= bajo;
+      }, 0.034, telaPrenda, (p) => {
+        const q = { x: p.x, y: p.y, z: p.z };
+        if (q.y > cintura) q.y = cintura;
+        if (q.y < bajo) q.y = bajo;
+        return q;
+      });
     } else if (slot === "cinturon") {
       const base = puesto.inferior || puesto.completo;
       if (base && admiteCinturon(base)) {
