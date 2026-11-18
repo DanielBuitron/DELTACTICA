@@ -242,10 +242,10 @@ def construir_manga(bm, lazo, signo):
     radio_puno = metros(MEDIDAS["manga_puno"]) / 2.0
 
     def centro_en(t):
-        # Cuelga casi vertical desde la sisa, como en la foto.
-        destino_x = signo * (abs(origen.x) * 0.93 + 0.006)
-        x = origen.x + (destino_x - origen.x) * t
-        y = origen.y * (1.0 - t) - 0.015 * t
+        # La sisa sigue pegada al hombro. El brazo se abre unos 4 cm.
+        afuera = signo * 0.042 * (1.0 - math.exp(-t * 5.0))
+        x = origen.x + afuera
+        y = origen.y * (1.0 - t) - 0.008 * t
         return Vector((x, y, origen.z - largo * t))
 
     anillos = [lazo]
