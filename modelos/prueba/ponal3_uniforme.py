@@ -128,15 +128,19 @@ def vertice(bm, x, y, z):
     return bm.verts.new((x, y, z))
 
 
-def anillo(bm, n, rx, rz, z, frente=0.0, caida=0.0):
+def anillo(bm, n, rx, rz, z, frente=0.0, espalda=0.0, caida=0.0):
     verts = []
     for i in range(n):
         angulo = 2.0 * math.pi * i / n
-        x = math.sin(angulo) * rx
-        y = -math.cos(angulo) * rz
-        if math.cos(angulo) > 0.0:
-            y -= frente
-        altura = z - caida * abs(math.sin(angulo))
+        seno = math.sin(angulo)
+        coseno = math.cos(angulo)
+        x = seno * rx
+        y = -coseno * rz
+        if coseno > 0.0:
+            y -= frente * coseno
+        if coseno < 0.0:
+            y += espalda * (-coseno)
+        altura = z - caida * abs(seno)
         verts.append(vertice(bm, x, y, altura))
     return verts
 
@@ -224,18 +228,25 @@ def construir_manga(bm, lazo, signo):
     for vert in lazo:
         origen += vert.co
     origen /= n
+    radio_sisa = sum((vert.co - origen).length for vert in lazo) / n
     largo = metros(MEDIDAS["manga"])
-    destino = origen + Vector((signo * 0.02, -0.012, -largo))
-    direccion = (destino - origen).normalized()
-    pasos = 8
-    anterior = lazo
+    pasos = 12
+
+    def centro_en(t):
+        afuera = signo * (0.012 + 0.038 * math.sin(math.pi * min(t, 1.0) * 0.85))
+        adelante = -0.006 - 0.028 * math.sin(math.pi * t)
+        return origen + Vector((afuera, adelante, -largo * t))
+
     anillos = [lazo]
     for paso in range(1, pasos + 1):
         t = paso / pasos
-        centro = origen.lerp(destino, t)
+        centro = centro_en(t)
+        direccion = (centro_en(min(1.0, t + 0.08)) - centro_en(max(0.0, t - 0.08))).normalized()
         grueso = radio(MEDIDAS["biceps"]) * (1.0 - t) + radio(MEDIDAS["puno"]) * t
+        if t < 0.16:
+            grueso = max(grueso, radio_sisa * 0.62)
         if paso >= pasos - 1:
-            grueso *= 1.08
+            grueso *= 1.06
         anillos.append(anillo_manga(bm, centro, direccion, grueso, lazo))
     for a, b in zip(anillos, anillos[1:]):
         for i in range(n):
@@ -247,7 +258,7 @@ def construir_manga(bm, lazo, signo):
             else:
                 parte = 5 if al_frente else 6
             cara(bm, (a[i], a[j], b[j], b[i]), parte)
-    return origen, direccion
+    return centro_en(1.0).z
 
 
 def construir_chaqueta(bm):
@@ -262,17 +273,21 @@ def construir_chaqueta(bm):
     pecho_z = bajo + metros(MEDIDAS["largo_chaqueta"]) * 0.62
     cintura_z = bajo + metros(MEDIDAS["largo_chaqueta"]) * 0.38
 
-    bajo_a = anillo(bm, N, cintura_x * 0.98, cintura_y * 0.95, bajo)
-    cintura_a = anillo(bm, N, cintura_x, cintura_y, cintura_z)
-    pecho_a = anillo(bm, N, pecho_x, pecho_y, pecho_z, frente=0.015)
-    sisa_a = anillo(bm, N, pecho_x * 1.02, pecho_y, sisa_z)
-    hombro_a = anillo(bm, N, hombro_x, pecho_y * 0.92, hombro_z, caida=0.04)
+    bajo_a = anillo(bm, N, cintura_x * 1.02, cintura_y, bajo, frente=0.012, espalda=0.01)
+    cadera_a = anillo(bm, N, cintura_x * 1.07, cintura_y * 1.05, bajo + metros(MEDIDAS["largo_chaqueta"]) * 0.16, frente=0.014, espalda=0.02)
+    cintura_a = anillo(bm, N, cintura_x * 0.96, cintura_y * 0.92, cintura_z, frente=0.01, espalda=0.012)
+    bajo_pecho = anillo(bm, N, pecho_x * 0.98, pecho_y, pecho_z - 0.055, frente=0.022, espalda=0.016)
+    pecho_a = anillo(bm, N, pecho_x, pecho_y * 1.04, pecho_z, frente=0.032, espalda=0.022)
+    sisa_a = anillo(bm, N, pecho_x * 1.05, pecho_y * 0.96, sisa_z, frente=0.014, espalda=0.014)
+    hombro_a = anillo(bm, N, hombro_x, pecho_y * 0.7, hombro_z, frente=0.006, caida=0.058)
     cuello_a = anillo(bm, N, cuello_r * 1.15, cuello_r, cuello_z)
     cuello_b = anillo(bm, N, cuello_r * 1.28, cuello_r * 1.05, cuello_z + 0.018)
     cuello_c = anillo(bm, N, cuello_r * 1.12, cuello_r * 0.95, cuello_z + 0.034)
 
-    coser_cerrado(bm, bajo_a, cintura_a)
-    coser_cerrado(bm, cintura_a, pecho_a)
+    coser_cerrado(bm, bajo_a, cadera_a)
+    coser_cerrado(bm, cadera_a, cintura_a)
+    coser_cerrado(bm, cintura_a, bajo_pecho)
+    coser_cerrado(bm, bajo_pecho, pecho_a)
     coser_cerrado(bm, pecho_a, sisa_a)
     coser_sisa(bm, sisa_a, hombro_a)
     for i in range(N):
@@ -281,9 +296,9 @@ def construir_chaqueta(bm):
         cara(bm, (cuello_a[i], cuello_a[j], cuello_b[j], cuello_b[i]), parte_tronco(i, j))
         cara(bm, (cuello_b[i], cuello_b[j], cuello_c[j], cuello_c[i]), parte_tronco(i, j))
 
-    construir_manga(bm, lazo_sisa(hombro_a, sisa_a, SISA_DER), -1.0)
+    puno_z = construir_manga(bm, lazo_sisa(hombro_a, sisa_a, SISA_DER), -1.0)
     construir_manga(bm, lazo_sisa(hombro_a, sisa_a, SISA_IZQ), 1.0)
-    return {"bajo": bajo, "cuello": cuello_z, "hombro": hombro_x, "pecho": pecho_x}
+    return {"bajo": bajo, "cuello": cuello_z, "hombro": hombro_x, "pecho": pecho_x, "puno_z": puno_z}
 
 
 def anillo_pierna(bm, centro_x, rx, rz, z):
@@ -306,15 +321,19 @@ def construir_pantalon(bm):
     tobillo_r = radio(MEDIDAS["tobillo"])
     cintura_z = metros(MEDIDAS["largo_pantalon"])
     tiro_z = metros(MEDIDAS["entrepierna"])
-    separacion = muslo_r * 1.02
+    separacion = muslo_r * 1.08
 
     def pierna(signo):
         centro = signo * separacion
-        tobillo = anillo_pierna(bm, centro, tobillo_r, tobillo_r * 0.82, 0.02)
-        rodilla = anillo_pierna(bm, centro, rodilla_r, rodilla_r * 0.9, tiro_z * 0.48)
-        muslo = anillo_pierna(bm, centro, muslo_r, muslo_r * 0.95, tiro_z * 0.82)
-        cadera = anillo_pierna(bm, centro, muslo_r * 1.05, muslo_r, tiro_z)
-        for a, b in ((tobillo, rodilla), (rodilla, muslo), (muslo, cadera)):
+        tobillo = anillo_pierna(bm, centro, tobillo_r, tobillo_r * 0.78, 0.015)
+        pantorrilla = anillo_pierna(bm, centro, tobillo_r * 1.18, tobillo_r * 0.95, tiro_z * 0.28)
+        rodilla = anillo_pierna(bm, centro, rodilla_r, rodilla_r * 0.9, tiro_z * 0.5)
+        muslo = anillo_pierna(bm, centro, muslo_r, muslo_r * 0.96, tiro_z * 0.78)
+        cadera = anillo_pierna(bm, centro, muslo_r * 1.08, muslo_r * 1.02, tiro_z)
+        for indice in (3, 4, 5):
+            cadera[indice].co.y += 0.03
+            muslo[indice].co.y += 0.014
+        for a, b in ((tobillo, pantorrilla), (pantorrilla, rodilla), (rodilla, muslo), (muslo, cadera)):
             for i in range(8):
                 j = (i + 1) % 8
                 cara(bm, (a[i], a[j], b[j], b[i]), 7 if i < 4 else 8)
@@ -322,13 +341,15 @@ def construir_pantalon(bm):
 
     izquierda = pierna(1.0)
     derecha = pierna(-1.0)
-    for anillo_sup in (izquierda, derecha):
-        anillo_sup[5].co.z -= 0.025
-        anillo_sup[6].co.z -= 0.055
-        anillo_sup[7].co.z -= 0.02
-        anillo_sup[6].co.x *= 0.25
-        anillo_sup[6].co.y -= 0.008
-    cara(bm, (izquierda[6], izquierda[7], derecha[7], derecha[6]), 7)
+    for anillo_sup, signo in ((izquierda, 1.0), (derecha, -1.0)):
+        anillo_sup[6].co.x = signo * 0.01
+        anillo_sup[6].co.z -= 0.03
+        anillo_sup[5].co.x = signo * 0.038
+        anillo_sup[5].co.z -= 0.01
+        anillo_sup[5].co.y += 0.012
+        anillo_sup[7].co.x = signo * 0.032
+        anillo_sup[7].co.z -= 0.006
+    cara(bm, (izquierda[7], izquierda[6], derecha[6], derecha[7]), 7)
     cara(bm, (izquierda[6], izquierda[5], derecha[5], derecha[6]), 8)
 
     def cinturon(signo):
@@ -393,13 +414,15 @@ def mapear(bm, chaqueta, pantalon, ficha):
                 foto = espalda if parte in (4, 6) else frente
                 if parte in (3, 4):
                     caja = foto["manga_vista_derecha"] if parte == 4 else foto["manga_vista_izquierda"]
-                    hacia_afuera = -1.0
+                    signo = -1.0
                 else:
                     caja = foto["manga_vista_izquierda"] if parte == 6 else foto["manga_vista_derecha"]
-                    hacia_afuera = 1.0
-                v_n = max(0.0, min(1.0, (co.z - (z1 - largo)) / largo))
-                frente_manga = max(0.0, min(1.0, 0.5 - co.y / 0.08))
-                u_n = 0.28 + 0.44 * frente_manga if hacia_afuera < 0.0 else 0.72 - 0.44 * frente_manga
+                    signo = 1.0
+                base_z = chaqueta.get("puno_z", z1 - largo)
+                v_n = max(0.0, min(1.0, (co.z - base_z) / max(0.01, z1 - 0.08 - base_z)))
+                eje = signo * 0.18
+                angulo = math.atan2((co.x - eje) * signo, -(co.y + 0.015))
+                u_n = 0.5 + 0.26 * max(-1.0, min(1.0, angulo))
                 u, v = proyectar(caja, u_n, v_n, foto["ancho"], foto["alto"])
             elif cruza:
                 caja = frente["pierna_vista_izquierda"]
@@ -411,7 +434,7 @@ def mapear(bm, chaqueta, pantalon, ficha):
                     caja = foto["pierna_vista_izquierda"] if del_lado_positivo else foto["pierna_vista_derecha"]
                 else:
                     caja = foto["pierna_vista_derecha"] if del_lado_positivo else foto["pierna_vista_izquierda"]
-                centro = radio(MEDIDAS["muslo"]) * 1.02 * (1.0 if del_lado_positivo else -1.0)
+                centro = radio(MEDIDAS["muslo"]) * 1.08 * (1.0 if del_lado_positivo else -1.0)
                 fuera = (co.x - centro) if del_lado_positivo else (centro - co.x)
                 giro = math.atan2(fuera, -co.y)
                 u_n = 0.5 + 0.22 * math.sin(giro)
@@ -511,6 +534,7 @@ def renderizar():
         "perfil-izquierdo": Vector((3.6, 0.0, 1.05)),
         "perfil-derecho": Vector((-3.6, 0.0, 1.05)),
         "tres-cuartos": Vector((2.1, -2.6, 1.15)),
+        "tres-cuartos-derecho": Vector((-2.1, -2.6, 1.15)),
     }
     escena = bpy.context.scene
     for nombre, ubicacion in camaras.items():
@@ -543,36 +567,67 @@ def material_oro():
     return mat
 
 
-def disco(nombre, x, y, z, oro, radio_m=0.011):
-    bpy.ops.mesh.primitive_cylinder_add(vertices=20, radius=radio_m, depth=0.004, location=(x, y, z))
+def superficie(obj, x, z, lado_y):
+    mejor = None
+    for poly in obj.data.polygons:
+        centro = poly.center
+        if lado_y < 0.0 and centro.y > 0.02:
+            continue
+        if lado_y > 0.0 and centro.y < -0.015:
+            continue
+        distancia = (centro.x - x) ** 2 + (centro.z - z) ** 2
+        if mejor is None or distancia < mejor[0]:
+            mejor = (distancia, centro.copy(), poly.normal.copy())
+    if mejor is None or mejor[0] > 0.075 ** 2:
+        return None
+    normal = mejor[2].normalized()
+    return mejor[1] + normal * 0.004, normal
+
+
+def disco_anclado(nombre, lugar, normal, oro, padre, radio_m=0.011):
+    bpy.ops.mesh.primitive_cylinder_add(vertices=20, radius=radio_m, depth=0.003, location=(0.0, 0.0, 0.0))
     obj = bpy.context.active_object
     obj.name = nombre
-    obj.rotation_euler = (math.pi / 2.0, 0.0, 0.0)
+    obj.location = lugar
+    obj.rotation_mode = "QUATERNION"
+    obj.rotation_quaternion = Vector((0.0, 0.0, 1.0)).rotation_difference(normal)
     obj.data.materials.append(oro)
+    obj.parent = padre
+    obj.matrix_parent_inverse = padre.matrix_world.inverted()
     return obj
 
 
-def colocar_botones(ficha, chaqueta):
+def colocar_botones(ficha, chaqueta, chaqueta_obj):
     oro = material_oro()
     frente = ficha["frente"]
     caja = frente["torso"]
     span = chaqueta["pecho"]
     z0 = chaqueta["bajo"]
     z1 = chaqueta["cuello"]
+    puestos = 0
     for indice, (px, py) in enumerate(frente["botones"]):
         tx = (px - caja[0]) / float(caja[2] - caja[0])
         tz = (caja[3] - py) / float(caja[3] - caja[1])
         x = -span + tx * 2.0 * span
         z = z0 + tz * (z1 - z0)
-        disco("boton_%02d" % indice, x, -0.132, z, oro)
+        ancla = superficie(chaqueta_obj, x, z, -1.0)
+        if ancla is None:
+            print("boton sin tela", indice)
+            continue
+        disco_anclado("boton_%02d" % indice, ancla[0], ancla[1], oro, chaqueta_obj)
+        puestos += 1
     espalda = ficha["espalda"]
-    punos = espalda["botones_puno"]
-    largo = metros(MEDIDAS["manga"])
-    base = z1 - largo + 0.02
-    for indice, (px, py) in enumerate(punos):
+    base = chaqueta.get("puno_z", z1 - metros(MEDIDAS["manga"]))
+    for indice, (px, py) in enumerate(espalda["botones_puno"]):
         lado = 1.0 if px < espalda["ancho"] / 2.0 else -1.0
         orden = indice % 3
-        disco("puno_%02d" % indice, lado * span * 0.78, 0.03, base + orden * 0.022, oro, 0.008)
+        ancla = superficie(chaqueta_obj, lado * (span + 0.05), base + 0.03 + orden * 0.022, 1.0)
+        if ancla is None:
+            print("puno sin tela", indice)
+            continue
+        disco_anclado("puno_%02d" % indice, ancla[0], ancla[1], oro, chaqueta_obj, 0.008)
+        puestos += 1
+    print("botones anclados", puestos)
 
 
 def main():
@@ -589,9 +644,9 @@ def main():
     pantalon_bm = nuevo_bmesh()
     medidas_pantalon = construir_pantalon(pantalon_bm)
     mapear(pantalon_bm, medidas_chaqueta, medidas_pantalon, ficha)
-    a_objeto(chaqueta_bm, "PONAL3_chaqueta", (frente, espalda))
+    chaqueta_obj = a_objeto(chaqueta_bm, "PONAL3_chaqueta", (frente, espalda))
     a_objeto(pantalon_bm, "PONAL3_pantalon", (frente, espalda))
-    colocar_botones(ficha, medidas_chaqueta)
+    colocar_botones(ficha, medidas_chaqueta, chaqueta_obj)
     os.makedirs(os.path.dirname(SALIDA), exist_ok=True)
     bpy.ops.object.select_all(action="DESELECT")
     for obj in bpy.data.objects:
