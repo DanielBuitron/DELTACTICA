@@ -242,10 +242,11 @@ def construir_manga(bm, lazo, signo):
     radio_puno = metros(MEDIDAS["manga_puno"]) / 2.0
 
     def centro_en(t):
-        # La sisa sigue pegada al hombro. El brazo se abre unos 4 cm.
-        afuera = signo * 0.042 * (1.0 - math.exp(-t * 5.0))
+        # La sisa queda en el hombro. El brazo se abre hasta dejar
+        # un hueco visible junto al torso, cerca de 9 cm en el puño.
+        afuera = signo * 0.09 * (1.0 - math.exp(-t * 3.5))
         x = origen.x + afuera
-        y = origen.y * (1.0 - t) - 0.008 * t
+        y = origen.y * (1.0 - t) - 0.006 * t
         return Vector((x, y, origen.z - largo * t))
 
     anillos = [lazo]
@@ -269,7 +270,7 @@ def construir_manga(bm, lazo, signo):
             else:
                 parte = 5 if al_frente else 6
             cara(bm, (a[i], a[j], b[j], b[i]), parte)
-    return centro_en(1.0).z
+    return centro_en(1.0)
 
 
 def mitad(clave):
@@ -298,7 +299,12 @@ def construir_chaqueta(bm):
     bajo_pecho = anillo(bm, N, pecho_x * 0.99, pecho_y * 1.04, pecho_z - 0.06, frente=0.03, espalda=0.032)
     pecho_a = anillo(bm, N, pecho_x, pecho_y * 1.08, pecho_z, frente=0.042, espalda=0.038)
     sisa_a = anillo(bm, N, pecho_x * 1.02, pecho_y, sisa_z, frente=0.018, espalda=0.026)
-    hombro_a = anillo(bm, N, hombro_x, pecho_y * 0.72, hombro_z, frente=0.008, caida=0.036)
+    hombro_a = anillo(bm, N, hombro_x, pecho_y * 0.72, hombro_z, frente=0.006, caida=0.0)
+    for vert in hombro_a:
+        lateral = min(1.0, abs(vert.co.x) / max(0.001, hombro_x))
+        curva = lateral ** 1.7
+        vert.co.z -= 0.09 * curva
+        vert.co.x *= 1.0 - 0.08 * (lateral ** 2)
     cuello_a = anillo(bm, N, cuello_r * 1.15, cuello_r, cuello_z)
     cuello_b = anillo(bm, N, cuello_r * 1.28, cuello_r * 1.05, cuello_z + 0.018)
     cuello_c = anillo(bm, N, cuello_r * 1.12, cuello_r * 0.95, cuello_z + 0.034)
@@ -315,9 +321,9 @@ def construir_chaqueta(bm):
         cara(bm, (cuello_a[i], cuello_a[j], cuello_b[j], cuello_b[i]), parte_tronco(i, j))
         cara(bm, (cuello_b[i], cuello_b[j], cuello_c[j], cuello_c[i]), parte_tronco(i, j))
 
-    puno_z = construir_manga(bm, lazo_sisa(hombro_a, sisa_a, SISA_DER), -1.0)
+    puno = construir_manga(bm, lazo_sisa(hombro_a, sisa_a, SISA_DER), -1.0)
     construir_manga(bm, lazo_sisa(hombro_a, sisa_a, SISA_IZQ), 1.0)
-    return {"bajo": bajo, "cuello": cuello_z, "hombro": hombro_x, "pecho": pecho_x, "puno_z": puno_z}
+    return {"bajo": bajo, "cuello": cuello_z, "hombro": hombro_x, "pecho": pecho_x, "puno_z": puno.z, "puno_x": abs(puno.x)}
 
 
 N_PIERNA = 16
@@ -686,7 +692,7 @@ def colocar_botones(ficha, chaqueta, chaqueta_obj):
     for indice, (px, py) in enumerate(espalda["botones_puno"]):
         lado = 1.0 if px < espalda["ancho"] / 2.0 else -1.0
         orden = indice % 3
-        ancla = superficie(chaqueta_obj, lado * (span + 0.05), base + 0.03 + orden * 0.022, 1.0)
+        ancla = superficie(chaqueta_obj, lado * chaqueta.get("puno_x", span + 0.05), base + 0.03 + orden * 0.022, 1.0)
         if ancla is None:
             print("puno sin tela", indice)
             continue
