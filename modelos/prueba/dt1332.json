@@ -1,0 +1,42 @@
+{
+  "id": "DT-1332",
+  "nota": "Cajas medidas en las fotos dt1332-01 y dt1332-03. La izquierda de la foto frontal es la derecha de quien viste la prenda.",
+  "frente": {
+    "ancho": 1800,
+    "alto": 2400,
+    "torso": [700, 400, 1140, 1290],
+    "manga_vista_izquierda": [575, 480, 690, 1080],
+    "manga_vista_derecha": [1145, 480, 1260, 1080],
+    "pierna_vista_izquierda": [710, 1380, 870, 2080],
+    "pierna_vista_derecha": [960, 1380, 1110, 2080],
+    "botones": [
+      [800, 452],
+      [1033, 452],
+      [762, 656],
+      [1059, 656],
+      [903, 672],
+      [905, 785],
+      [903, 889],
+      [901, 989],
+      [720, 998],
+      [1104, 998]
+    ]
+  },
+  "espalda": {
+    "ancho": 1800,
+    "alto": 2400,
+    "torso": [690, 420, 1130, 1320],
+    "manga_vista_izquierda": [560, 520, 680, 1100],
+    "manga_vista_derecha": [1120, 520, 1240, 1100],
+    "pierna_vista_izquierda": [690, 1420, 840, 2100],
+    "pierna_vista_derecha": [960, 1420, 1100, 2100],
+    "botones_puno": [
+      [570, 1147],
+      [569, 1164],
+      [567, 1193],
+      [1227, 1148],
+      [1226, 1167],
+      [1226, 1189]
+    ]
+  }
+}

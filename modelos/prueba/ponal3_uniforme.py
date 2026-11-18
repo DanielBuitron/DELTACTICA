@@ -19,6 +19,7 @@
 #   modelos/prueba/vistas/perfil-derecho.png
 #   modelos/prueba/vistas/tres-cuartos.png
 
+import json
 import math
 import os
 import sys
@@ -76,6 +77,7 @@ SALIDA = os.path.join(RAIZ, "modelos", "prueba", "ponal-3.glb")
 VISTAS = os.path.join(RAIZ, "modelos", "prueba", "vistas")
 FOTO_FRENTE = os.path.join(RAIZ, "img", "vueltas", "dt1332-01.jpg")
 FOTO_ESPALDA = os.path.join(RAIZ, "img", "vueltas", "dt1332-03.jpg")
+FICHA = os.path.join(os.path.dirname(__file__), "dt1332.json")
 
 
 def metros(cm):
@@ -281,7 +283,7 @@ def construir_chaqueta(bm):
 
     construir_manga(bm, lazo_sisa(hombro_a, sisa_a, SISA_DER), -1.0)
     construir_manga(bm, lazo_sisa(hombro_a, sisa_a, SISA_IZQ), 1.0)
-    return {"bajo": bajo, "cuello": cuello_z, "hombro": hombro_x}
+    return {"bajo": bajo, "cuello": cuello_z, "hombro": hombro_x, "pecho": pecho_x}
 
 
 def anillo_pierna(bm, centro_x, rx, rz, z):
@@ -347,58 +349,79 @@ def construir_pantalon(bm):
     return {"bajo": 0.02, "cintura": cintura_z}
 
 
-def mapear(bm, chaqueta, pantalon):
+def cargar_ficha():
+    with open(FICHA, encoding="utf-8") as archivo:
+        return json.load(archivo)
+
+
+def uv_de_pixel(px, py, ancho, alto):
+    return px / float(ancho), 1.0 - py / float(alto)
+
+
+def proyectar(caja, tx, tz, ancho, alto, voltear_x=False):
+    if voltear_x:
+        tx = 1.0 - tx
+    tx = max(0.0, min(1.0, tx))
+    tz = max(0.0, min(1.0, tz))
+    px = caja[0] + tx * (caja[2] - caja[0])
+    py = caja[3] + tz * (caja[1] - caja[3])
+    return uv_de_pixel(px, py, ancho, alto)
+
+
+def mapear(bm, chaqueta, pantalon, ficha):
     uv = uv_de(bm)
     capa = parte_de(bm)
-    frente = RECORTES["chaqueta_frente"]
-    espalda = RECORTES["chaqueta_espalda"]
+    frente = ficha["frente"]
+    espalda = ficha["espalda"]
+    span = max(0.05, chaqueta["pecho"])
+    z0 = chaqueta["bajo"]
+    z1 = chaqueta["cuello"]
+    largo = max(0.01, metros(MEDIDAS["manga"]))
     for cara_uv in bm.faces:
         parte = cara_uv[capa]
         equis = [lazo.vert.co.x for lazo in cara_uv.loops]
         cruza = min(equis) < -0.01 and max(equis) > 0.01
         for lazo in cara_uv.loops:
             co = lazo.vert.co
-            if parte in (1, 2):
-                rect = frente if parte == 1 else espalda
-                u = rect[0] + (co.x / (chaqueta["hombro"] * 2.0) + 0.5) * (rect[2] - rect[0])
-                v = rect[1] + (co.z - chaqueta["bajo"]) / max(0.01, chaqueta["cuello"] - chaqueta["bajo"]) * (rect[3] - rect[1])
+            tx = (co.x + span) / (2.0 * span)
+            tz = (co.z - z0) / max(0.01, z1 - z0)
+            if parte == 1:
+                u, v = proyectar(frente["torso"], tx, tz, frente["ancho"], frente["alto"])
+            elif parte == 2:
+                u, v = proyectar(espalda["torso"], tx, tz, espalda["ancho"], espalda["alto"], voltear_x=True)
             elif parte in (3, 4, 5, 6):
+                foto = espalda if parte in (4, 6) else frente
                 if parte in (3, 4):
-                    rect = RECORTES["manga_derecha_espalda"] if parte == 4 else RECORTES["manga_derecha"]
-                    signo = -1.0
+                    caja = foto["manga_vista_derecha"] if parte == 4 else foto["manga_vista_izquierda"]
+                    hacia_afuera = -1.0
                 else:
-                    rect = RECORTES["manga_izquierda_espalda"] if parte == 6 else RECORTES["manga_izquierda"]
-                    signo = 1.0
-                eje = signo * chaqueta["hombro"] * 0.75
-                fuera = signo * (co.x - eje) / max(0.02, radio(MEDIDAS["biceps"]))
-                u_n = 0.5 + max(-0.5, min(0.5, fuera * 0.5))
-                if signo < 0.0:
-                    u_n = 1.0 - u_n
-                u = rect[0] + u_n * (rect[2] - rect[0])
-                largo = max(0.01, metros(MEDIDAS["manga"]))
-                v_n = max(0.0, min(1.0, (co.z - (chaqueta["cuello"] - largo)) / largo))
-                v = rect[1] + v_n * (rect[3] - rect[1])
+                    caja = foto["manga_vista_izquierda"] if parte == 6 else foto["manga_vista_derecha"]
+                    hacia_afuera = 1.0
+                v_n = max(0.0, min(1.0, (co.z - (z1 - largo)) / largo))
+                frente_manga = max(0.0, min(1.0, 0.5 - co.y / 0.08))
+                u_n = 0.28 + 0.44 * frente_manga if hacia_afuera < 0.0 else 0.72 - 0.44 * frente_manga
+                u, v = proyectar(caja, u_n, v_n, foto["ancho"], foto["alto"])
             elif cruza:
-                rect = RECORTES["pantalon_derecha_espalda"] if parte == 8 else RECORTES["pantalon_derecha"]
-                u = (rect[0] + rect[2]) * 0.5 + max(-0.01, min(0.01, co.x))
-                alto = max(0.01, pantalon["cintura"] - pantalon["bajo"])
-                v = rect[1] + (co.z - pantalon["bajo"]) / alto * (rect[3] - rect[1])
+                caja = frente["pierna_vista_izquierda"]
+                u, v = proyectar(caja, 0.5, (co.z - pantalon["bajo"]) / max(0.01, pantalon["cintura"] - pantalon["bajo"]), frente["ancho"], frente["alto"])
             else:
-                izquierda = co.x >= 0.0
+                foto = espalda if parte == 8 else frente
+                del_lado_positivo = co.x >= 0.0
                 if parte == 8:
-                    rect = RECORTES["pantalon_izquierda_espalda"] if izquierda else RECORTES["pantalon_derecha_espalda"]
+                    caja = foto["pierna_vista_izquierda"] if del_lado_positivo else foto["pierna_vista_derecha"]
                 else:
-                    rect = RECORTES["pantalon_izquierda"] if izquierda else RECORTES["pantalon_derecha"]
-                centro = radio(MEDIDAS["muslo"]) * 1.02 * (1.0 if izquierda else -1.0)
-                fuera = (co.x - centro) if izquierda else (centro - co.x)
+                    caja = foto["pierna_vista_derecha"] if del_lado_positivo else foto["pierna_vista_izquierda"]
+                centro = radio(MEDIDAS["muslo"]) * 1.02 * (1.0 if del_lado_positivo else -1.0)
+                fuera = (co.x - centro) if del_lado_positivo else (centro - co.x)
                 giro = math.atan2(fuera, -co.y)
-                u_n = 0.5 + 0.48 * math.sin(giro)
-                if not izquierda:
+                u_n = 0.5 + 0.22 * math.sin(giro)
+                if not del_lado_positivo:
                     u_n = 1.0 - u_n
-                u = rect[0] + max(0.0, min(1.0, u_n)) * (rect[2] - rect[0])
+                if parte == 8:
+                    u_n = 1.0 - u_n
                 alto = max(0.01, pantalon["cintura"] - pantalon["bajo"])
-                v = rect[1] + (co.z - pantalon["bajo"]) / alto * (rect[3] - rect[1])
-            lazo[uv].uv = (max(0.0, min(1.0, u)), max(0.0, min(1.0, v)))
+                u, v = proyectar(caja, u_n, (co.z - pantalon["bajo"]) / alto, foto["ancho"], foto["alto"])
+            lazo[uv].uv = (max(0.0, min(0.999, u)), max(0.0, min(0.999, v)))
 
 
 def material(nombre, ruta, color):
@@ -481,13 +504,13 @@ def mirar(obj, objetivo):
 def renderizar():
     os.makedirs(VISTAS, exist_ok=True)
     preparar_mundo()
-    objetivo = Vector((0.0, 0.0, 0.85))
+    objetivo = Vector((0.0, 0.0, 0.98))
     camaras = {
-        "frente": Vector((0.0, -2.35, 0.9)),
-        "espalda": Vector((0.0, 2.35, 0.9)),
-        "perfil-izquierdo": Vector((2.35, 0.0, 0.9)),
-        "perfil-derecho": Vector((-2.35, 0.0, 0.9)),
-        "tres-cuartos": Vector((1.35, -1.7, 1.0)),
+        "frente": Vector((0.0, -3.6, 1.05)),
+        "espalda": Vector((0.0, 3.6, 1.05)),
+        "perfil-izquierdo": Vector((3.6, 0.0, 1.05)),
+        "perfil-derecho": Vector((-3.6, 0.0, 1.05)),
+        "tres-cuartos": Vector((2.1, -2.6, 1.15)),
     }
     escena = bpy.context.scene
     for nombre, ubicacion in camaras.items():
@@ -506,25 +529,74 @@ def renderizar():
             print("No se pudo renderizar", nombre, error)
 
 
+def material_oro():
+    mat = bpy.data.materials.new("OroPONAL")
+    mat.use_nodes = True
+    nodos = mat.node_tree.nodes
+    nodos.clear()
+    salida = nodos.new("ShaderNodeOutputMaterial")
+    bsdf = nodos.new("ShaderNodeBsdfPrincipled")
+    bsdf.inputs["Base Color"].default_value = (0.74, 0.56, 0.16, 1.0)
+    bsdf.inputs["Metallic"].default_value = 0.82
+    bsdf.inputs["Roughness"].default_value = 0.34
+    mat.node_tree.links.new(bsdf.outputs["BSDF"], salida.inputs["Surface"])
+    return mat
+
+
+def disco(nombre, x, y, z, oro, radio_m=0.011):
+    bpy.ops.mesh.primitive_cylinder_add(vertices=20, radius=radio_m, depth=0.004, location=(x, y, z))
+    obj = bpy.context.active_object
+    obj.name = nombre
+    obj.rotation_euler = (math.pi / 2.0, 0.0, 0.0)
+    obj.data.materials.append(oro)
+    return obj
+
+
+def colocar_botones(ficha, chaqueta):
+    oro = material_oro()
+    frente = ficha["frente"]
+    caja = frente["torso"]
+    span = chaqueta["pecho"]
+    z0 = chaqueta["bajo"]
+    z1 = chaqueta["cuello"]
+    for indice, (px, py) in enumerate(frente["botones"]):
+        tx = (px - caja[0]) / float(caja[2] - caja[0])
+        tz = (caja[3] - py) / float(caja[3] - caja[1])
+        x = -span + tx * 2.0 * span
+        z = z0 + tz * (z1 - z0)
+        disco("boton_%02d" % indice, x, -0.132, z, oro)
+    espalda = ficha["espalda"]
+    punos = espalda["botones_puno"]
+    largo = metros(MEDIDAS["manga"])
+    base = z1 - largo + 0.02
+    for indice, (px, py) in enumerate(punos):
+        lado = 1.0 if px < espalda["ancho"] / 2.0 else -1.0
+        orden = indice % 3
+        disco("puno_%02d" % indice, lado * span * 0.78, 0.03, base + orden * 0.022, oro, 0.008)
+
+
 def main():
     print("Plantilla PONAL #3, centímetros editables, no son talla certificada.")
     for clave in sorted(MEDIDAS):
         print(" ", clave, MEDIDAS[clave])
+    ficha = cargar_ficha()
     limpiar_escena()
     frente = material("FrentePONAL", FOTO_FRENTE, (0.16, 0.20, 0.12, 1.0))
     espalda = material("EspaldaPONAL", FOTO_ESPALDA, (0.14, 0.18, 0.11, 1.0))
     chaqueta_bm = nuevo_bmesh()
     medidas_chaqueta = construir_chaqueta(chaqueta_bm)
-    mapear(chaqueta_bm, medidas_chaqueta, {"bajo": 0.02, "cintura": metros(MEDIDAS["largo_pantalon"])})
+    mapear(chaqueta_bm, medidas_chaqueta, {"bajo": 0.02, "cintura": metros(MEDIDAS["largo_pantalon"])}, ficha)
     pantalon_bm = nuevo_bmesh()
     medidas_pantalon = construir_pantalon(pantalon_bm)
-    mapear(pantalon_bm, medidas_chaqueta, medidas_pantalon)
+    mapear(pantalon_bm, medidas_chaqueta, medidas_pantalon, ficha)
     a_objeto(chaqueta_bm, "PONAL3_chaqueta", (frente, espalda))
     a_objeto(pantalon_bm, "PONAL3_pantalon", (frente, espalda))
+    colocar_botones(ficha, medidas_chaqueta)
     os.makedirs(os.path.dirname(SALIDA), exist_ok=True)
     bpy.ops.object.select_all(action="DESELECT")
-    for nombre in ("PONAL3_chaqueta", "PONAL3_pantalon"):
-        bpy.data.objects[nombre].select_set(True)
+    for obj in bpy.data.objects:
+        if obj.type == "MESH":
+            obj.select_set(True)
     try:
         bpy.ops.preferences.addon_enable(module="io_scene_gltf2")
     except Exception:
