@@ -5,8 +5,10 @@
     "ancho": 1800,
     "alto": 2400,
     "torso": [700, 400, 1140, 1290],
-    "manga_vista_izquierda": [575, 540, 690, 1080],
-    "manga_vista_derecha": [1145, 540, 1260, 1080],
+    "manga_vista_izquierda": [630, 640, 690, 1080],
+    "manga_vista_derecha": [1145, 640, 1205, 1080],
+    "parche_manga_izquierda": [590, 510, 670, 640],
+    "parche_manga_derecha": [1185, 510, 1260, 660],
     "pierna_vista_izquierda": [710, 1380, 870, 2080],
     "pierna_vista_derecha": [960, 1380, 1110, 2080],
     "botones": [

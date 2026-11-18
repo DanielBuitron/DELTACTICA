@@ -33,23 +33,31 @@ except ImportError:
 
 # Plantilla editable. Cambiar un número y volver a ejecutar reconstruye la malla.
 MEDIDAS = {
-    "hombros": 46.0,
-    "pecho": 102.0,
-    "cintura": 88.0,
-    "cadera": 100.0,
-    "largo_chaqueta": 76.0,
-    "manga": 63.0,
-    "biceps": 34.0,
-    "puno": 27.0,
+    # Anchos de lado a lado, en cm, medidos en dt1332-01.
+    # El hombro exterior de esa foto (574 px) se toma como 48 cm.
+    # Con esa escala: bajo 40 cm, muslo 19 cm, tobillo 11 cm,
+    # largo de chaqueta 72 cm y manga 54 cm. La profundidad no sale
+    # de la foto: es una estimación anatómica, no una talla certificada.
+    "hombro_ancho": 48.0,
+    "pecho_ancho": 39.0,
+    "cintura_ancho": 37.0,
+    "bajo_ancho": 40.2,
+    "prof_pecho": 27.0,
+    "prof_cintura": 24.0,
+    "prof_cadera": 29.0,
+    "largo_chaqueta": 72.0,
+    "manga": 54.0,
+    "manga_arriba": 10.0,
+    "manga_puno": 8.4,
     "cuello": 40.0,
-    "muslo": 58.0,
-    "rodilla": 40.0,
-    "tobillo": 36.0,
-    "entrepierna": 80.0,
-    "largo_pantalon": 106.0,
-    "profundidad_pecho": 24.0,
-    "profundidad_cintura": 21.0,
-    "profundidad_cadera": 26.0,
+    "muslo_ancho": 18.6,
+    "rodilla_ancho": 16.2,
+    "tobillo_ancho": 11.4,
+    "prof_muslo": 17.5,
+    "centro_muslo": 10.0,
+    "centro_tobillo": 11.6,
+    "entrepierna": 67.0,
+    "largo_pantalon": 100.0,
 }
 
 # Recortes dentro de cada foto (u, v). v=0 es el bajo de la imagen.
@@ -228,25 +236,28 @@ def construir_manga(bm, lazo, signo):
     for vert in lazo:
         origen += vert.co
     origen /= n
-    radio_sisa = sum((vert.co - origen).length for vert in lazo) / n
     largo = metros(MEDIDAS["manga"])
     pasos = 12
+    radio_arriba = metros(MEDIDAS["manga_arriba"]) / 2.0
+    radio_puno = metros(MEDIDAS["manga_puno"]) / 2.0
 
     def centro_en(t):
-        afuera = signo * (0.012 + 0.038 * math.sin(math.pi * min(t, 1.0) * 0.85))
-        adelante = -0.006 - 0.028 * math.sin(math.pi * t)
-        return origen + Vector((afuera, adelante, -largo * t))
+        # Cuelga casi vertical desde la sisa, como en la foto.
+        destino_x = signo * (abs(origen.x) * 0.93 + 0.006)
+        x = origen.x + (destino_x - origen.x) * t
+        y = origen.y * (1.0 - t) - 0.015 * t
+        return Vector((x, y, origen.z - largo * t))
 
     anillos = [lazo]
     for paso in range(1, pasos + 1):
         t = paso / pasos
         centro = centro_en(t)
         direccion = (centro_en(min(1.0, t + 0.08)) - centro_en(max(0.0, t - 0.08))).normalized()
-        grueso = radio(MEDIDAS["biceps"]) * (1.0 - t) + radio(MEDIDAS["puno"]) * t
-        if t < 0.16:
-            grueso = max(grueso, radio_sisa * 0.62)
+        grueso = radio_arriba * (1.0 - t) + radio_puno * t
+        if t < 0.22:
+            grueso = max(grueso, radio_arriba * 1.05)
         if paso >= pasos - 1:
-            grueso *= 1.06
+            grueso *= 1.05
         anillos.append(anillo_manga(bm, centro, direccion, grueso, lazo))
     for a, b in zip(anillos, anillos[1:]):
         for i in range(n):
@@ -261,25 +272,33 @@ def construir_manga(bm, lazo, signo):
     return centro_en(1.0).z
 
 
-def construir_chaqueta(bm):
-    pecho_x, pecho_y = ejes(MEDIDAS["pecho"], MEDIDAS["profundidad_pecho"])
-    cintura_x, cintura_y = ejes(MEDIDAS["cintura"], MEDIDAS["profundidad_cintura"])
-    hombro_x = metros(MEDIDAS["hombros"]) / 2.0
-    cuello_r = radio(MEDIDAS["cuello"])
-    bajo = metros(MEDIDAS["largo_pantalon"] - 8.0)
-    cuello_z = bajo + metros(MEDIDAS["largo_chaqueta"])
-    hombro_z = cuello_z - 0.045
-    sisa_z = hombro_z - 0.13
-    pecho_z = bajo + metros(MEDIDAS["largo_chaqueta"]) * 0.62
-    cintura_z = bajo + metros(MEDIDAS["largo_chaqueta"]) * 0.38
+def mitad(clave):
+    return metros(MEDIDAS[clave]) / 2.0
 
-    bajo_a = anillo(bm, N, cintura_x * 1.02, cintura_y, bajo, frente=0.012, espalda=0.01)
-    cadera_a = anillo(bm, N, cintura_x * 1.07, cintura_y * 1.05, bajo + metros(MEDIDAS["largo_chaqueta"]) * 0.16, frente=0.014, espalda=0.02)
-    cintura_a = anillo(bm, N, cintura_x * 0.96, cintura_y * 0.92, cintura_z, frente=0.01, espalda=0.012)
-    bajo_pecho = anillo(bm, N, pecho_x * 0.98, pecho_y, pecho_z - 0.055, frente=0.022, espalda=0.016)
-    pecho_a = anillo(bm, N, pecho_x, pecho_y * 1.04, pecho_z, frente=0.032, espalda=0.022)
-    sisa_a = anillo(bm, N, pecho_x * 1.05, pecho_y * 0.96, sisa_z, frente=0.014, espalda=0.014)
-    hombro_a = anillo(bm, N, hombro_x, pecho_y * 0.7, hombro_z, frente=0.006, caida=0.058)
+
+def construir_chaqueta(bm):
+    pecho_x = mitad("pecho_ancho")
+    pecho_y = mitad("prof_pecho")
+    cintura_x = mitad("cintura_ancho")
+    cintura_y = mitad("prof_cintura")
+    hombro_x = mitad("hombro_ancho")
+    bajo_x = mitad("bajo_ancho")
+    cuello_r = radio(MEDIDAS["cuello"])
+    largo = metros(MEDIDAS["largo_chaqueta"])
+    bajo = metros(MEDIDAS["entrepierna"]) + 0.07
+    cuello_z = bajo + largo
+    hombro_z = cuello_z - 0.04
+    sisa_z = hombro_z - 0.145
+    pecho_z = bajo + largo * 0.62
+    cintura_z = bajo + largo * 0.38
+
+    bajo_a = anillo(bm, N, bajo_x, pecho_y * 0.98, bajo, frente=0.014, espalda=0.022)
+    cadera_a = anillo(bm, N, bajo_x * 0.98, pecho_y * 1.02, bajo + largo * 0.16, frente=0.016, espalda=0.032)
+    cintura_a = anillo(bm, N, cintura_x, cintura_y, cintura_z, frente=0.014, espalda=0.024)
+    bajo_pecho = anillo(bm, N, pecho_x * 0.99, pecho_y * 1.04, pecho_z - 0.06, frente=0.03, espalda=0.032)
+    pecho_a = anillo(bm, N, pecho_x, pecho_y * 1.08, pecho_z, frente=0.042, espalda=0.038)
+    sisa_a = anillo(bm, N, pecho_x * 1.02, pecho_y, sisa_z, frente=0.018, espalda=0.026)
+    hombro_a = anillo(bm, N, hombro_x, pecho_y * 0.72, hombro_z, frente=0.008, caida=0.036)
     cuello_a = anillo(bm, N, cuello_r * 1.15, cuello_r, cuello_z)
     cuello_b = anillo(bm, N, cuello_r * 1.28, cuello_r * 1.05, cuello_z + 0.018)
     cuello_c = anillo(bm, N, cuello_r * 1.12, cuello_r * 0.95, cuello_z + 0.034)
@@ -301,10 +320,13 @@ def construir_chaqueta(bm):
     return {"bajo": bajo, "cuello": cuello_z, "hombro": hombro_x, "pecho": pecho_x, "puno_z": puno_z}
 
 
+N_PIERNA = 16
+
+
 def anillo_pierna(bm, centro_x, rx, rz, z):
     verts = []
-    for i in range(8):
-        angulo = 2.0 * math.pi * i / 8.0
+    for i in range(N_PIERNA):
+        angulo = 2.0 * math.pi * i / N_PIERNA
         local_x = math.sin(angulo) * rx
         if centro_x < 0.0:
             local_x = -local_x
@@ -314,60 +336,79 @@ def anillo_pierna(bm, centro_x, rx, rz, z):
 
 
 def construir_pantalon(bm):
-    cadera_x, cadera_y = ejes(MEDIDAS["cadera"], MEDIDAS["profundidad_cadera"])
-    cintura_x, cintura_y = ejes(MEDIDAS["cintura"], MEDIDAS["profundidad_cintura"])
-    muslo_r = radio(MEDIDAS["muslo"])
-    rodilla_r = radio(MEDIDAS["rodilla"])
-    tobillo_r = radio(MEDIDAS["tobillo"])
+    muslo_r = mitad("muslo_ancho")
+    tobillo_r = mitad("tobillo_ancho")
+    muslo_z = mitad("prof_muslo")
     cintura_z = metros(MEDIDAS["largo_pantalon"])
     tiro_z = metros(MEDIDAS["entrepierna"])
-    separacion = muslo_r * 1.08
+    sep_arriba = metros(MEDIDAS["centro_muslo"])
+    sep_abajo = metros(MEDIDAS["centro_tobillo"])
+
+    def separacion(z, signo):
+        t = max(0.0, min(1.0, z / max(0.01, tiro_z)))
+        return signo * (sep_abajo * (1.0 - t) + sep_arriba * t)
+
+    def radio_en(z):
+        t = max(0.0, min(1.0, z / max(0.01, tiro_z)))
+        base = tobillo_r * (1.0 - t) + muslo_r * t
+        if 0.40 < t < 0.64:
+            base += 0.008 * (1.0 - abs(t - 0.52) / 0.12)
+        return base
 
     def pierna(signo):
-        centro = signo * separacion
-        tobillo = anillo_pierna(bm, centro, tobillo_r, tobillo_r * 0.78, 0.015)
-        pantorrilla = anillo_pierna(bm, centro, tobillo_r * 1.18, tobillo_r * 0.95, tiro_z * 0.28)
-        rodilla = anillo_pierna(bm, centro, rodilla_r, rodilla_r * 0.9, tiro_z * 0.5)
-        muslo = anillo_pierna(bm, centro, muslo_r, muslo_r * 0.96, tiro_z * 0.78)
-        cadera = anillo_pierna(bm, centro, muslo_r * 1.08, muslo_r * 1.02, tiro_z)
-        for indice in (3, 4, 5):
-            cadera[indice].co.y += 0.03
-            muslo[indice].co.y += 0.014
-        for a, b in ((tobillo, pantorrilla), (pantorrilla, rodilla), (rodilla, muslo), (muslo, cadera)):
-            for i in range(8):
-                j = (i + 1) % 8
-                cara(bm, (a[i], a[j], b[j], b[i]), 7 if i < 4 else 8)
+        alturas = (0.012, tiro_z * 0.16, tiro_z * 0.34, tiro_z * 0.50, tiro_z * 0.66, tiro_z * 0.84, tiro_z)
+        anillos = []
+        for z in alturas:
+            rx = radio_en(z) * (1.06 if z <= 0.02 else 1.0)
+            rz = rx * (muslo_z / max(0.01, muslo_r))
+            anillos.append(anillo_pierna(bm, separacion(z, signo), rx, rz, z))
+        cadera = anillos[-1]
+        muslo = anillos[-2]
+        for indice in (6, 7, 8, 9, 10):
+            peso = 1.0 - abs(indice - 8) / 3.0
+            cadera[indice].co.y += 0.032 * peso
+            muslo[indice].co.y += 0.016 * peso
+        for a, b in zip(anillos, anillos[1:]):
+            for i in range(N_PIERNA):
+                j = (i + 1) % N_PIERNA
+                cara(bm, (a[i], a[j], b[j], b[i]), 7 if i < 8 else 8)
         return cadera
 
     izquierda = pierna(1.0)
     derecha = pierna(-1.0)
     for anillo_sup, signo in ((izquierda, 1.0), (derecha, -1.0)):
-        anillo_sup[6].co.x = signo * 0.01
-        anillo_sup[6].co.z -= 0.03
-        anillo_sup[5].co.x = signo * 0.038
-        anillo_sup[5].co.z -= 0.01
-        anillo_sup[5].co.y += 0.012
-        anillo_sup[7].co.x = signo * 0.032
-        anillo_sup[7].co.z -= 0.006
-    cara(bm, (izquierda[7], izquierda[6], derecha[6], derecha[7]), 7)
-    cara(bm, (izquierda[6], izquierda[5], derecha[5], derecha[6]), 8)
+        anillo_sup[12].co.x = signo * 0.006
+        anillo_sup[12].co.z -= 0.032
+        anillo_sup[11].co.x = signo * 0.026
+        anillo_sup[11].co.z -= 0.012
+        anillo_sup[11].co.y += 0.01
+        anillo_sup[13].co.x = signo * 0.026
+        anillo_sup[13].co.z -= 0.01
+    cara(bm, (izquierda[13], izquierda[12], derecha[12], derecha[13]), 7)
+    cara(bm, (izquierda[12], izquierda[11], derecha[11], derecha[12]), 8)
 
     def cinturon(signo):
-        return anillo_pierna(bm, signo * cadera_x * 0.48, cintura_x * 0.55, cintura_y * 0.72, cintura_z)
+        return anillo_pierna(
+            bm,
+            signo * mitad("cintura_ancho") * 0.42,
+            mitad("cintura_ancho") * 0.58,
+            mitad("prof_cintura") * 0.9,
+            cintura_z,
+        )
 
     cin_izq = cinturon(1.0)
     cin_der = cinturon(-1.0)
     for origen, destino in ((izquierda, cin_izq), (derecha, cin_der)):
-        for i in range(8):
-            j = (i + 1) % 8
-            if i in (5, 6):
+        for i in range(N_PIERNA):
+            j = (i + 1) % N_PIERNA
+            if i in (11, 12):
                 continue
-            cara(bm, (origen[i], origen[j], destino[j], destino[i]), 7 if i < 4 else 8)
-    cara(bm, (izquierda[7], cin_izq[7], cin_der[7], derecha[7]), 7)
-    cara(bm, (izquierda[5], cin_izq[5], cin_der[5], derecha[5]), 8)
-    cara(bm, (cin_izq[6], cin_izq[7], cin_der[7], cin_der[6]), 7)
-    cara(bm, (cin_izq[6], cin_izq[5], cin_der[5], cin_der[6]), 8)
-    return {"bajo": 0.02, "cintura": cintura_z}
+            cara(bm, (origen[i], origen[j], destino[j], destino[i]), 7 if i < 8 else 8)
+    cara(bm, (izquierda[13], cin_izq[13], cin_der[13], derecha[13]), 7)
+    cara(bm, (izquierda[11], cin_izq[11], cin_der[11], derecha[11]), 8)
+    cara(bm, (cin_izq[12], cin_izq[13], cin_der[13], cin_der[12]), 7)
+    cara(bm, (cin_izq[12], cin_izq[11], cin_der[11], cin_der[12]), 8)
+    return {"bajo": 0.02, "cintura": cintura_z, "centro_pierna": sep_arriba}
 
 
 def cargar_ficha():
@@ -395,6 +436,7 @@ def mapear(bm, chaqueta, pantalon, ficha):
     frente = ficha["frente"]
     espalda = ficha["espalda"]
     span = max(0.05, chaqueta["pecho"])
+    hombro = max(span + 0.01, chaqueta["hombro"])
     z0 = chaqueta["bajo"]
     z1 = chaqueta["cuello"]
     largo = max(0.01, metros(MEDIDAS["manga"]))
@@ -404,8 +446,17 @@ def mapear(bm, chaqueta, pantalon, ficha):
         cruza = min(equis) < -0.01 and max(equis) > 0.01
         for lazo in cara_uv.loops:
             co = lazo.vert.co
-            tx = (co.x + span) / (2.0 * span)
+            ax = abs(co.x)
+            if ax <= span:
+                tx = (co.x + span) / (2.0 * span)
+            else:
+                t_h = min(1.0, (ax - span) / (hombro - span))
+                borde = 0.76 + 0.12 * t_h
+                tx = borde if co.x > 0.0 else 1.0 - borde
             tz = (co.z - z0) / max(0.01, z1 - z0)
+            if parte == 1 and tz > 0.82 and abs(tx - 0.5) < 0.16:
+                tx = 0.36 if tx < 0.5 else 0.64
+                tz = min(tz, 0.78)
             if parte == 1:
                 u, v = proyectar(frente["torso"], tx, tz, frente["ancho"], frente["alto"])
             elif parte == 2:
@@ -420,10 +471,22 @@ def mapear(bm, chaqueta, pantalon, ficha):
                     signo = 1.0
                 base_z = chaqueta.get("puno_z", z1 - largo)
                 v_n = max(0.0, min(1.0, (co.z - base_z) / max(0.01, z1 - 0.08 - base_z)))
-                eje = signo * 0.18
+                eje = signo * hombro * 0.9
                 angulo = math.atan2((co.x - eje) * signo, -(co.y + 0.015))
-                u_n = 0.5 + 0.26 * max(-1.0, min(1.0, angulo))
-                u, v = proyectar(caja, u_n, v_n, foto["ancho"], foto["alto"])
+                u_n = 0.5 + 0.08 * max(-1.0, min(1.0, angulo))
+                v_tela = 0.22 + 0.58 * v_n
+                parche = None
+                if parte == 3:
+                    parche = frente.get("parche_manga_izquierda")
+                elif parte == 5:
+                    parche = frente.get("parche_manga_derecha")
+                fuera = co.x * signo
+                if parche and v_n > 0.62 and fuera > hombro + 0.012:
+                    u_p = max(0.0, min(1.0, (fuera - hombro - 0.012) / 0.05))
+                    v_p = max(0.0, min(1.0, (v_n - 0.58) / 0.40))
+                    u, v = proyectar(parche, u_p, v_p, frente["ancho"], frente["alto"])
+                else:
+                    u, v = proyectar(caja, u_n, v_tela, foto["ancho"], foto["alto"])
             elif cruza:
                 caja = frente["pierna_vista_izquierda"]
                 u, v = proyectar(caja, 0.5, (co.z - pantalon["bajo"]) / max(0.01, pantalon["cintura"] - pantalon["bajo"]), frente["ancho"], frente["alto"])
@@ -434,7 +497,9 @@ def mapear(bm, chaqueta, pantalon, ficha):
                     caja = foto["pierna_vista_izquierda"] if del_lado_positivo else foto["pierna_vista_derecha"]
                 else:
                     caja = foto["pierna_vista_derecha"] if del_lado_positivo else foto["pierna_vista_izquierda"]
-                centro = radio(MEDIDAS["muslo"]) * 1.08 * (1.0 if del_lado_positivo else -1.0)
+                t_pierna = max(0.0, min(1.0, co.z / max(0.01, metros(MEDIDAS["entrepierna"]))))
+                sep = metros(MEDIDAS["centro_tobillo"]) * (1.0 - t_pierna) + pantalon.get("centro_pierna", 0.1) * t_pierna
+                centro = sep if del_lado_positivo else -sep
                 fuera = (co.x - centro) if del_lado_positivo else (centro - co.x)
                 giro = math.atan2(fuera, -co.y)
                 u_n = 0.5 + 0.22 * math.sin(giro)
@@ -630,6 +695,24 @@ def colocar_botones(ficha, chaqueta, chaqueta_obj):
     print("botones anclados", puestos)
 
 
+def cuerpo_guia():
+    # Referencia masculina interna, más estrecha que el uniforme. Queda oculta.
+    bajo = metros(MEDIDAS["entrepierna"]) + 0.07
+    largo = metros(MEDIDAS["largo_chaqueta"])
+    piezas = (
+        ("CUERPO_pecho", (0.0, -0.01, bajo + largo * 0.62), (0.16, 0.12, 0.13)),
+        ("CUERPO_cintura", (0.0, 0.0, bajo + largo * 0.38), (0.15, 0.11, 0.08)),
+        ("CUERPO_cadera", (0.0, 0.015, metros(MEDIDAS["entrepierna"]) + 0.02), (0.17, 0.13, 0.09)),
+    )
+    for nombre, lugar, escala in piezas:
+        bpy.ops.mesh.primitive_uv_sphere_add(segments=16, ring_count=8, radius=1.0, location=lugar)
+        obj = bpy.context.active_object
+        obj.name = nombre
+        obj.scale = escala
+        obj.hide_render = True
+        obj.hide_set(True)
+
+
 def main():
     print("Plantilla PONAL #3, centímetros editables, no son talla certificada.")
     for clave in sorted(MEDIDAS):
@@ -647,10 +730,11 @@ def main():
     chaqueta_obj = a_objeto(chaqueta_bm, "PONAL3_chaqueta", (frente, espalda))
     a_objeto(pantalon_bm, "PONAL3_pantalon", (frente, espalda))
     colocar_botones(ficha, medidas_chaqueta, chaqueta_obj)
+    cuerpo_guia()
     os.makedirs(os.path.dirname(SALIDA), exist_ok=True)
     bpy.ops.object.select_all(action="DESELECT")
     for obj in bpy.data.objects:
-        if obj.type == "MESH":
+        if obj.type == "MESH" and not obj.name.startswith("CUERPO"):
             obj.select_set(True)
     try:
         bpy.ops.preferences.addon_enable(module="io_scene_gltf2")
